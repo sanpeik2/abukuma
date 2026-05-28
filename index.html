@@ -3321,11 +3321,11 @@
                 <h3><span class="title-icon gray">1</span>会議の基本情報</h3>
                 <div class="field">
                   <label for="comment6">出席者・確認者 <span class="auto">自動補完</span></label>
-                  <textarea id="comment6" readonly>出席: 代表、所長、O&M責任者、管理部、アグリゲーター窓口。確認者: 所長 / 承認者: 代表。</textarea>
+                  <textarea id="comment6">出席: 代表、所長、O&M責任者、管理部、アグリゲーター窓口。確認者: 所長 / 承認者: 代表。</textarea>
                 </div>
                 <div class="field">
                   <label for="comment8">前日決定の結果 <span class="auto">自動補完</span></label>
-                  <textarea id="comment8" readonly>WTG31ナセル内確認は完了。WTG18ブレード目視点検は高風況回避のため本日午後へ繰越。</textarea>
+                  <textarea id="comment8">WTG31ナセル内確認は完了。WTG18ブレード目視点検は高風況回避のため本日午後へ繰越。</textarea>
                 </div>
               </div>
               <div class="input-group">
@@ -3343,18 +3343,18 @@
                 <h3><span class="title-icon blue">3</span>外部・現場への連絡</h3>
                 <div class="field">
                   <label for="comment4">アグリゲーターへの連絡事項 <span class="auto">自動補完</span> <span class="carryover-check"><input type="checkbox" class="carryover-input" data-title="アグリゲーターへの連絡事項" data-field="comment4" data-tags="アグリゲーター共有" /> 持ち越し</span></label>
-                  <textarea id="comment4" readonly>本日予測 2,510MWh、1時間前計画値誤差 4.6%。WTG28高所作業中止とWTG18午後変更により、午前計画値への影響は限定的見込み。</textarea>
+                  <textarea id="comment4">本日予測 2,510MWh、1時間前計画値誤差 4.6%。WTG28高所作業中止とWTG18午後変更により、午前計画値への影響は限定的見込み。</textarea>
                 </div>
                 <div class="field">
                   <label for="comment5">O&Mとの連絡事項 <span class="auto">自動補完</span> <span class="carryover-check"><input type="checkbox" class="carryover-input" data-title="O&Mとの連絡事項" data-field="comment5" data-tags="O&M確認" checked /> 持ち越し</span></label>
-                  <textarea id="comment5" readonly>WTG07の油温・冷却ファン履歴を午前中に確認。WTG18は13:00以降へ変更、WTG33復旧確認は予定通り実施。</textarea>
+                  <textarea id="comment5">WTG07の油温・冷却ファン履歴を午前中に確認。WTG18は13:00以降へ変更、WTG33復旧確認は予定通り実施。</textarea>
                 </div>
               </div>
               <div class="input-group">
                 <h3><span class="title-icon red">4</span>リスク・申し送り</h3>
                 <div class="field">
                   <label for="comment7">未解決リスク <span class="auto">自動補完</span> <span class="carryover-check"><input type="checkbox" class="carryover-input" data-title="未解決リスク" data-field="comment7" data-tags="未クローズ" checked /> 持ち越し</span></label>
-                  <textarea id="comment7" readonly>WTG07冷却系アラーム再発、WTG23通信欠損、WTG36停止継続、午後強風時の高所作業可否。</textarea>
+                  <textarea id="comment7">WTG07冷却系アラーム再発、WTG23通信欠損、WTG36停止継続、午後強風時の高所作業可否。</textarea>
                 </div>
               <div class="field">
                 <label for="comment3">申し送り <span class="carryover-check"><input type="checkbox" class="carryover-input" data-title="申し送り" data-field="comment3" data-tags="翌日へ申し送り / 未クローズ / O&M確認" checked /> 持ち越し</span></label>
@@ -4918,6 +4918,16 @@ ${document.getElementById("comment10").value}
 
           document.getElementById('loginOverlay').style.display = 'none';
           console.log('✅ ログイン成功:', data.user?.email);
+
+          // ログイン後にデータを再読み込み・再描画
+          initFromSupabase().finally(() => {
+            renderMatrix();
+            renderTrend(7);
+            renderDaySummary();
+            renderKpiCompare();
+            renderImbalanceImpact();
+            setTab('today');
+          });
         } catch (e) {
           err.textContent = e.message; err.style.display = 'block';
           btn.textContent = 'ログイン'; btn.disabled = false;
@@ -5239,7 +5249,7 @@ ${document.getElementById("comment10").value}
                     bar.innerHTML = ins.top_decisions.map((d, i) => {
                       const sep = i < ins.top_decisions.length - 1
                         ? '<span class="decision-separator">·</span>' : '';
-                      return `<span class="${d.level || 'info'}">${d.text}</span>${sep}`;
+                      return `<span class="${d.level || 'info'}" title="${d.detail || ''}">${d.label}</span>${sep}`;
                     }).join('');
                   }
                 }
@@ -5278,6 +5288,36 @@ ${document.getElementById("comment10").value}
               }
             }
           } catch(e) { console.warn('AI所見取得失敗:', e); }
+
+          // 議事録読み込み（今日のmeeting_minutesがあれば優先、なければai_insightsの下書き）
+          try {
+            const today = new Date().toISOString().slice(0,10);
+            const minRes = await fetch(
+              `https://kwhashtnuzrlzrpikhne.supabase.co/rest/v1/meeting_minutes?select=*&date=eq.${today}&limit=1`,
+              { headers: authHeaders() }
+            );
+            if (minRes.ok) {
+              const [min] = await minRes.json();
+              const draft = ins?.minutes_draft;
+              const src = min || draft;
+              if (src) {
+                const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+                set('comment1', src.representative_comment);
+                set('comment2', src.decisions);
+                set('comment3', src.handover);
+                set('comment4', src.aggregator_note);
+                set('comment5', src.om_note);
+                set('comment7', src.unresolved_risks);
+                set('comment6', src.attendees);
+                set('comment10', src.data_quality_note);
+                set('comment9', src.next_check_time ? `次回確認: ${src.next_check_time}` : '');
+                const statusEl = document.getElementById('saveStatus');
+                if (statusEl) statusEl.textContent = min
+                  ? `✅ 本日の議事録を読み込みました（${today} 保存済み）`
+                  : `🤖 AI下書きを読み込みました（編集して保存してください）`;
+              }
+            }
+          } catch(e) { console.warn('議事録読み込み失敗:', e); }
 
           // DB容量チェック
           try {
