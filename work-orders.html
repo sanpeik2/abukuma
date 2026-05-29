@@ -34,6 +34,25 @@
   footer{margin-top:28px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
   code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
   a.menu{color:#58a6ff;text-decoration:none;font-size:12.5px}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--panel2)}
+  #ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50}
+  #ov.show{display:block}
+  #drawer{position:fixed;top:0;right:0;width:min(560px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
+  #ov.show #drawer{transform:none}
+  .dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:10px}
+  .dhd .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+  .dhd h2{font-size:17px;color:#fff}
+  .dbody{padding:18px 20px 40px}
+  .dno{font-family:monospace;font-size:12px;color:var(--master);margin-bottom:10px}
+  .dpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .dpill{font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
+  .dsec{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
+  .dval{font-size:13px;color:var(--txt);white-space:pre-wrap}
+  .dval.empty{color:var(--muted)}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0}
+  .dgrid .l{font-size:11px;color:var(--muted)}
+  .dgrid .v{font-size:14px;color:#fff;font-weight:600}
 </style>
 </head>
 <body>
@@ -72,9 +91,15 @@
   </table>
 
   <footer>
-    データ元: <code>v_work_orders_full</code>（work_orders ＋ 関連異常・添付数・JST変換）。
-    本画面は閲覧用。作業票の作成・更新は業務OS（Budibase）側で行う運用。
+    データ元: <code>v_work_orders_full</code>（work_orders ＋ 関連異常・添付数・JST変換）。行をクリックすると詳細を表示します。
   </footer>
+
+  <div id="ov" onclick="if(event.target.id==='ov')closeDetail()">
+    <div id="drawer">
+      <div class="dhd"><h2 id="dTitle">作業票詳細</h2><button class="x" onclick="closeDetail()">×</button></div>
+      <div class="dbody" id="dBody"></div>
+    </div>
+  </div>
 
   <script src="./lib/supabase.js"></script>
   <script>
@@ -116,7 +141,7 @@
     function render(d){
       const rows = document.getElementById('rows');
       if(!d.length){ rows.innerHTML = '<tr><td colspan="11" class="empty">該当する作業票はありません</td></tr>'; return; }
-      rows.innerHTML = d.map(r=>`<tr>
+      rows.innerHTML = d.map(r=>`<tr onclick="openDetail('${sb.esc(r['id'])}')">
         <td class="no">${sb.esc(r['作業票番号'])}</td>
         <td>${sb.esc(r['風車'])||'–'}</td>
         <td>${sb.esc(r['作業種別'])||'–'}</td>
@@ -130,6 +155,47 @@
         <td>${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
       </tr>`).join('');
     }
+
+    function fld(label, val){
+      const empty = val==null || val==='';
+      return `<div class="dsec">${label}</div><div class="dval${empty?' empty':''}">${empty?'（記載なし）':sb.esc(val)}</div>`;
+    }
+    function openDetail(id){
+      const r = ALL.find(x => String(x['id'])===String(id));
+      if(!r) return;
+      document.getElementById('dTitle').textContent = (r['風車']||'') + ' 作業票';
+      document.getElementById('dBody').innerHTML = `
+        <div class="dno">${sb.esc(r['作業票番号']||'')}</div>
+        <div class="dpills">
+          <span class="dpill">${sb.esc(r['状態表示']||r['状態']||'')}</span>
+          <span class="dpill">${sb.esc(r['優先度表示']||r['優先度']||'')}</span>
+          ${r['深刻度']?`<span class="dpill">深刻度 ${sb.esc(r['深刻度'])}</span>`:''}
+          ${r['作業種別']?`<span class="dpill">${sb.esc(r['作業種別'])}</span>`:''}
+        </div>
+        <div class="dgrid">
+          <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
+          <div><div class="l">対応予定日</div><div class="v">${sb.esc(r['対応予定日']||'–')}</div></div>
+          <div><div class="l">停止時間</div><div class="v">${r['停止時間min']??'–'} <small>分</small></div></div>
+          <div><div class="l">逸失電力</div><div class="v">${r['逸失電力kwh']??'–'} <small>kWh</small></div></div>
+        </div>
+        ${fld('異常概要', r['異常概要'])}
+        ${fld('関連異常', r['関連異常タイトル'])}
+        ${fld('根本原因', r['根本原因'])}
+        ${fld('暫定処置', r['暫定処置'])}
+        ${fld('恒久処置', r['恒久処置'])}
+        <div class="dgrid" style="margin-top:14px">
+          <div><div class="l">起票日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['起票日時_jst']||'–')}</div></div>
+          <div><div class="l">完了日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['完了日時_jst']||'–')}</div></div>
+        </div>
+        <div class="dsec">添付</div><div class="dval${(r['添付数']||0)>0?'':' empty'}">${(r['添付数']||0)>0?('📎 '+r['添付数']+' 件'):'なし'}</div>
+        <div style="margin-top:20px;display:flex;gap:14px;font-size:12.5px">
+          <a class="menu" href="./permits.html">🔒 関連する作業許可(PTW)</a>
+          <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
+        </div>`;
+      document.getElementById('ov').classList.add('show');
+    }
+    function closeDetail(){ document.getElementById('ov').classList.remove('show'); }
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeDetail(); });
 
     sb.requireLogin({ onReady: load });
   </script>
