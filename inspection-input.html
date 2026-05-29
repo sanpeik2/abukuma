@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 点検実績入力（ライブ）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:18px 22px 50px;max-width:1100px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:24px}
+  .card h2{font-size:15px;color:#fff;margin-bottom:14px}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+  textarea{min-height:64px;resize:vertical}
+  .full{grid-column:1/-1}
+  .row-anom{display:none}
+  .submit{margin-top:16px;display:flex;gap:10px;align-items:center}
+  .submit button{background:var(--insp);border:none;color:#04210d;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:14px}
+  .submit button:disabled{opacity:.5;cursor:default}
+  .msg{font-size:13px;font-weight:700}
+  .msg.ok{color:#7ee787} .msg.ng{color:#ff9a92}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  tr.anom{background:rgba(248,81,73,.05)}
+  .loading{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div>
+      <h1>点検実績入力</h1>
+      <div class="sub">阿武隈OS ライブ盤 — 点検結果・異常・BOXリンク登録</div>
+    </div>
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h2>📝 新規 点検実績を登録</h2>
+      <div class="form-grid">
+        <div><label>号機 *</label><select id="f_wtg"></select></div>
+        <div><label>実施日 *</label><input type="date" id="f_date"></div>
+        <div><label>天候</label>
+          <select id="f_weather"><option value="">—</option><option>晴れ</option><option>曇り</option><option>雨</option><option>雪</option><option>強風</option></select>
+        </div>
+        <div><label>風速 (m/s)</label><input type="number" id="f_wind" step="0.1" min="0" placeholder="例: 5.2"></div>
+        <div><label>判定 *</label>
+          <select id="f_result"><option value="ok">OK（異常なし）</option><option value="conditional">条件付き</option><option value="ng">NG（異常あり）</option></select>
+        </div>
+        <div><label>異常あり</label>
+          <select id="f_anom"><option value="false">なし</option><option value="true">あり</option></select>
+        </div>
+        <div class="full row-anom" id="anomBox">
+          <label>異常内容</label><textarea id="f_anomdesc" placeholder="異常の内容を記入"></textarea>
+        </div>
+        <div class="row-anom" id="sevBox"><label>深刻度</label>
+          <select id="f_sev"><option value="low">低</option><option value="medium">中</option><option value="high">高</option><option value="critical">重大</option></select>
+        </div>
+        <div class="full"><label>コメント</label><textarea id="f_comment" placeholder="所見・備考"></textarea></div>
+        <div class="full"><label>写真 / BOX リンク (URL)</label><input type="url" id="f_box" placeholder="https://app.box.com/..."></div>
+      </div>
+      <div class="submit">
+        <button id="submitBtn">登録する</button>
+        <span class="msg" id="formMsg"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 最近の点検実績</h2>
+      <div id="listBody" class="loading">読み込み中…</div>
+    </div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+  <script>
+    const esc = sb.esc;
+    const state = { turbines: [], userId: null };
+
+    function toggleAnom(){
+      const on = document.getElementById("f_anom").value === "true";
+      document.getElementById("anomBox").style.display = on ? "block" : "none";
+      document.getElementById("sevBox").style.display = on ? "block" : "none";
+    }
+    document.getElementById("f_anom").addEventListener("change", toggleAnom);
+    document.getElementById("f_result").addEventListener("change", e => {
+      if(e.target.value === "ng"){ document.getElementById("f_anom").value = "true"; toggleAnom(); }
+    });
+
+    async function getUserId(){
+      const res = await fetch(`${sb.URL}/auth/v1/user`, { headers: sb.headers() });
+      if(!res.ok) return null;
+      return (await res.json()).id || null;
+    }
+
+    function renderList(rows){
+      const body = document.getElementById("listBody");
+      if(!rows.length){ body.innerHTML = '<div style="color:var(--muted)">点検実績はまだありません。</div>'; return; }
+      const trs = rows.map(r => `<tr class="${r["異常あり"]?'anom':''}">
+        <td style="white-space:nowrap">${esc(r["実施日"]||"")}</td>
+        <td><b style="color:#fff">${esc(r["風車"]||"")}</b></td>
+        <td style="white-space:nowrap">${esc(r["結果表示"]||r["結果"]||"")}</td>
+        <td>${esc(r["異常内容"]||"")}</td>
+        <td style="white-space:nowrap">${esc(r["深刻度"]||"–")}</td>
+        <td style="white-space:nowrap;color:var(--muted)">${esc(r["天候"]||"")} ${r["風速ms"]!=null?esc(r["風速ms"])+"m/s":""}</td>
+        <td style="white-space:nowrap">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</td>
+        <td style="color:var(--muted)">${esc(r["コメント"]||"")}</td>
+      </tr>`).join("");
+      body.innerHTML = `<table><thead><tr>
+        <th>実施日</th><th>号機</th><th>判定</th><th>異常内容</th><th>深刻度</th><th>条件</th><th>チェック</th><th>コメント</th>
+      </tr></thead><tbody>${trs}</tbody></table>`;
+    }
+
+    async function reloadList(){
+      const rows = await sb.get("v_inspection_results_list?order=実施日.desc&limit=30");
+      renderList(rows);
+    }
+
+    async function submit(){
+      const msg = document.getElementById("formMsg");
+      const btn = document.getElementById("submitBtn");
+      const wtgId = document.getElementById("f_wtg").value;
+      const date  = document.getElementById("f_date").value;
+      if(!wtgId || !date){ msg.className="msg ng"; msg.textContent="号機と実施日は必須です。"; return; }
+      const anom = document.getElementById("f_anom").value === "true";
+      const box = document.getElementById("f_box").value.trim();
+      let comment = document.getElementById("f_comment").value.trim();
+      if(box) comment = (comment ? comment + "\n" : "") + "BOX: " + box;
+      const windVal = document.getElementById("f_wind").value;
+      btn.disabled = true; msg.className="msg"; msg.textContent="登録中…";
+      try{
+        if(!state.userId) state.userId = await getUserId();
+        const payload = {
+          turbine_id: wtgId,
+          executed_date: date,
+          executed_by: state.userId,
+          weather: document.getElementById("f_weather").value || null,
+          wind_speed_ms: windVal !== "" ? Number(windVal) : null,
+          result_status: document.getElementById("f_result").value,
+          has_anomaly: anom,
+          anomaly_description: anom ? (document.getElementById("f_anomdesc").value.trim() || null) : null,
+          severity: anom ? document.getElementById("f_sev").value : null,
+          comments: comment || null,
+          submitted_at: new Date().toISOString()
+        };
+        await sb.write("POST", "inspection_results", payload);
+        msg.className="msg ok"; msg.textContent="✓ 登録しました";
+        document.getElementById("f_anomdesc").value=""; document.getElementById("f_comment").value="";
+        document.getElementById("f_box").value=""; document.getElementById("f_wind").value="";
+        await reloadList();
+      }catch(e){
+        msg.className="msg ng"; msg.textContent="登録失敗: " + e.message;
+      }finally{ btn.disabled = false; }
+    }
+    document.getElementById("submitBtn").addEventListener("click", submit);
+
+    async function loadAll(){
+      try{
+        state.turbines = await sb.get("turbines?select=id,turbine_no&order=turbine_no.asc");
+        document.getElementById("f_wtg").innerHTML =
+          '<option value="">選択…</option>' + state.turbines.map(t => `<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`).join("");
+        document.getElementById("f_date").value = new Date().toISOString().slice(0,10);
+        await reloadList();
+      }catch(e){
+        document.getElementById("listBody").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+      }
+    }
+    sb.requireLogin({ onReady: loadAll });
+  </script>
+</body>
+</html>
