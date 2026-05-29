@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 故障対応・根本原因調査(RCA)の基本</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--ai:#ff7b72;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.7}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:24px 22px 60px;max-width:860px;margin:0 auto}
+  .purpose{border:1px solid var(--insp);background:rgba(63,185,80,.08);border-radius:10px;padding:15px 18px;margin-bottom:8px}
+  .purpose .l{font-size:11px;color:#7ee787;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+  .purpose p{font-size:15px;color:#fff}
+  .when{font-size:13px;color:var(--muted);margin:14px 0 6px}
+  .when b{color:#f0c674}
+  h2{font-size:14px;color:#fff;margin:26px 0 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:7px}
+  .kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:12px 0}
+  .kind{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:var(--panel)}
+  .kind .t{font-size:13.5px;color:#fff;font-weight:700;margin-bottom:3px} .kind .d{font-size:12px;color:var(--muted)}
+  ol.steps{list-style:none;counter-reset:s;margin:8px 0}
+  ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 40px;font-size:14px;border-bottom:1px solid var(--line)}
+  ol.steps li:last-child{border-bottom:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;background:rgba(88,166,255,.15);color:#9cd2ff;font-weight:800;font-size:13px;display:grid;place-items:center}
+  .tip,.warn{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .tip{border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.06)} .tip .h{color:#7ee787;font-weight:700;margin-bottom:5px}
+  .warn{border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.06)} .warn .h{color:#ff9a92;font-weight:700;margin-bottom:5px}
+  .tip ul,.warn ul{margin:0;padding-left:18px} .tip li,.warn li{margin:3px 0}
+  .loto{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+  .loto .s{flex:1;min-width:90px;border:1px solid var(--ai);border-radius:9px;padding:10px;text-align:center;background:rgba(255,123,114,.08);font-size:12px}
+  .loto .s b{display:block;color:#ffb0a8;font-size:13px;margin-bottom:2px}
+  .trig{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:12px 0}
+  .trig .x{border:1px solid var(--work);border-radius:9px;padding:10px 12px;background:rgba(210,153,34,.07);font-size:12.5px;color:#f0c674}
+  .confirm{border:1px solid var(--work);background:rgba(210,153,34,.08);border-radius:9px;padding:11px 15px;font-size:12.5px;color:#f0c674;margin:14px 0}
+  .links{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+  .links a{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--master);background:var(--panel)}
+  .footer{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:11.5px}
+  code{color:var(--master);background:#0d1117;padding:1px 6px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div><h1>⑦ 故障対応・根本原因調査(RCA)の基本</h1><div class="sub">阿武隈OS 業務の考え方 — 止血だけで終わらせず、再発を断つ</div></div>
+    <a class="back" href="./menu.html">≡ メニュー</a>
+  </div>
+  <div class="wrap">
+    <div class="purpose"><div class="l">この業務の目的</div><p>故障・重大異常に対し、まず<b style="color:#7ee787">安全確保と暫定処置（止血）</b>を行い、重要なものは<b style="color:#ffb0a8">根本原因(Root Cause)</b>を突き止めて<b style="color:#7ee787">恒久処置で再発を断つ</b>。対処療法で終わらせない。</p></div>
+    <div class="when">📌 <b>いつ</b>：点検・巡視・SCADA・アラームで異常を検知したとき。特に <b>原因不明 / 再発 / 安全影響あり</b> のものはRCA対象。</div>
+
+    <h2>暫定処置 と 恒久処置（ちがい）</h2>
+    <div class="kinds">
+      <div class="kind"><div class="t">暫定処置（止血）</div><div class="d">いま止める・広げない。リセット、隔離、運転制限など。早さ優先。</div></div>
+      <div class="kind"><div class="t">根本原因(Root Cause)</div><div class="d">「なぜ起きたか」の真因。部品単体でなく仕組み・使い方まで。</div></div>
+      <div class="kind"><div class="t">恒久処置（再発防止）</div><div class="d">真因をつぶす。設計・手順・点検周期の見直しまで含む。</div></div>
+    </div>
+
+    <h2>RCA対象の見分け方（このうち1つでも該当）</h2>
+    <div class="trig">
+      <div class="x">🔴 原因が「不明」</div>
+      <div class="x">🔁 再発・頻発している</div>
+      <div class="x">⚠️ 安全影響が大きい</div>
+      <div class="x">📋 一次判定が「RCA」</div>
+    </div>
+
+    <h2>RCAの考え方（なぜ→なぜ で深掘り）</h2>
+    <div class="loto">
+      <div class="s"><b>1 把握</b>事実・データ収集</div>
+      <div class="s"><b>2 なぜ</b>なぜを繰り返す</div>
+      <div class="s"><b>3 真因</b>根本原因の特定</div>
+      <div class="s"><b>4 恒久</b>再発防止策</div>
+      <div class="s"><b>5 検証</b>効果を確認</div>
+    </div>
+
+    <h2>進め方（手順）</h2>
+    <ol class="steps">
+      <li>安全確保（必要なら停止・隔離）と暫定処置を実施</li>
+      <li>事実・データを記録（発見元・状況・SCADA値・写真）</li>
+      <li>RCA対象か判定する（不明/再発/安全影響/一次判定=RCA）</li>
+      <li>対象なら「なぜ」を繰り返し根本原因を特定</li>
+      <li>恒久処置を作業票で実施 → 効果を検証してクローズ</li>
+      <li>報告対象に該当しないか確認（保安規定 → 報告候補へ）</li>
+    </ol>
+
+    <div class="tip"><div class="h">✓ ポイント</div><ul><li>暫定処置で止まっても「完了」にしない。恒久処置まで追う</li><li>原因は「人のミス」で止めず、なぜミスできたかの仕組みまで掘る</li><li>同型機・他号機への水平展開（横展）を忘れない</li></ul></div>
+    <div class="warn"><div class="h">✕ やってはいけない</div><ul><li>リセットしただけでクローズ（再発する）</li><li>原因不明のまま放置・様子見にし続ける</li><li>事実・データを残さず記憶だけで判断する</li></ul></div>
+
+    <div class="confirm">⚑ 要確認：<b>どの故障が事故報告の対象か・RCAの実施基準は保安規定／電気主任技術者</b>の判断による。ここは運用の叩き台です。</div>
+
+    <div class="links">
+      <a href="./defect-rca.html">▶ 故障/RCA 一覧（LIVE）</a>
+      <a href="./guide-defect-judge.html">前提：③ 異常評価・是正判断の基本</a>
+      <a href="./report-candidates.html">報告候補（LIVE）</a>
+      <a href="./guide-inspection-plan.html">最初へ：① 点検計画の基本</a>
+    </div>
+    <div class="footer">業務の考え方シリーズ ⑦（並行）— 故障・RCA。詳細・基準は保安規定／電気主任技術者の確認が優先。</div>
+  </div>
+</body>
+</html>
