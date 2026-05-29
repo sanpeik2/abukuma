@@ -3,213 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿武隈OS — 業務フロー ⇔ O&M OS 画面マッピング</title>
+<title>阿武隈OS — 主任承認の基本</title>
 <style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
-  }
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--ai:#ff7b72;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.6}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.7}
   a{color:var(--master);text-decoration:none}
   .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
   .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
   .topbar h1{font-size:16px;color:#fff;font-weight:700}
   .topbar .sub{font-size:11.5px;color:var(--muted)}
   .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
-  .wrap{padding:22px 22px 60px;max-width:1180px;margin:0 auto}
-
-  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:20px;border:1px solid var(--line);border-radius:9px;padding:11px 15px;background:var(--panel)}
-  .legend b{color:#fff}
-  .st{display:inline-flex;align-items:center;gap:5px}
-
-  h2.sec{font-size:15px;color:#fff;margin:28px 0 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:7px}
-  .intro{font-size:13px;color:var(--muted);margin-bottom:18px}
-
-  /* stage row: 業務(左) | OS画面(右) */
-  .stage{display:grid;grid-template-columns:38px 1fr 1fr;gap:0;margin-bottom:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
-  @media(max-width:760px){.stage{grid-template-columns:32px 1fr}.stage .os{grid-column:2}}
-  .stage .num{background:var(--panel2);display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;border-right:1px solid var(--line)}
-  .stage .biz{padding:13px 16px;border-right:1px solid var(--line)}
-  .stage .os{padding:13px 16px}
-  .colhd{display:grid;grid-template-columns:38px 1fr 1fr;gap:0;margin-bottom:6px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}
-  @media(max-width:760px){.colhd{grid-template-columns:32px 1fr}.colhd .h3{display:none}}
-  .colhd div{padding:0 16px}
-  .colhd .h1c{color:#d6a84f} .colhd .h2c{color:#7ee787}
-
-  .biz .ttl{font-size:14px;color:#fff;font-weight:700;margin-bottom:4px}
-  .biz .desc{font-size:12px;color:var(--muted)}
-  .os .scr{display:block;padding:7px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;font-size:12.5px;background:#0d1117}
-  .os .scr:last-child{margin-bottom:0}
-  .os .scr .nm{color:#fff;font-weight:600}
-  .os .scr .sub{color:var(--muted);font-size:11px;display:block;margin-top:1px}
-  .badge{font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap;margin-left:6px}
-  .b-live{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.13)}
-  .b-part{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.13)}
-  .b-doc{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
-  .b-soon{color:var(--muted);border-color:var(--line)}
-
-  .arrow{text-align:center;color:var(--muted);font-size:16px;margin:-8px 0 6px}
-
-  /* parallel events */
-  .evgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:680px){.evgrid{grid-template-columns:1fr}}
-  .ev{border:1px solid var(--line);border-left:4px solid var(--defect);border-radius:10px;padding:14px 16px;background:var(--panel)}
-  .ev.alarm{border-left-color:var(--ai)} .ev.fault{border-left-color:var(--defect)}
-  .ev .eh{font-size:14px;color:#fff;font-weight:700;margin-bottom:6px}
-  .ev .ed{font-size:12px;color:var(--muted);margin-bottom:9px}
-
-  .cards2{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-  .mini{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:var(--panel);font-size:12.5px}
-  .mini .nm{color:#fff;font-weight:600}
-  .mini .sub{color:var(--muted);font-size:11px;display:block;margin-top:2px}
-
-  .gap{border:1px solid var(--work);background:rgba(210,153,34,.07);border-radius:10px;padding:8px 6px}
-  .gap .row{display:flex;gap:11px;align-items:flex-start;padding:8px 13px;border-bottom:1px solid var(--line)}
-  .gap .row:last-child{border-bottom:none}
-  .gap .ic{flex-shrink:0;color:var(--work);font-weight:800}
-  .gap .gt{font-size:13px} .gap .gt b{color:#fff} .gap .gt .sm{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
-  .footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:11.5px}
+  .wrap{padding:24px 22px 60px;max-width:860px;margin:0 auto}
+  .purpose{border:1px solid var(--insp);background:rgba(63,185,80,.08);border-radius:10px;padding:15px 18px;margin-bottom:8px}
+  .purpose .l{font-size:11px;color:#7ee787;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+  .purpose p{font-size:15px;color:#fff}
+  .when{font-size:13px;color:var(--muted);margin:14px 0 6px}
+  .when b{color:#f0c674}
+  h2{font-size:14px;color:#fff;margin:26px 0 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:7px}
+  .kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:12px 0}
+  .kind{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:var(--panel)}
+  .kind .t{font-size:13.5px;color:#fff;font-weight:700;margin-bottom:3px} .kind .d{font-size:12px;color:var(--muted)}
+  ol.steps{list-style:none;counter-reset:s;margin:8px 0}
+  ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 40px;font-size:14px;border-bottom:1px solid var(--line)}
+  ol.steps li:last-child{border-bottom:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;background:rgba(88,166,255,.15);color:#9cd2ff;font-weight:800;font-size:13px;display:grid;place-items:center}
+  .tip,.warn{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .tip{border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.06)} .tip .h{color:#7ee787;font-weight:700;margin-bottom:5px}
+  .warn{border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.06)} .warn .h{color:#ff9a92;font-weight:700;margin-bottom:5px}
+  .tip ul,.warn ul{margin:0;padding-left:18px} .tip li,.warn li{margin:3px 0}
+  .confirm{border:1px solid var(--work);background:rgba(210,153,34,.08);border-radius:9px;padding:11px 15px;font-size:12.5px;color:#f0c674;margin:14px 0}
+  .links{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+  .links a{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--master);background:var(--panel)}
+  .footer{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:11.5px}
+  code{color:var(--master);background:#0d1117;padding:1px 6px;border-radius:4px;font-size:11.5px}
 </style>
 </head>
 <body>
   <div class="topbar">
     <div class="mark">AW</div>
-    <div>
-      <h1>業務フロー ⇔ O&M OS 画面マッピング</h1>
-      <div class="sub">阿武隈OS — 実際の業務と固定画面の対応・棚卸し</div>
-    </div>
-    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+    <div><h1>⑥ 主任承認の基本</h1><div class="sub">阿武隈OS 業務の考え方 — 何を確認して承認するか</div></div>
+    <a class="back" href="./menu.html">≡ メニュー</a>
   </div>
-
   <div class="wrap">
-    <div class="intro">左＝実際の業務の流れ／右＝それを担うO&M OSの画面。各画面の実装状況と、いま「浮いている画面」「足りない画面」を最後に整理しています。</div>
-    <div class="legend">
-      <span class="st"><span class="badge b-live">LIVE</span> 実装済（Supabase連携）</span>
-      <span class="st"><span class="badge b-part">部分</span> 一部のみ／別画面に内包</span>
-      <span class="st"><span class="badge b-doc">DOC</span> 考え方・設計（静的）</span>
-      <span class="st"><span class="badge b-soon">予定</span> 未実装</span>
+    <div class="purpose"><div class="l">この業務の目的</div><p>電気主任技術者（または主任）が内容を確認し、承認／差戻しで<b style="color:#7ee787">品質と法令適合を担保</b>する。誰がいつ承認したかの証跡を残す。</p></div>
+    <div class="when">📌 <b>いつ</b>：作業票・作業許可(PTW)・点検実績が「承認待ち」になったとき。</div>
+
+    <h2>承認時に見るポイント</h2>
+    <div class="kinds">
+      <div class="kind"><div class="t">内容の妥当性</div><div class="d">処置・判定が適切か。</div></div>
+      <div class="kind"><div class="t">安全・資格</div><div class="d">安全要件・必要資格を満たすか。</div></div>
+      <div class="kind"><div class="t">報告・記録</div><div class="d">報告要否、記録・添付は十分か。</div></div>
     </div>
 
-    <h2 class="sec">本流：点検計画 → 実行 → 是正 → 作業 → 許可 → 承認 → 報告</h2>
-    <div class="colhd"><div></div><div class="h1c h3">▌実際の業務</div><div class="h2c">▌O&M OS の画面</div></div>
+    <h2>進め方（手順）</h2>
+    <ol class="steps">
+      <li>承認待ち一覧を開く</li>
+      <li>内容と添付（写真・記録）を確認する</li>
+      <li>問題なければ承認／不足なら差戻し（理由コメント必須）</li>
+      <li>証跡（誰が・いつ・コメント）が自動で記録される</li>
+    </ol>
 
-    <!-- 1 -->
-    <div class="stage">
-      <div class="num">1</div>
-      <div class="biz"><div class="ttl">点検計画</div><div class="desc">年次／随時／月次巡視の計画立案・周期管理・担当割当。法令に基づく点検サイクルの設計。</div></div>
-      <div class="os">
-        <a class="scr" href="./inspection-plan.html"><span class="nm">点検計画一覧<span class="badge b-live">LIVE</span></span><span class="sub">v_inspection_plan_list（区分・状態・期限超過/本日ハイライト）</span></a>
-        <a class="scr" href="./live-board.html"><span class="nm">タービン/アラーム/点検盤<span class="badge b-part">部分</span></span><span class="sub">点検カレンダータブでも予定を表示</span></a>
-      </div>
-    </div>
-    <div class="arrow">▼</div>
+    <div class="tip"><div class="h">✓ ポイント</div><ul><li>差戻しは「何を直すか」を明記する</li><li>承認権限（必要ロール）と対象が合っているか確認</li></ul></div>
+    <div class="warn"><div class="h">✕ やってはいけない</div><ul><li>中身を見ずに承認する（形だけの承認）</li><li>差戻し理由を空欄にする</li></ul></div>
 
-    <!-- 2 -->
-    <div class="stage">
-      <div class="num">2</div>
-      <div class="biz"><div class="ttl">点検実行</div><div class="desc">現地点検・チェックリスト記入・異常の発見・証拠写真の取得。</div></div>
-      <div class="os">
-        <a class="scr" href="./inspection-input.html"><span class="nm">点検実績入力<span class="badge b-live">LIVE</span></span><span class="sub">結果・異常・判定・コメント登録（inspection_results）</span></a>
-        <a class="scr" href="./box-upload-flow.html"><span class="nm">証拠写真アップロード<span class="badge b-doc">DOC</span></span><span class="sub">案B（BOX直アップロード）— 設計のみ・未実装</span></a>
-      </div>
-    </div>
-    <div class="arrow">▼</div>
+    <div class="confirm">⚑ 要確認：<b>何を電気主任技術者が承認すべきか（範囲）は保安規定</b>による。ここは運用の叩き台です。</div>
 
-    <!-- 3 -->
-    <div class="stage">
-      <div class="num">3</div>
-      <div class="biz"><div class="ttl">異常評価・是正判断</div><div class="desc">発見した異常の重大度評価／是正要否／A〜F判定／保安規定の報告要否を判断。</div></div>
-      <div class="os">
-        <a class="scr" href="./decision-flow.html"><span class="nm">考え方フロー図<span class="badge b-doc">DOC</span></span><span class="sub">一次評価→A〜F判定→是正→クローズの判断ロジック</span></a>
-        <a class="scr" href="./defect-flow.html"><span class="nm">異常是正フロー<span class="badge b-doc">DOC</span></span><span class="sub">defect_findings → closeout のデータの流れ</span></a>
-        <a class="scr" href="./report-candidates.html"><span class="nm">保安規定 報告候補<span class="badge b-live">LIVE</span></span><span class="sub">事故報告対象の一次スクリーニング</span></a>
-      </div>
+    <div class="links">
+      <a href="./approvals.html">▶ 承認待ち一覧（LIVE）</a>
+      <a href="./om-workflow-map.html">電気主任が承認するもの一覧</a>
+      <a href="./guide-inspection-plan.html">最初へ：① 点検計画の基本</a>
     </div>
-    <div class="arrow">▼</div>
-
-    <!-- 4 -->
-    <div class="stage">
-      <div class="num">4</div>
-      <div class="biz"><div class="ttl">作業票（WO）起票</div><div class="desc">是正・修理作業の指示書を起票。停止時間・逸失電力・暫定/恒久処置を記録。</div></div>
-      <div class="os">
-        <a class="scr" href="./work-orders.html"><span class="nm">作業票一覧・詳細<span class="badge b-live">LIVE</span></span><span class="sub">v_work_orders_full（一覧＋詳細ドロワー）</span></a>
-      </div>
-    </div>
-    <div class="arrow">▼</div>
-
-    <!-- 5 -->
-    <div class="stage">
-      <div class="num">5</div>
-      <div class="biz"><div class="ttl">作業許可（PTW / LOTO）</div><div class="desc">高所・電気・LOTO・火気などの許可申請。安全要件・隔離・風速制限の確認。</div></div>
-      <div class="os">
-        <a class="scr" href="./permits.html"><span class="nm">作業許可(PTW)一覧<span class="badge b-live">LIVE</span></span><span class="sub">v_permits_full（状態・リスク・LOTO要否で絞り込み）</span></a>
-      </div>
-    </div>
-    <div class="arrow">▼</div>
-
-    <!-- 6 -->
-    <div class="stage">
-      <div class="num">6</div>
-      <div class="biz"><div class="ttl">主任承認</div><div class="desc">電気主任技術者が作業票・作業許可・点検実績を承認／差戻し。証跡（誰がいつ）を記録。</div></div>
-      <div class="os">
-        <a class="scr" href="./approvals.html"><span class="nm">承認待ち一覧<span class="badge b-live">LIVE</span></span><span class="sub">v_approvals_pending_all — その場で承認/差戻し＋コメント</span></a>
-      </div>
-    </div>
-    <div class="arrow">▼</div>
-
-    <!-- 7 -->
-    <div class="stage">
-      <div class="num">7</div>
-      <div class="biz"><div class="ttl">点検実施報告・記録</div><div class="desc">実施記録の確定・保安規定上の報告（必要時）・記録の保存。</div></div>
-      <div class="os">
-        <a class="scr" href="./report-candidates.html"><span class="nm">保安規定 報告候補<span class="badge b-live">LIVE</span></span><span class="sub">報告対象の抽出（最終判断は電気主任）</span></a>
-        <a class="scr" href="./accident-report-flow.html"><span class="nm">事故報告フロー<span class="badge b-doc">DOC</span></span><span class="sub">覚知→速報→詳報→記録の流れ</span></a>
-        <span class="scr"><span class="nm">点検実施報告書 出力<span class="badge b-soon">予定</span></span><span class="sub">帳票/PDF出力・記録のエクスポート</span></span>
-      </div>
-    </div>
-
-    <!-- parallel -->
-    <h2 class="sec">並行：イベント駆動の対応（本流に随時合流）</h2>
-    <div class="evgrid">
-      <div class="ev alarm">
-        <div class="eh">⚡ アラーム対応</div>
-        <div class="ed">SCADA/アラーム発生 → 確認 → 一次対応 → 必要なら作業票へ。</div>
-        <a class="scr" href="./live-board.html"><span class="nm">アラーム一覧タブ<span class="badge b-live">LIVE</span></span><span class="sub">alarm_events（深刻度フィルタ）</span></a>
-        <a class="scr" href="./index.html"><span class="nm">朝会コックピット<span class="badge b-live">LIVE</span></span><span class="sub">重大アラームを毎朝把握 → 段階4(作業票)へ</span></a>
-      </div>
-      <div class="ev fault">
-        <div class="eh">🔧 故障対応</div>
-        <div class="ed">故障点検 → 原因調査(RCA) → 是正作業 → 再発防止。</div>
-        <a class="scr" href="./om-workflow-map.html"><span class="nm">点検・作業・法令の関係図<span class="badge b-doc">DOC</span></span><span class="sub">RCA(根本原因調査)の位置づけ</span></a>
-        <a class="scr" href="./work-orders.html"><span class="nm">作業票（恒久処置）<span class="badge b-live">LIVE</span></span><span class="sub">根本原因・恒久処置を記録 → 段階4〜6へ合流</span></a>
-      </div>
-    </div>
-
-    <!-- 横断 -->
-    <h2 class="sec">横断：毎朝の入口・基盤ドキュメント（特定段階に属さない）</h2>
-    <div class="cards2">
-      <a class="mini" href="./index.html"><span class="nm">🌅 朝会コックピット <span class="badge b-live">LIVE</span></span><span class="sub">全段階のKPIを5秒で把握する司令塔TOP</span></a>
-      <a class="mini" href="./om-workflow-map.html"><span class="nm">🗺 点検・作業・法令の関係図 <span class="badge b-doc">DOC</span></span><span class="sub">業務概念の全体整理（叩き台）</span></a>
-      <a class="mini" href="./er-diagram.html"><span class="nm">🗂 テーブル関係図(ER) <span class="badge b-doc">DOC</span></span><span class="sub">26テーブル＋ビューの関係</span></a>
-      <a class="mini" href="./data-source-map.html"><span class="nm">🔌 データソースマップ <span class="badge b-doc">DOC</span></span><span class="sub">各画面が読むテーブル/ビュー対応表</span></a>
-      <a class="mini" href="./ai-data-boundary.html"><span class="nm">🔐 AIデータ境界 <span class="badge b-doc">DOC</span></span><span class="sub">AIに渡す範囲の設計メモ</span></a>
-    </div>
-
-    <!-- gap -->
-    <h2 class="sec">足りない画面・次に整理する候補</h2>
-    <div class="gap">
-      <div class="row"><span class="ic">①</span><div class="gt"><b>点検計画 専用画面</b>（段階1）<span class="sm">いまは live-board のカレンダータブに内包。周期・担当・期限超過を管理する独立画面が欲しい（v_inspection_plan_list）。</span></div></div>
-      <div class="row"><span class="ic">②</span><div class="gt"><b>故障/RCA 専用ビュー</b>（並行・故障対応）<span class="sm">いまは作業票詳細に内包。故障の根本原因調査を独立で追える画面があると整理しやすい。</span></div></div>
-      <div class="row"><span class="ic">③</span><div class="gt"><b>点検実施報告書の出力</b>（段階7）<span class="sm">記録の帳票/PDF出力・エクスポートが未実装。</span></div></div>
-      <div class="row"><span class="ic">④</span><div class="gt"><b>証拠写真アップロード</b>（段階2）<span class="sm">案Bの設計のみ。Edge Function＋BOX連携の実装が残っている。</span></div></div>
-      <div class="row"><span class="ic">⑤</span><div class="gt"><b>在庫・資格期限</b>（補助）<span class="sm">メニューに「予定」として置いてあるが未着手（v_parts_stock_full / v_qualifications_expiry）。</span></div></div>
-    </div>
-
-    <div class="footer">
-      この図は「どの画面がどの業務段階を担うか」の棚卸し用。整理を進めるたびに、バッジ（LIVE/部分/予定）と「足りない画面」リストを更新していきます。<br>
-      関連：<a href="./om-workflow-map.html">関係図</a> / <a href="./data-source-map.html">データソースマップ</a> / <a href="./menu.html">メニュー</a>
-    </div>
+    <div class="footer">業務の考え方シリーズ ⑥／⑥ — 作業者向け早見。詳細・基準は保安規定／電気主任技術者の確認が優先。</div>
   </div>
 </body>
 </html>
