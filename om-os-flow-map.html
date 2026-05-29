@@ -39,6 +39,7 @@
 
   .biz .ttl{font-size:14px;color:#fff;font-weight:700;margin-bottom:4px}
   .biz .desc{font-size:12px;color:var(--muted)}
+  .biz .gd{display:inline-block;margin-top:8px;font-size:11.5px;color:#f0c674;border:1px solid var(--work);border-radius:999px;padding:2px 10px;background:rgba(210,153,34,.08)}
   .os .scr{display:block;padding:7px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;font-size:12.5px;background:#0d1117}
   .os .scr:last-child{margin-bottom:0}
   .os .scr .nm{color:#fff;font-weight:600}
@@ -97,7 +98,7 @@
     <!-- 1 -->
     <div class="stage">
       <div class="num">1</div>
-      <div class="biz"><div class="ttl">点検計画</div><div class="desc">年次／随時／月次巡視の計画立案・周期管理・担当割当。法令に基づく点検サイクルの設計。</div></div>
+      <div class="biz"><div class="ttl">点検計画</div><div class="desc">年次／随時／月次巡視の計画立案・周期管理・担当割当。法令に基づく点検サイクルの設計。</div><a class="gd" href="./guide-inspection-plan.html">▸ ① 基本の考え方</a></div>
       <div class="os">
         <a class="scr" href="./inspection-plan.html"><span class="nm">点検計画一覧<span class="badge b-live">LIVE</span></span><span class="sub">v_inspection_plan_list（区分・状態・期限超過/本日ハイライト）</span></a>
         <a class="scr" href="./live-board.html"><span class="nm">タービン/アラーム/点検盤<span class="badge b-part">部分</span></span><span class="sub">点検カレンダータブでも予定を表示</span></a>
@@ -108,7 +109,7 @@
     <!-- 2 -->
     <div class="stage">
       <div class="num">2</div>
-      <div class="biz"><div class="ttl">点検実行</div><div class="desc">現地点検・チェックリスト記入・異常の発見・証拠写真の取得。</div></div>
+      <div class="biz"><div class="ttl">点検実行</div><div class="desc">現地点検・チェックリスト記入・異常の発見・証拠写真の取得。</div><a class="gd" href="./guide-inspection-do.html">▸ ② 基本の考え方</a></div>
       <div class="os">
         <a class="scr" href="./inspection-input.html"><span class="nm">点検実績入力<span class="badge b-live">LIVE</span></span><span class="sub">結果・異常・判定・コメント登録（inspection_results）</span></a>
         <a class="scr" href="./box-upload-flow.html"><span class="nm">証拠写真アップロード<span class="badge b-doc">DOC</span></span><span class="sub">案B（BOX直アップロード）— 設計のみ・未実装</span></a>
@@ -119,7 +120,7 @@
     <!-- 3 -->
     <div class="stage">
       <div class="num">3</div>
-      <div class="biz"><div class="ttl">異常評価・是正判断</div><div class="desc">発見した異常の重大度評価／是正要否／A〜F判定／保安規定の報告要否を判断。</div></div>
+      <div class="biz"><div class="ttl">異常評価・是正判断</div><div class="desc">発見した異常の重大度評価／是正要否／A〜F判定／保安規定の報告要否を判断。</div><a class="gd" href="./guide-defect-judge.html">▸ ③ 基本の考え方</a></div>
       <div class="os">
         <a class="scr" href="./decision-flow.html"><span class="nm">考え方フロー図<span class="badge b-doc">DOC</span></span><span class="sub">一次評価→A〜F判定→是正→クローズの判断ロジック</span></a>
         <a class="scr" href="./defect-flow.html"><span class="nm">異常是正フロー<span class="badge b-doc">DOC</span></span><span class="sub">defect_findings → closeout のデータの流れ</span></a>
@@ -131,7 +132,7 @@
     <!-- 4 -->
     <div class="stage">
       <div class="num">4</div>
-      <div class="biz"><div class="ttl">作業票（WO）起票</div><div class="desc">是正・修理作業の指示書を起票。停止時間・逸失電力・暫定/恒久処置を記録。</div></div>
+      <div class="biz"><div class="ttl">作業票（WO）起票</div><div class="desc">是正・修理作業の指示書を起票。停止時間・逸失電力・暫定/恒久処置を記録。</div><a class="gd" href="./guide-work-order.html">▸ ④ 基本の考え方</a></div>
       <div class="os">
         <a class="scr" href="./work-orders.html"><span class="nm">作業票一覧・詳細<span class="badge b-live">LIVE</span></span><span class="sub">v_work_orders_full（一覧＋詳細ドロワー）</span></a>
       </div>
@@ -141,7 +142,7 @@
     <!-- 5 -->
     <div class="stage">
       <div class="num">5</div>
-      <div class="biz"><div class="ttl">作業許可（PTW / LOTO）</div><div class="desc">高所・電気・LOTO・火気などの許可申請。安全要件・隔離・風速制限の確認。</div></div>
+      <div class="biz"><div class="ttl">作業許可（PTW / LOTO）</div><div class="desc">高所・電気・LOTO・火気などの許可申請。安全要件・隔離・風速制限の確認。</div><a class="gd" href="./guide-permit-loto.html">▸ ⑤ 基本の考え方</a></div>
       <div class="os">
         <a class="scr" href="./permits.html"><span class="nm">作業許可(PTW)一覧<span class="badge b-live">LIVE</span></span><span class="sub">v_permits_full（状態・リスク・LOTO要否で絞り込み）</span></a>
       </div>
@@ -151,7 +152,7 @@
     <!-- 6 -->
     <div class="stage">
       <div class="num">6</div>
-      <div class="biz"><div class="ttl">主任承認</div><div class="desc">電気主任技術者が作業票・作業許可・点検実績を承認／差戻し。証跡（誰がいつ）を記録。</div></div>
+      <div class="biz"><div class="ttl">主任承認</div><div class="desc">電気主任技術者が作業票・作業許可・点検実績を承認／差戻し。証跡（誰がいつ）を記録。</div><a class="gd" href="./guide-approval.html">▸ ⑥ 基本の考え方</a></div>
       <div class="os">
         <a class="scr" href="./approvals.html"><span class="nm">承認待ち一覧<span class="badge b-live">LIVE</span></span><span class="sub">v_approvals_pending_all — その場で承認/差戻し＋コメント</span></a>
       </div>
@@ -199,7 +200,7 @@
     <!-- gap -->
     <h2 class="sec">足りない画面・次に整理する候補</h2>
     <div class="gap">
-      <div class="row"><span class="ic">①</span><div class="gt"><b>点検計画 専用画面</b>（段階1）<span class="sm">いまは live-board のカレンダータブに内包。周期・担当・期限超過を管理する独立画面が欲しい（v_inspection_plan_list）。</span></div></div>
+      <div class="row" style="opacity:.55"><span class="ic" style="color:var(--insp)">✓</span><div class="gt"><b>点検計画 専用画面</b>（段階1）<span class="sm">実装済 → <a href="./inspection-plan.html">点検計画一覧（LIVE）</a>。v_inspection_plan_list で区分・状態・期限超過を管理。</span></div></div>
       <div class="row"><span class="ic">②</span><div class="gt"><b>故障/RCA 専用ビュー</b>（並行・故障対応）<span class="sm">いまは作業票詳細に内包。故障の根本原因調査を独立で追える画面があると整理しやすい。</span></div></div>
       <div class="row"><span class="ic">③</span><div class="gt"><b>点検実施報告書の出力</b>（段階7）<span class="sm">記録の帳票/PDF出力・エクスポートが未実装。</span></div></div>
       <div class="row"><span class="ic">④</span><div class="gt"><b>証拠写真アップロード</b>（段階2）<span class="sm">案Bの設計のみ。Edge Function＋BOX連携の実装が残っている。</span></div></div>
