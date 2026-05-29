@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈風力 O&M / 朝会コックピット — メニュー</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:36px 28px;line-height:1.6;max-width:1040px;margin:0 auto}
+  header{margin-bottom:6px}
+  h1{font-size:25px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:28px}
+
+  h2.sec{font-size:14px;color:#fff;margin:30px 0 12px;display:flex;align-items:center;gap:9px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+  .sec .tag{font-size:11px;color:var(--muted);font-weight:normal;border:1px solid var(--line);border-radius:10px;padding:2px 9px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;text-decoration:none;color:var(--txt);transition:border-color .15s,transform .15s}
+  a.card:hover{border-color:var(--master);transform:translateY(-2px)}
+  a.card .t{font-size:15px;color:#fff;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  a.card .d{font-size:12px;color:var(--muted)}
+  a.card .badge{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);white-space:nowrap;margin-left:auto}
+  .badge.live{background:rgba(63,185,80,.14);border-color:var(--insp);color:#7ee787}
+  .badge.doc{background:rgba(88,166,255,.12);border-color:var(--master);color:#9cd2ff}
+  .badge.soon{background:rgba(139,148,158,.12);color:var(--muted)}
+  a.card.disabled{pointer-events:none;opacity:.5}
+
+  footer{margin-top:38px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:16px}
+  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+  <header>
+    <h1>阿武隈風力 O&M / 朝会コックピット</h1>
+  </header>
+  <div class="sub">画面メニュー（ハブ） / GitHub Pages: sanpeik2.github.io/abukuma / Supabase連携はログインが必要です</div>
+
+  <!-- ライブ画面 -->
+  <h2 class="sec"><span class="dot" style="background:var(--insp)"></span>ライブ画面（Supabase連携）<span class="tag">要ログイン</span></h2>
+  <div class="grid">
+    <a class="card" href="./index.html">
+      <div class="t">🌅 朝会コックピット<span class="badge live">LIVE</span></div>
+      <div class="d">本日停止・KPI・重大アラーム・AIコメント・気象を5秒で把握する司令塔TOP</div>
+    </a>
+    <a class="card" href="./report-candidates.html">
+      <div class="t">⚖ 保安規定 報告候補<span class="badge live">LIVE</span></div>
+      <div class="d">事故報告対象の一次スクリーニング（<code>v_report_candidates</code>）。最終判断は電気主任技術者</div>
+    </a>
+  </div>
+
+  <!-- ドキュメント・フロー図 -->
+  <h2 class="sec"><span class="dot" style="background:var(--master)"></span>ドキュメント・フロー図<span class="tag">静的・ログイン不要</span></h2>
+  <div class="grid">
+    <a class="card" href="./accident-report-flow.html">
+      <div class="t">📋 事故報告フロー<span class="badge doc">DOC</span></div>
+      <div class="d">保安規定にもとづく事故報告の流れ（覚知→速報→詳報→記録）</div>
+    </a>
+    <a class="card" href="./decision-flow.html">
+      <div class="t">🧭 考え方フロー図<span class="badge doc">DOC</span></div>
+      <div class="d">異常発見→一次評価→A〜F判定→是正→クローズの判断ロジック</div>
+    </a>
+    <a class="card" href="./defect-flow.html">
+      <div class="t">🔧 異常是正フロー<span class="badge doc">DOC</span></div>
+      <div class="d">defect_findings から closeout までのデータの流れ</div>
+    </a>
+    <a class="card" href="./er-diagram.html">
+      <div class="t">🗂 テーブル関係図（ER）<span class="badge doc">DOC</span></div>
+      <div class="d">26テーブル＋ビューの関係。グループ別カラー表示</div>
+    </a>
+    <a class="card" href="./data-source-map.html">
+      <div class="t">🔌 データソースマップ<span class="badge doc">DOC</span></div>
+      <div class="d">各画面がどのテーブル/ビューを読むかの対応表</div>
+    </a>
+  </div>
+
+  <!-- 今後追加予定（プレースホルダ） -->
+  <h2 class="sec"><span class="dot" style="background:var(--muted)"></span>今後追加予定<span class="tag">v_ビューをsb.get()で表示</span></h2>
+  <div class="grid">
+    <a class="card disabled"><div class="t">📝 作業票一覧<span class="badge soon">予定</span></div><div class="d"><code>v_work_orders_full</code></div></a>
+    <a class="card disabled"><div class="t">📅 点検計画<span class="badge soon">予定</span></div><div class="d"><code>v_inspection_plan_list</code></div></a>
+    <a class="card disabled"><div class="t">📦 在庫<span class="badge soon">予定</span></div><div class="d"><code>v_parts_stock_full</code></div></a>
+    <a class="card disabled"><div class="t">🎓 資格期限<span class="badge soon">予定</span></div><div class="d"><code>v_qualifications_expiry</code></div></a>
+  </div>
+
+  <footer>
+    新しいライブ画面は、HTMLに <code>&lt;script src="./lib/supabase.js"&gt;</code> を読み込み <code>sb.get('v_ビュー名?select=*')</code> を呼ぶだけで追加できます（接続情報は lib に一元管理）。
+  </footer>
+</body>
+</html>
