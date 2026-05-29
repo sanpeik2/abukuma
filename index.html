@@ -88,7 +88,6 @@
         display: flex;
         align-items: baseline;
         gap: 10px;
-        justify-self: center;
       }
 
       .today-label {
@@ -132,7 +131,7 @@
 
       .header-title-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        grid-template-columns: minmax(320px, 1fr) auto auto;
         align-items: center;
         gap: 18px;
         min-height: 78px;
@@ -153,7 +152,6 @@
         flex-wrap: nowrap;
         justify-content: flex-end;
         align-self: center;
-        justify-self: end;
       }
 
       .header-info-row {
@@ -173,21 +171,14 @@
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
-        flex: 1 1 auto;
-        min-width: 0;
       }
 
       .weather-comment {
+        flex-basis: 100%;
         color: var(--muted);
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .header-info-right {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
+        font-size: 11px;
+        line-height: 1.4;
+        margin-top: 1px;
       }
 
       .brand p,
@@ -310,14 +301,14 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        height: 32px;
-        padding: 0 13px;
-        border: 1px solid rgba(86, 163, 217, 0.4);
-        background: rgba(86, 163, 217, 0.05);
+        height: 36px;
+        padding: 0 16px;
+        border: 1px solid rgba(86, 163, 217, 0.45);
+        background: rgba(86, 163, 217, 0.06);
         color: #a8cfe6;
         font-size: 12px;
         font-weight: 700;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.07em;
         text-decoration: none;
         white-space: nowrap;
         cursor: pointer;
@@ -2949,6 +2940,7 @@
           </div>
           <div class="header-utility">
             <a id="menuLink" class="nav-btn" href="./menu.html" title="画面メニュー">≡ メニュー</a>
+            <button class="tab print-btn" type="button" title="PDF出力" onclick="window.print()">PDF出力</button>
           </div>
         <div class="header-info-row">
           <div class="header-weather-left" aria-label="本日の気象概況">
@@ -2957,10 +2949,7 @@
             <span id="alertBadge" class="header-badge" style="display:none;">強風注意報</span>
             <span id="weatherComment" class="weather-comment">午後は南南西寄りへ変化。高所作業は風速9m/s超見込みに注意。</span>
           </div>
-          <div class="header-info-right">
-            <span class="header-badge deadline">ゲートクローズ <strong id="countdown">残り 02:24:18</strong></span>
-            <button class="tab print-btn" type="button" title="PDF出力" onclick="window.print()">PDF出力</button>
-          </div>
+          <span class="header-badge deadline">ゲートクローズ <strong id="countdown">残り 02:24:18</strong></span>
         </div>
       </header>
 
