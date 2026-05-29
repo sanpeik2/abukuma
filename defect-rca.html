@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 故障 / 根本原因調査(RCA) 一覧（ライブ）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:18px 22px 50px}
+  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 16px;min-width:120px}
+  .kpi .v{font-size:22px;font-weight:800;color:#fff} .kpi .l{font-size:11px;color:var(--muted)}
+  .kpi.rca .v{color:#f0c674} .kpi.open .v{color:#ff9a92} .kpi.prog .v{color:#9cd2ff}
+  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;white-space:nowrap;vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--bg)}
+  tr.main{cursor:pointer}
+  tr.main:hover td{background:rgba(88,166,255,.05)}
+  tr.rca td{background:rgba(210,153,34,.07)}
+  tr.rca-strong td{background:rgba(248,81,73,.08)}
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+  .imp-high{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+  .imp-mid{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+  .imp-low{color:var(--muted);border-color:var(--line)}
+  .cl-unknown{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.1)}
+  .cl-assumed{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
+  .cl-clear{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.1)}
+  .wtg{font-family:monospace;color:#fff;font-weight:600}
+  .rca-tag{font-weight:700}
+  .rca-strong-tag{color:#ff9a92} .rca-rec-tag{color:#f0c674} .rca-none{color:var(--muted)}
+  .arrow{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+  tr.open-row .arrow{transform:rotate(90deg)}
+  .detail td{background:var(--panel2);white-space:normal}
+  .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;padding:6px 2px}
+  .dcard{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:var(--panel)}
+  .dcard .l{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:4px;text-transform:uppercase}
+  .dcard .val{font-size:13px;color:#fff}
+  .dcard .val.empty{color:var(--muted);font-weight:400}
+  .dcard.rca-step{border-color:var(--work)}
+  .dcard.cause{border-color:var(--ai)}
+  .loading,.empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
+  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div>
+      <h1>故障 / 根本原因調査(RCA) 一覧</h1>
+      <div class="sub">阿武隈OS ライブ盤 — 異常の評価・RCA対象の抽出・是正の進捗</div>
+    </div>
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  </div>
+
+  <div class="wrap">
+    <div class="note">故障・異常の評価とRCA（<code>v_defect_rca_list</code>）。行をクリックで詳細（根本原因・暫定/恒久処置・進捗）を展開。考え方は <a href="./guide-defect-judge.html">③ 異常評価・是正判断の基本</a> ／ <a href="./guide-rca.html">⑦ 故障対応・RCAの基本</a>。</div>
+    <div class="kpis" id="kpis"></div>
+    <div class="filters" id="filters">
+      <button data-f="all" class="active">すべて</button>
+      <button data-f="rca">🔍 RCA対象</button>
+      <button data-f="open">🔴 未対応</button>
+      <button data-f="prog">🔧 対応中</button>
+      <button data-f="done">✅ 完了</button>
+    </div>
+    <div id="body" class="loading">読み込み中…</div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+  <script>
+    const esc = sb.esc;
+    const state = { rows: [], filter: "all", open: {} };
+
+    function impClass(v){ return v==="高"?"imp-high":v==="中"?"imp-mid":"imp-low"; }
+    function clClass(v){ return v==="不明"?"cl-unknown":v==="推定"?"cl-assumed":"cl-clear"; }
+    function rcaClass(v){ if(!v||v==="—")return "rca-none"; return v.indexOf("対象")>=0?"rca-strong-tag":"rca-rec-tag"; }
+
+    function isOpen(r){ const s=r["状態表示"]||""; return s.indexOf("未対応")>=0; }
+    function isProg(r){ const s=r["状態表示"]||""; return s.indexOf("対応中")>=0; }
+    function isDone(r){ const s=r["状態表示"]||""; return s.indexOf("完了")>=0; }
+
+    function renderKpis(){
+      const rows = state.rows;
+      const rca = rows.filter(r => r["rca対象"]).length;
+      const open = rows.filter(isOpen).length;
+      const prog = rows.filter(isProg).length;
+      document.getElementById("kpis").innerHTML =
+        `<div class="kpi"><div class="v">${rows.length}</div><div class="l">故障・異常 総数</div></div>
+         <div class="kpi rca"><div class="v">${rca}</div><div class="l">🔍 RCA対象</div></div>
+         <div class="kpi open"><div class="v">${open}</div><div class="l">🔴 未対応</div></div>
+         <div class="kpi prog"><div class="v">${prog}</div><div class="l">🔧 対応中</div></div>`;
+    }
+
+    function detailRow(r, cols){
+      const v = (x) => (x!==null && x!==undefined && x!=="") ? `<div class="val">${esc(x)}</div>` : `<div class="val empty">—（未登録）</div>`;
+      return `<tr class="detail"><td colspan="${cols}"><div class="dgrid">
+        <div class="dcard"><div class="l">異常詳細</div>${v(r["異常詳細"])}</div>
+        <div class="dcard"><div class="l">発電影響</div>${v(r["発電影響"])}</div>
+        <div class="dcard"><div class="l">関連作業票</div>${v(r["関連作業票"])}（${esc(r["作業票状態"]||"未登録")}）</div>
+        <div class="dcard cause"><div class="l">根本原因 (Root Cause)</div>${v(r["根本原因"])}</div>
+        <div class="dcard rca-step"><div class="l">暫定処置</div>${v(r["暫定処置"])}</div>
+        <div class="dcard rca-step"><div class="l">恒久処置</div>${v(r["恒久処置"])}</div>
+        <div class="dcard"><div class="l">RCA進捗</div><div class="val">${esc(r["rca進捗"]||"—")}</div></div>
+        <div class="dcard"><div class="l">停止時間 / 逸失電力</div><div class="val">${esc(r["停止時間min"]??"—")} 分 / ${esc(r["逸失電力kwh"]??"—")} kWh</div></div>
+      </div></td></tr>`;
+    }
+
+    function render(){
+      const body = document.getElementById("body");
+      let rows = state.rows.slice();
+      const f = state.filter;
+      if(f === "rca") rows = rows.filter(r => r["rca対象"]);
+      else if(f === "open") rows = rows.filter(isOpen);
+      else if(f === "prog") rows = rows.filter(isProg);
+      else if(f === "done") rows = rows.filter(isDone);
+      if(!rows.length){ body.innerHTML = '<div class="empty">該当する故障・異常はありません</div>'; return; }
+      const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','RCA要否'];
+      const cols = heads.length;
+      body.innerHTML = '<table><thead><tr>' +
+        heads.map(h=>`<th>${h}</th>`).join('') +
+        '</tr></thead><tbody>' + rows.map(r => {
+          const id = r["故障id"];
+          const opened = !!state.open[id];
+          const strong = (r["rca要否"]||"").indexOf("対象")>=0;
+          const cls = (r["rca対象"] ? (strong?"rca-strong":"rca") : "") + (opened?" open-row":"");
+          const dt = (r["発見日時_jst"]||"").replace("T"," ").slice(0,16);
+          const main = `<tr class="main ${cls}" data-id="${esc(id)}">
+            <td><span class="arrow">▸</span></td>
+            <td>${esc(dt)}</td>
+            <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
+            <td>${esc(r["発見元"]||"")}</td>
+            <td>${esc(r["異常タイトル"]||"")}</td>
+            <td><span class="pill ${impClass(r["安全影響"])}">${esc(r["安全影響"]||"—")}</span></td>
+            <td><span class="pill ${clClass(r["原因明確度"])}">${esc(r["原因明確度"]||"—")}</span></td>
+            <td>${esc(r["再発性"]||"—")}</td>
+            <td>${esc(r["一次判定"]||"—")}</td>
+            <td>${esc(r["状態表示"]||"")}</td>
+            <td><span class="rca-tag ${rcaClass(r["rca要否"])}">${esc(r["rca要否"]||"—")}</span></td>
+          </tr>`;
+          return main + (opened ? detailRow(r, cols) : "");
+        }).join('') + '</tbody></table>';
+
+      body.querySelectorAll("tr.main").forEach(tr =>
+        tr.addEventListener("click", () => {
+          const id = tr.dataset.id;
+          state.open[id] = !state.open[id];
+          render();
+        }));
+    }
+
+    document.querySelectorAll("#filters button").forEach(btn =>
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filter = btn.dataset.f;
+        render();
+      }));
+
+    async function loadAll(){
+      try{
+        state.rows = await sb.get("v_defect_rca_list?order=発見日時_jst.desc");
+        renderKpis();
+        render();
+      }catch(e){
+        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+      }
+    }
+    sb.requireLogin({ onReady: loadAll });
+  </script>
+</body>
+</html>
