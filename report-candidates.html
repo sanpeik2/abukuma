@@ -36,29 +36,11 @@
   .tag.ok{background:rgba(63,185,80,.12);border-color:var(--insp);color:#7ee787}
   .tag.trig{background:rgba(219,97,162,.12);border-color:var(--legal);color:#f0a6cd}
   .empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
-
-  /* login overlay */
-  #ov{position:fixed;inset:0;background:rgba(13,17,23,.96);display:flex;align-items:center;justify-content:center;z-index:50}
-  #ov .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px 30px;width:340px}
-  #ov h2{font-size:17px;color:#fff;margin-bottom:14px}
-  #ov input{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 12px;border-radius:8px;margin-bottom:10px;font-size:13px}
-  #ov button{width:100%;background:var(--master);border:none;color:#04101f;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;font-size:13.5px}
-  #ovErr{color:var(--defect);font-size:12px;margin-top:8px;display:none}
   footer{margin-top:28px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
   code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
 </style>
 </head>
 <body>
-  <div id="ov">
-    <div class="box">
-      <h2>ログイン（O&M OS）</h2>
-      <input id="email" type="email" placeholder="メールアドレス" autocomplete="username">
-      <input id="pass" type="password" placeholder="パスワード" autocomplete="current-password">
-      <button id="loginBtn" onclick="doLogin()">ログイン</button>
-      <div id="ovErr"></div>
-    </div>
-  </div>
-
   <h1>保安規定 — 事故報告 候補リスト</h1>
   <div class="sub">阿武隈風力発電所 / ビュー <code>v_report_candidates</code> をライブ取得 / 要否の最終判断は電気主任技術者</div>
 
@@ -80,7 +62,7 @@
     <button class="r" onclick="load()">↻ 再読み込み</button>
   </div>
 
-  <table id="tbl">
+  <table>
     <thead>
       <tr>
         <th>号機</th><th>異常</th><th>検知日時</th><th>区分</th>
@@ -99,91 +81,53 @@
     本画面は説明・運用補助用。条文・様式・期限の正本は最新法令と自所の保安規定。
   </footer>
 
-<script>
-  const SUPA_URL = 'https://kwhashtnuzrlzrpikhne.supabase.co';
-  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3aGFzaHRudXpybHpycGlraG5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjExNTIsImV4cCI6MjA5NTIzNzE1Mn0.rYfWQL6zDkl0WKkguHx_mtHg9g3MGij_Z8Ge35QYl_k';
-
-  const getToken = () => sessionStorage.getItem('sb_access_token') || ANON_KEY;
-  const authHeaders = () => ({ 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + getToken() });
-
-  async function doLogin(){
-    const email = document.getElementById('email').value.trim();
-    const pass  = document.getElementById('pass').value;
-    const btn = document.getElementById('loginBtn'), err = document.getElementById('ovErr');
-    btn.textContent='ログイン中...'; btn.disabled=true; err.style.display='none';
-    try{
-      const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`,{
-        method:'POST', headers:{'apikey':ANON_KEY,'Content-Type':'application/json'},
-        body: JSON.stringify({email,password:pass})
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error_description||'ログイン失敗');
-      sessionStorage.setItem('sb_access_token', data.access_token);
-      sessionStorage.setItem('sb_refresh_token', data.refresh_token);
-      document.getElementById('ov').style.display='none';
-      load();
-    }catch(e){ err.textContent=e.message; err.style.display='block'; btn.textContent='ログイン'; btn.disabled=false; }
-  }
-  document.addEventListener('keydown', e=>{
-    if(e.key==='Enter' && document.getElementById('ov').style.display!=='none') doLogin();
-  });
-
-  const fmtDt = s => s ? new Date(s).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '–';
-  const esc = s => (s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-
-  async function load(){
-    const rows = document.getElementById('rows');
-    rows.innerHTML = '<tr><td colspan="12" class="empty">取得中…</td></tr>';
-    try{
-      const res = await fetch(`${SUPA_URL}/rest/v1/v_report_candidates?select=*&order=detected_at.desc`,{ headers: authHeaders() });
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const d = await res.json();
-      render(d);
-    }catch(e){
-      rows.innerHTML = `<tr><td colspan="12" class="empty">取得エラー: ${esc(e.message)}（権限／RLSを確認）</td></tr>`;
+  <!-- 共通Supabaseクライアント（接続・認証・取得を集約） -->
+  <script src="./lib/supabase.js"></script>
+  <script>
+    async function load(){
+      const rows = document.getElementById('rows');
+      rows.innerHTML = '<tr><td colspan="12" class="empty">取得中…</td></tr>';
+      try{
+        const d = await sb.get('v_report_candidates?select=*&order=detected_at.desc');
+        render(d);
+      }catch(e){
+        rows.innerHTML = `<tr><td colspan="12" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
+      }
     }
-  }
 
-  function render(d){
-    document.getElementById('kTotal').textContent = d.length;
-    document.getElementById('kConfirm').textContent = d.filter(r=>r.screening_class==='要主任技術者確認').length;
-    document.getElementById('kStop').textContent = d.filter(r=>r.recommended_action==='stop').length;
-    document.getElementById('kReg').textContent = d.filter(r=>r.regulation_impact==='yes').length;
+    function render(d){
+      document.getElementById('kTotal').textContent   = d.length;
+      document.getElementById('kConfirm').textContent = d.filter(r=>r.screening_class==='要主任技術者確認').length;
+      document.getElementById('kStop').textContent    = d.filter(r=>r.recommended_action==='stop').length;
+      document.getElementById('kReg').textContent     = d.filter(r=>r.regulation_impact==='yes').length;
 
-    const rows = document.getElementById('rows');
-    if(!d.length){ rows.innerHTML = '<tr><td colspan="12" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
+      const rows = document.getElementById('rows');
+      if(!d.length){ rows.innerHTML = '<tr><td colspan="12" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
 
-    rows.innerHTML = d.map(r=>{
-      const cls = r.screening_class==='要主任技術者確認'
-        ? '<span class="tag must">要主任技術者確認</span>'
-        : '<span class="tag ok">社内記録のみ</span>';
-      const trig = (r.report_trigger||[]).map(t=>`<span class="tag trig">${esc(t)}</span>`).join('');
-      return `<tr>
-        <td class="wtg">${esc(r.turbine_no)}</td>
-        <td>${esc(r.finding_title)}</td>
-        <td>${fmtDt(r.detected_at)}</td>
-        <td>${cls}</td>
-        <td>${trig||'–'}</td>
-        <td>${esc(r.safety_impact)||'–'}</td>
-        <td>${esc(r.operation_impact)||'–'}</td>
-        <td>${r.recommended_action==='stop'?'<span class="tag must">F</span>':'–'}</td>
-        <td>${r.downtime_minutes??'–'}</td>
-        <td>${r.estimated_loss_kwh??'–'}</td>
-        <td>${esc(r.work_order_no)||'–'}</td>
-        <td>${esc(r.status)||'–'}</td>
-      </tr>`;
-    }).join('');
-  }
+      rows.innerHTML = d.map(r=>{
+        const cls = r.screening_class==='要主任技術者確認'
+          ? '<span class="tag must">要主任技術者確認</span>'
+          : '<span class="tag ok">社内記録のみ</span>';
+        const trig = (r.report_trigger||[]).map(t=>`<span class="tag trig">${sb.esc(t)}</span>`).join('');
+        return `<tr>
+          <td class="wtg">${sb.esc(r.turbine_no)}</td>
+          <td>${sb.esc(r.finding_title)}</td>
+          <td>${sb.fmtDateTime(r.detected_at)}</td>
+          <td>${cls}</td>
+          <td>${trig||'–'}</td>
+          <td>${sb.esc(r.safety_impact)||'–'}</td>
+          <td>${sb.esc(r.operation_impact)||'–'}</td>
+          <td>${r.recommended_action==='stop'?'<span class="tag must">F</span>':'–'}</td>
+          <td>${r.downtime_minutes??'–'}</td>
+          <td>${r.estimated_loss_kwh??'–'}</td>
+          <td>${sb.esc(r.work_order_no)||'–'}</td>
+          <td>${sb.esc(r.status)||'–'}</td>
+        </tr>`;
+      }).join('');
+    }
 
-  // セッション復元
-  (async function(){
-    const t = sessionStorage.getItem('sb_access_token');
-    if(!t) return;
-    try{
-      const r = await fetch(`${SUPA_URL}/auth/v1/user`,{ headers: authHeaders() });
-      if(r.ok){ document.getElementById('ov').style.display='none'; load(); }
-    }catch{}
-  })();
-</script>
+    // ログイン確定後に load() を実行（セッションがあれば自動で即実行）
+    sb.requireLogin({ onReady: load });
+  </script>
 </body>
 </html>
