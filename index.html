@@ -2847,6 +2847,8 @@
         }
       }
     </style>
+    <!-- 共通Supabaseクライアント（接続URL・anonキー・認証を一元管理）。インラインJSより前に読み込む -->
+    <script src="./lib/supabase.js"></script>
   </head>
   <!-- ===== ログインオーバーレイ ===== -->
   <div id="loginOverlay" style="
@@ -4880,21 +4882,11 @@ ${document.getElementById("comment10").value}
         applyScenario(tabName);
       }
 
-      // ===== 認証システム =====
-      const SUPA_URL  = 'https://kwhashtnuzrlzrpikhne.supabase.co';
-      const ANON_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3aGFzaHRudXpybHpycGlraG5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjExNTIsImV4cCI6MjA5NTIzNzE1Mn0.rYfWQL6zDkl0WKkguHx_mtHg9g3MGij_Z8Ge35QYl_k';
-
-      function getToken() {
-        return sessionStorage.getItem('sb_access_token') || ANON_KEY;
-      }
-
-      function authHeaders() {
-        return {
-          'apikey': ANON_KEY,
-          'Authorization': 'Bearer ' + getToken(),
-          'Content-Type': 'application/json'
-        };
-      }
+      // ===== 認証システム（接続情報は lib/supabase.js に一元化） =====
+      // 接続URL・anonキー・トークン管理は window.sb（lib/supabase.js）が保持。
+      // このページ内のfetchは従来どおり authHeaders() / SUPA_URL を使える（sbへの薄いラッパ）。
+      const SUPA_URL = sb.URL;
+      function authHeaders() { return sb.headers(); }
 
       async function doLogin() {
         const email = document.getElementById('loginEmail').value.trim();
@@ -4905,16 +4897,7 @@ ${document.getElementById("comment10").value}
         err.style.display = 'none';
 
         try {
-          const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
-            method: 'POST',
-            headers: { 'apikey': ANON_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password: pass })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error_description || 'ログイン失敗');
-
-          sessionStorage.setItem('sb_access_token',  data.access_token);
-          sessionStorage.setItem('sb_refresh_token', data.refresh_token);
+          const data = await sb.login(email, pass);   // 認証はlibに委譲（トークン保存もlib側）
 
           document.getElementById('loginOverlay').style.display = 'none';
           console.log('✅ ログイン成功:', data.user?.email);
@@ -4939,15 +4922,11 @@ ${document.getElementById("comment10").value}
         if (e.key === 'Enter' && document.getElementById('loginOverlay').style.display !== 'none') doLogin();
       });
 
-      // セッション復元チェック
+      // セッション復元チェック（lib側の判定に委譲）
       (async function checkSession() {
-        const token = sessionStorage.getItem('sb_access_token');
-        if (!token) return;
-        try {
-          const r = await fetch(`${SUPA_URL}/auth/v1/user`,
-            { headers: authHeaders() });
-          if (r.ok) document.getElementById('loginOverlay').style.display = 'none';
-        } catch {}
+        if (await sb.isLoggedIn()) {
+          document.getElementById('loginOverlay').style.display = 'none';
+        }
       })();
       // ========================
 
@@ -4967,7 +4946,7 @@ ${document.getElementById("comment10").value}
       async function initFromSupabase() {
         try {
           const res = await fetch(
-            'https://kwhashtnuzrlzrpikhne.supabase.co/rest/v1/rpc/get_morning_context',
+            `${SUPA_URL}/rest/v1/rpc/get_morning_context`,
             {
               method: 'POST',
               headers: authHeaders(),
@@ -5063,7 +5042,7 @@ ${document.getElementById("comment10").value}
           try {
             const todayDate = new Date().toISOString().slice(0,10);
             const wxAllRes = await fetch(
-              `https://kwhashtnuzrlzrpikhne.supabase.co/rest/v1/weather_cache?select=datetime,wind_speed_ms,wind_dir,weather_code,alert_type,alert_level&datetime=gte.${todayDate}&order=datetime.asc&limit=336`,
+              `${SUPA_URL}/rest/v1/weather_cache?select=datetime,wind_speed_ms,wind_dir,weather_code,alert_type,alert_level&datetime=gte.${todayDate}&order=datetime.asc&limit=336`,
               { headers: authHeaders()}
             );
             if (wxAllRes.ok) {
@@ -5135,7 +5114,7 @@ ${document.getElementById("comment10").value}
             // 今日の日付でフィルタ（timezone問題を回避）
             const todayDate = new Date().toISOString().slice(0,10); // YYYY-MM-DD
             const wxRes = await fetch(
-              `https://kwhashtnuzrlzrpikhne.supabase.co/rest/v1/weather_cache?select=datetime,wind_speed_ms,wind_dir,weather_code,alert_type,alert_level&datetime=gte.${todayDate}&order=datetime.asc&limit=1`,
+              `${SUPA_URL}/rest/v1/weather_cache?select=datetime,wind_speed_ms,wind_dir,weather_code,alert_type,alert_level&datetime=gte.${todayDate}&order=datetime.asc&limit=1`,
               { headers: authHeaders()}
             );
             if (wxRes.ok) {
@@ -5207,7 +5186,7 @@ ${document.getElementById("comment10").value}
           // AI所見 取得・表示
           try {
             const insightRes = await fetch(
-              'https://kwhashtnuzrlzrpikhne.supabase.co/rest/v1/ai_insights?select=*&order=generated_date.desc&limit=1',
+              `${SUPA_URL}/rest/v1/ai_insights?select=*&order=generated_date.desc&limit=1`,
               { headers: authHeaders()}
             );
             if (insightRes.ok) {
@@ -5293,7 +5272,7 @@ ${document.getElementById("comment10").value}
           try {
             const today = new Date().toISOString().slice(0,10);
             const minRes = await fetch(
-              `https://kwhashtnuzrlzrpikhne.supabase.co/rest/v1/meeting_minutes?select=*&date=eq.${today}&limit=1`,
+              `${SUPA_URL}/rest/v1/meeting_minutes?select=*&date=eq.${today}&limit=1`,
               { headers: authHeaders() }
             );
             if (minRes.ok) {
@@ -5322,7 +5301,7 @@ ${document.getElementById("comment10").value}
           // DB容量チェック
           try {
             const usageRes = await fetch(
-              'https://kwhashtnuzrlzrpikhne.supabase.co/rest/v1/db_usage_status?select=*',
+              `${SUPA_URL}/rest/v1/db_usage_status?select=*`,
               { headers: authHeaders()}
             );
             if (usageRes.ok) {
