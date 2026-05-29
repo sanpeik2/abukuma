@@ -295,6 +295,30 @@
         color: #bfe5ff;
       }
 
+      .nav-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 34px;
+        padding: 0 14px;
+        border: 1px solid rgba(86, 163, 217, 0.28);
+        background: transparent;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+        line-height: 1;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .nav-btn:hover {
+        border-color: rgba(86, 163, 217, 0.65);
+        color: var(--blue);
+        background: rgba(86, 163, 217, 0.08);
+      }
+
       .print-btn {
         border-color: rgba(214, 168, 79, 0.72);
         color: #07101a;
@@ -2910,9 +2934,10 @@
             <span class="today-label">本日</span>
             <strong class="today-date" id="todayDate">--</strong>
           </div>
-          <a id="menuLink" class="tab" href="./menu.html" title="画面メニュー" style="text-decoration:none;display:inline-flex;align-items:center;margin-right:8px">≡ メニュー</a>
-          <button class="tab print-btn" type="button" title="PDF出力" onclick="window.print()">PDF出力</button>
-        </div>
+          <div class="header-utility">
+            <a id="menuLink" class="nav-btn" href="./menu.html" title="画面メニュー">≡ メニュー</a>
+            <button class="tab print-btn" type="button" title="PDF出力" onclick="window.print()">PDF出力</button>
+          </div>
         <div class="header-info-row">
           <div class="header-weather-left" aria-label="本日の気象概況">
             <span id="weatherBadge" class="header-badge weather"><span class="weather-icon">⛅</span>晴れのち曇り</span>
