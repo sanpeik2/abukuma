@@ -4907,6 +4907,7 @@ ${document.getElementById("comment10").value}
           initFromSupabase().finally(() => {
             renderMatrix();
             renderTrend(7);
+            renderForecast("day");
             renderDaySummary();
             renderKpiCompare();
             renderImbalanceImpact();
@@ -5338,6 +5339,7 @@ ${document.getElementById("comment10").value}
       initFromSupabase().finally(() => {
         renderMatrix();
         renderTrend(7);
+        renderForecast("day");
         renderDaySummary();
         renderKpiCompare();
         renderImbalanceImpact();
