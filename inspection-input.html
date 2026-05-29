@@ -19,18 +19,50 @@
   .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
   .wrap{padding:18px 22px 50px;max-width:1100px;margin:0 auto}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:24px}
-  .card h2{font-size:15px;color:#fff;margin-bottom:14px}
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
-  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+  .card h2{font-size:15px;color:#fff;margin-bottom:6px}
+  .hint{font-size:12px;color:var(--muted);margin-bottom:16px}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  label .req{color:#ff9a92;font-weight:700;margin-left:2px}
+  label .opt{color:var(--muted);font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:5px}
+  label .help{display:block;color:#6e7681;font-size:10.5px;font-weight:400;margin-top:2px}
+  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--master)}
+  input.bad,textarea.bad,select.bad{border-color:var(--defect)}
   textarea{min-height:64px;resize:vertical}
   .full{grid-column:1/-1}
-  .row-anom{display:none}
-  .submit{margin-top:16px;display:flex;gap:10px;align-items:center}
-  .submit button{background:var(--insp);border:none;color:#04210d;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:14px}
-  .submit button:disabled{opacity:.5;cursor:default}
-  .msg{font-size:13px;font-weight:700}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:62px;background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:9px 6px;border-radius:8px;font-size:13px;cursor:pointer;transition:.12s}
+  .seg button:hover{border-color:var(--muted)}
+  .seg button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
+  .seg.judge button.on[data-v="ok"]{border-color:var(--insp);background:rgba(63,185,80,.16);color:#7ee787}
+  .seg.judge button.on[data-v="conditional"]{border-color:var(--work);background:rgba(210,153,34,.16);color:#f0c674}
+  .seg.judge button.on[data-v="ng"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92}
+  .seg.sev button.on[data-v="critical"],.seg.sev button.on[data-v="high"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92}
+  .ferr{color:#ff9a92;font-size:11px;margin-top:5px;display:none}
+  .ferr.show{display:block}
+  .anom-wrap{display:none}
+  .anom-wrap.show{display:contents}
+  .submit{margin-top:18px}
+  .submit .errsum{font-size:12.5px;color:#f0c674;margin-bottom:10px;display:none}
+  .submit .errsum.show{display:block}
+  .btn{border:none;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-primary{background:var(--master);color:#04183a}
+  .btn-go{background:var(--insp);color:#04210d}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .msg{font-size:13px;font-weight:700;margin-left:12px}
   .msg.ok{color:#7ee787} .msg.ng{color:#ff9a92}
+  /* confirm panel */
+  .confirm{border:1px solid var(--master);background:rgba(88,166,255,.06);border-radius:10px;padding:16px 18px;margin-top:16px;display:none}
+  .confirm.show{display:block}
+  .confirm h3{font-size:13.5px;color:#9cd2ff;margin-bottom:12px}
+  .confirm .crow{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .confirm .crow:last-of-type{border-bottom:none}
+  .confirm .ck{width:96px;color:var(--muted);flex-shrink:0}
+  .confirm .cv{color:#fff}
+  .confirm .cv.warn{color:#ff9a92;font-weight:700}
+  .confirm .cbtns{display:flex;gap:10px;margin-top:14px}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
   th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
   th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
@@ -52,31 +84,85 @@
   <div class="wrap">
     <div class="card">
       <h2>📝 新規 点検実績を登録</h2>
-      <div class="form-grid">
-        <div><label>号機 *</label><select id="f_wtg"></select></div>
-        <div><label>実施日 *</label><input type="date" id="f_date"></div>
-        <div><label>天候</label>
-          <select id="f_weather"><option value="">—</option><option>晴れ</option><option>曇り</option><option>雨</option><option>雪</option><option>強風</option></select>
+      <div class="hint"><span style="color:#ff9a92">*</span> は必須。判定を選ぶと必要な欄が自動で出ます。<b>OK＝異常なし</b>／<b>NG＝異常あり（内容・深刻度が必須）</b>。最後に内容を確認してから登録します。 → <a href="./guide-inspection-do.html">② 点検実行の基本</a></div>
+
+      <div class="form-grid" id="form">
+        <div>
+          <label>号機<span class="req">*</span></label>
+          <select id="f_wtg"></select>
+          <div class="ferr" id="e_wtg">号機を選択してください。</div>
         </div>
-        <div><label>風速 (m/s)</label><input type="number" id="f_wind" step="0.1" min="0" placeholder="例: 5.2"></div>
-        <div><label>判定 *</label>
-          <select id="f_result"><option value="ok">OK（異常なし）</option><option value="conditional">条件付き</option><option value="ng">NG（異常あり）</option></select>
+        <div>
+          <label>実施日<span class="req">*</span><span class="help">未来の日付は選べません</span></label>
+          <input type="date" id="f_date">
+          <div class="ferr" id="e_date">実施日が不正です（未来日は不可）。</div>
         </div>
-        <div><label>異常あり</label>
-          <select id="f_anom"><option value="false">なし</option><option value="true">あり</option></select>
+        <div>
+          <label>天候<span class="opt">任意</span></label>
+          <div class="seg" id="seg_weather" data-clear="1">
+            <button type="button" data-v="晴れ">晴れ</button>
+            <button type="button" data-v="曇り">曇り</button>
+            <button type="button" data-v="雨">雨</button>
+            <button type="button" data-v="雪">雪</button>
+            <button type="button" data-v="強風">強風</button>
+          </div>
         </div>
-        <div class="full row-anom" id="anomBox">
-          <label>異常内容</label><textarea id="f_anomdesc" placeholder="異常の内容を記入"></textarea>
+        <div>
+          <label>風速 (m/s)<span class="opt">任意</span><span class="help">0〜40 の範囲</span></label>
+          <input type="number" id="f_wind" step="0.1" min="0" max="40" placeholder="例: 5.2">
+          <div class="ferr" id="e_wind">風速は 0〜40 m/s で入力してください。</div>
         </div>
-        <div class="row-anom" id="sevBox"><label>深刻度</label>
-          <select id="f_sev"><option value="low">低</option><option value="medium">中</option><option value="high">高</option><option value="critical">重大</option></select>
+
+        <div class="full">
+          <label>判定<span class="req">*</span></label>
+          <div class="seg judge" id="seg_result">
+            <button type="button" data-v="ok">OK（異常なし）</button>
+            <button type="button" data-v="conditional">条件付き</button>
+            <button type="button" data-v="ng">NG（異常あり）</button>
+          </div>
         </div>
-        <div class="full"><label>コメント</label><textarea id="f_comment" placeholder="所見・備考"></textarea></div>
-        <div class="full"><label>写真 / BOX リンク (URL)</label><input type="url" id="f_box" placeholder="https://app.box.com/..."></div>
+
+        <div class="full anom-wrap" id="anomWrap">
+          <div class="form-grid" style="margin:0">
+            <div class="full">
+              <label>異常内容<span class="req" id="req_anom" style="display:none">*</span><span class="help">例：ギアボックス油に金属粉、ピッチ角ずれ 等</span></label>
+              <textarea id="f_anomdesc" placeholder="どこに・どんな異常か、具体的に"></textarea>
+              <div class="ferr" id="e_anomdesc">NG の場合は異常内容が必須です。</div>
+            </div>
+            <div class="full">
+              <label>深刻度<span class="req" id="req_sev" style="display:none">*</span></label>
+              <div class="seg sev" id="seg_sev">
+                <button type="button" data-v="low">低</button>
+                <button type="button" data-v="medium">中</button>
+                <button type="button" data-v="high">高</button>
+                <button type="button" data-v="critical">重大</button>
+              </div>
+              <div class="ferr" id="e_sev">NG の場合は深刻度が必須です。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="full"><label>コメント<span class="opt">任意</span></label><textarea id="f_comment" placeholder="所見・備考（異常なしでも気づきがあれば）"></textarea></div>
+        <div class="full">
+          <label>写真 / BOX リンク (URL)<span class="opt">任意</span></label>
+          <input type="url" id="f_box" placeholder="https://app.box.com/...">
+          <div class="ferr" id="e_box">URL は http(s):// で始めてください。</div>
+        </div>
       </div>
+
       <div class="submit">
-        <button id="submitBtn">登録する</button>
+        <div class="errsum" id="errsum"></div>
+        <button class="btn btn-primary" id="checkBtn">内容を確認</button>
         <span class="msg" id="formMsg"></span>
+      </div>
+
+      <div class="confirm" id="confirm">
+        <h3>この内容で登録します。よろしいですか？</h3>
+        <div id="confirmBody"></div>
+        <div class="cbtns">
+          <button class="btn btn-go" id="goBtn">この内容で登録</button>
+          <button class="btn btn-ghost" id="backBtn">修正に戻る</button>
+        </div>
       </div>
     </div>
 
@@ -89,16 +175,107 @@
   <script src="./lib/supabase.js"></script>
   <script>
     const esc = sb.esc;
-    const state = { turbines: [], userId: null };
+    const $ = id => document.getElementById(id);
+    const state = { turbines:[], userId:null, result:"", sev:"", weather:"", submitting:false };
+    const sevLabel = { low:"低", medium:"中", high:"高", critical:"重大" };
 
-    function toggleAnom(){
-      const on = document.getElementById("f_anom").value === "true";
-      document.getElementById("anomBox").style.display = on ? "block" : "none";
-      document.getElementById("sevBox").style.display = on ? "block" : "none";
+    // ---- segmented controls ----
+    function bindSeg(segId, onPick){
+      const seg = $(segId);
+      seg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+        const v = b.dataset.v;
+        const already = b.classList.contains("on");
+        seg.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+        let picked = v;
+        if(already && seg.dataset.clear){ picked = ""; }   // 任意項目は再クリックで解除
+        else b.classList.add("on");
+        onPick(picked);
+      }));
     }
-    document.getElementById("f_anom").addEventListener("change", toggleAnom);
-    document.getElementById("f_result").addEventListener("change", e => {
-      if(e.target.value === "ng"){ document.getElementById("f_anom").value = "true"; toggleAnom(); }
+    bindSeg("seg_weather", v => { state.weather = v; });
+    bindSeg("seg_sev", v => { state.sev = v; validate(); });
+    bindSeg("seg_result", v => {
+      state.result = v;
+      const showAnom = (v === "ng" || v === "conditional");
+      $("anomWrap").classList.toggle("show", showAnom);
+      const ngReq = (v === "ng");
+      $("req_anom").style.display = ngReq ? "inline" : "none";
+      $("req_sev").style.display  = ngReq ? "inline" : "none";
+      if(v === "ok"){ state.sev=""; $("f_anomdesc").value=""; $("seg_sev").querySelectorAll("button").forEach(x=>x.classList.remove("on")); }
+      validate();
+    });
+
+    // ---- validation ----
+    function collect(){
+      const windRaw = $("f_wind").value;
+      return {
+        wtg: $("f_wtg").value,
+        date: $("f_date").value,
+        result: state.result,
+        anomdesc: $("f_anomdesc").value.trim(),
+        sev: state.sev,
+        wind: windRaw === "" ? null : Number(windRaw),
+        windRaw,
+        box: $("f_box").value.trim(),
+        comment: $("f_comment").value.trim(),
+        weather: state.weather
+      };
+    }
+    function setErr(fieldEl, errId, bad){
+      if(errId) $(errId).classList.toggle("show", bad);
+      if(fieldEl) fieldEl.classList.toggle("bad", bad);
+    }
+    function validate(){
+      const d = collect();
+      const today = new Date().toISOString().slice(0,10);
+      const errs = [];
+      const eW = !d.wtg; setErr($("f_wtg"),"e_wtg",eW); if(eW) errs.push("号機");
+      const eD = !d.date || d.date > today; setErr($("f_date"),"e_date",eD); if(eD) errs.push("実施日");
+      const eR = !d.result; if(eR) errs.push("判定");
+      const eWind = d.wind !== null && (isNaN(d.wind) || d.wind < 0 || d.wind > 40);
+      setErr($("f_wind"),"e_wind",eWind); if(eWind) errs.push("風速");
+      const eBox = d.box !== "" && !/^https?:\/\//i.test(d.box);
+      setErr($("f_box"),"e_box",eBox); if(eBox) errs.push("BOXリンク");
+      // 条件付き必須（NG）
+      const ngAnom = d.result === "ng" && !d.anomdesc;
+      setErr($("f_anomdesc"),"e_anomdesc",ngAnom); if(ngAnom) errs.push("異常内容");
+      const ngSev = d.result === "ng" && !d.sev;
+      setErr(null,"e_sev",ngSev); if(ngSev) errs.push("深刻度");
+
+      const ok = errs.length === 0;
+      $("checkBtn").disabled = !ok;
+      const sum = $("errsum");
+      if(ok){ sum.classList.remove("show"); sum.textContent=""; }
+      else { sum.classList.add("show"); sum.textContent = "未入力・不正: " + errs.join(" / "); }
+      return ok ? d : null;
+    }
+    ["f_wtg","f_date","f_wind","f_box","f_anomdesc","f_comment"].forEach(id =>
+      $(id).addEventListener("input", validate));
+
+    // ---- confirm step ----
+    function showConfirm(d){
+      const wtgNo = (state.turbines.find(t=>t.id===d.wtg)||{}).turbine_no || d.wtg;
+      const judge = {ok:"OK（異常なし）",conditional:"条件付き",ng:"NG（異常あり）"}[d.result];
+      const isNg = d.result === "ng";
+      let rows = `
+        <div class="crow"><div class="ck">号機</div><div class="cv">${esc(wtgNo)}</div></div>
+        <div class="crow"><div class="ck">実施日</div><div class="cv">${esc(d.date)}</div></div>
+        <div class="crow"><div class="ck">判定</div><div class="cv ${isNg?'warn':''}">${esc(judge)}</div></div>`;
+      if(d.result !== "ok"){
+        rows += `<div class="crow"><div class="ck">異常内容</div><div class="cv">${esc(d.anomdesc||"（記載なし）")}</div></div>`;
+        rows += `<div class="crow"><div class="ck">深刻度</div><div class="cv ${(d.sev==='high'||d.sev==='critical')?'warn':''}">${esc(sevLabel[d.sev]||"（未選択）")}</div></div>`;
+      }
+      rows += `<div class="crow"><div class="ck">天候 / 風速</div><div class="cv">${esc(d.weather||"—")} ${d.wind!=null?esc(d.wind)+" m/s":""}</div></div>`;
+      if(d.comment) rows += `<div class="crow"><div class="ck">コメント</div><div class="cv">${esc(d.comment)}</div></div>`;
+      if(d.box) rows += `<div class="crow"><div class="ck">BOX</div><div class="cv">${esc(d.box)}</div></div>`;
+      $("confirmBody").innerHTML = rows;
+      $("confirm").classList.add("show");
+      $("checkBtn").style.display = "none";
+      $("confirm").scrollIntoView({behavior:"smooth", block:"nearest"});
+    }
+    $("checkBtn").addEventListener("click", () => { const d = validate(); if(d) showConfirm(d); });
+    $("backBtn").addEventListener("click", () => {
+      $("confirm").classList.remove("show"); $("checkBtn").style.display = "inline-block"; $("formMsg").textContent="";
     });
 
     async function getUserId(){
@@ -107,8 +284,50 @@
       return (await res.json()).id || null;
     }
 
+    // ---- submit (confirmed) ----
+    $("goBtn").addEventListener("click", async () => {
+      if(state.submitting) return;               // 二重送信防止
+      const d = validate(); if(!d) { $("backBtn").click(); return; }
+      state.submitting = true;
+      const go = $("goBtn"), msg = $("formMsg");
+      go.disabled = true; $("backBtn").disabled = true; msg.className="msg"; msg.textContent="登録中…";
+      try{
+        if(!state.userId) state.userId = await getUserId();
+        let comment = d.comment;
+        if(d.box) comment = (comment ? comment + "\n" : "") + "BOX: " + d.box;
+        const anom = d.result !== "ok";
+        await sb.write("POST", "inspection_results", {
+          turbine_id: d.wtg,
+          executed_date: d.date,
+          executed_by: state.userId,
+          weather: d.weather || null,
+          wind_speed_ms: d.wind,
+          result_status: d.result,
+          has_anomaly: anom,
+          anomaly_description: anom ? (d.anomdesc || null) : null,
+          severity: (d.result === "ng" ? d.sev : (d.result==="conditional" && d.sev ? d.sev : null)),
+          comments: comment || null,
+          submitted_at: new Date().toISOString()
+        });
+        msg.className="msg ok"; msg.textContent="✓ 登録しました";
+        // reset
+        $("confirm").classList.remove("show"); $("checkBtn").style.display="inline-block";
+        $("f_anomdesc").value=""; $("f_comment").value=""; $("f_box").value=""; $("f_wind").value="";
+        state.sev=""; state.weather=""; state.result="";
+        document.querySelectorAll(".seg button.on").forEach(b=>b.classList.remove("on"));
+        $("anomWrap").classList.remove("show");
+        validate();
+        await reloadList();
+      }catch(e){
+        msg.className="msg ng"; msg.textContent="登録失敗: " + e.message + "（修正に戻って再試行できます）";
+      }finally{
+        state.submitting = false; go.disabled = false; $("backBtn").disabled = false;
+      }
+    });
+
+    // ---- list ----
     function renderList(rows){
-      const body = document.getElementById("listBody");
+      const body = $("listBody");
       if(!rows.length){ body.innerHTML = '<div style="color:var(--muted)">点検実績はまだありません。</div>'; return; }
       const trs = rows.map(r => `<tr class="${r["異常あり"]?'anom':''}">
         <td style="white-space:nowrap">${esc(r["実施日"]||"")}</td>
@@ -124,59 +343,22 @@
         <th>実施日</th><th>号機</th><th>判定</th><th>異常内容</th><th>深刻度</th><th>条件</th><th>チェック</th><th>コメント</th>
       </tr></thead><tbody>${trs}</tbody></table>`;
     }
-
     async function reloadList(){
       const rows = await sb.get("v_inspection_results_list?order=実施日.desc&limit=30");
       renderList(rows);
     }
 
-    async function submit(){
-      const msg = document.getElementById("formMsg");
-      const btn = document.getElementById("submitBtn");
-      const wtgId = document.getElementById("f_wtg").value;
-      const date  = document.getElementById("f_date").value;
-      if(!wtgId || !date){ msg.className="msg ng"; msg.textContent="号機と実施日は必須です。"; return; }
-      const anom = document.getElementById("f_anom").value === "true";
-      const box = document.getElementById("f_box").value.trim();
-      let comment = document.getElementById("f_comment").value.trim();
-      if(box) comment = (comment ? comment + "\n" : "") + "BOX: " + box;
-      const windVal = document.getElementById("f_wind").value;
-      btn.disabled = true; msg.className="msg"; msg.textContent="登録中…";
-      try{
-        if(!state.userId) state.userId = await getUserId();
-        const payload = {
-          turbine_id: wtgId,
-          executed_date: date,
-          executed_by: state.userId,
-          weather: document.getElementById("f_weather").value || null,
-          wind_speed_ms: windVal !== "" ? Number(windVal) : null,
-          result_status: document.getElementById("f_result").value,
-          has_anomaly: anom,
-          anomaly_description: anom ? (document.getElementById("f_anomdesc").value.trim() || null) : null,
-          severity: anom ? document.getElementById("f_sev").value : null,
-          comments: comment || null,
-          submitted_at: new Date().toISOString()
-        };
-        await sb.write("POST", "inspection_results", payload);
-        msg.className="msg ok"; msg.textContent="✓ 登録しました";
-        document.getElementById("f_anomdesc").value=""; document.getElementById("f_comment").value="";
-        document.getElementById("f_box").value=""; document.getElementById("f_wind").value="";
-        await reloadList();
-      }catch(e){
-        msg.className="msg ng"; msg.textContent="登録失敗: " + e.message;
-      }finally{ btn.disabled = false; }
-    }
-    document.getElementById("submitBtn").addEventListener("click", submit);
-
     async function loadAll(){
       try{
         state.turbines = await sb.get("turbines?select=id,turbine_no&order=turbine_no.asc");
-        document.getElementById("f_wtg").innerHTML =
-          '<option value="">選択…</option>' + state.turbines.map(t => `<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`).join("");
-        document.getElementById("f_date").value = new Date().toISOString().slice(0,10);
+        $("f_wtg").innerHTML = '<option value="">選択…</option>' +
+          state.turbines.map(t => `<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`).join("");
+        const today = new Date().toISOString().slice(0,10);
+        $("f_date").value = today; $("f_date").max = today;
+        validate();
         await reloadList();
       }catch(e){
-        document.getElementById("listBody").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+        $("listBody").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
       }
     }
     sb.requireLogin({ onReady: loadAll });
