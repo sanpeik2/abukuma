@@ -34,7 +34,9 @@
   .b-high{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
   .b-medium,.b-normal{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
   .b-low{color:var(--muted);border-color:var(--line)}
-  .actions{display:flex;gap:8px;margin-top:12px}
+  .cmt{width:100%;margin-top:10px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:8px;font-size:12.5px;font-family:inherit;min-height:46px;resize:vertical}
+  .cmt:focus{outline:none;border-color:var(--master)}
+  .actions{display:flex;gap:8px;margin-top:10px}
   .actions button{flex:1;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer}
   .btn-ok{background:var(--insp);color:#04210d}
   .btn-rev{background:transparent;border:1px solid var(--work)!important;color:#f0c674}
@@ -100,7 +102,8 @@
         let foot;
         if(pr === "approved") foot = '<div class="done ok">✓ 承認しました</div>';
         else if(pr === "revised") foot = '<div class="done rev">↩ 差戻ししました</div>';
-        else foot = `<div class="actions">
+        else foot = `<textarea class="cmt" data-id="${esc(id)}" placeholder="コメント（任意・証跡に記録されます）"></textarea>
+          <div class="actions">
             <button class="btn-ok" data-id="${esc(id)}" data-act="approve">承認</button>
             <button class="btn-rev" data-id="${esc(id)}" data-act="revise">差戻し</button>
           </div>`;
@@ -127,14 +130,20 @@
       if(!row) return;
       const t = row["種別"];
       const card = btn.closest(".acard");
-      card.querySelectorAll("button").forEach(b => b.disabled = true);
+      const cmtEl = card.querySelector(".cmt");
+      const userComment = cmtEl ? cmtEl.value.trim() : "";
+      if(act === "revise" && !userComment){
+        alert("差戻しの場合はコメント（修正理由）を入力してください。");
+        return;
+      }
+      card.querySelectorAll("button,textarea").forEach(b => b.disabled = true);
       try{
         if(!state.userId) state.userId = await getUserId();
         await sb.write("POST", "approvals", {
           target_type: t, target_id: recId,
           action: act === "approve" ? "approved" : "requested_revision",
           reviewed_by: state.userId,
-          comment: act === "approve" ? "承認" : "差戻し（要修正）"
+          comment: userComment || (act === "approve" ? "承認" : "差戻し（要修正）")
         });
         const cfg = patchTarget[t];
         const patch = act === "approve" ? cfg.approve : cfg.revise;
@@ -144,7 +153,7 @@
         state.processed[recId] = act === "approve" ? "approved" : "revised";
         render();
       }catch(e){
-        card.querySelectorAll("button").forEach(b => b.disabled = false);
+        card.querySelectorAll("button,textarea").forEach(b => b.disabled = false);
         alert("処理に失敗しました: " + e.message);
       }
     }
