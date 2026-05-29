@@ -133,7 +133,7 @@
   <script>
     const esc = sb.esc;
     const TODAY = "2026-05-29";
-    const state = { wtg: [], alarms: [], insp: [], sel: null, alarmFilter: "all" };
+    const state = { wtg: [], alarms: [], insp: [], detail: {}, sel: null, alarmFilter: "all" };
 
     const statusLabel = { normal:"正常", warn:"警告", stop:"停止", inspect:"点検中" };
     const inspStatusLabel = { planned:"予定", in_progress:"実施中", done:"完了", cancelled:"中止" };
@@ -142,15 +142,16 @@
     function fmtTime(t){ return t ? t.slice(0,5) : ""; }
     function fmtDT(s){ return sb.fmtDateTime(s); }
 
-    /* ---------- TURBINES ---------- */
+    /* ---------- TURBINES (purpose-built views) ---------- */
     function renderTurbines(){
       const body = document.getElementById("turbBody");
       if(!state.wtg.length){ body.innerHTML = '<div class="dempty">タービンデータがありません。</div>'; return; }
       const cards = state.wtg.map(t => {
-        const st = t.status || "normal";
-        return `<div class="tcard${state.sel===t.wtg_id?' sel':''}" data-id="${esc(t.wtg_id)}">
-          <div class="id"><span class="sdot s-${esc(st)}"></span>${esc(t.wtg_id)}</div>
-          <div class="kw">${t.output_kw!=null?Math.round(t.output_kw)+" kW":"–"}</div>
+        const id = t["風車id"], st = t["状態"] || "normal";
+        const alm = t["未解決アラーム数"] || 0;
+        return `<div class="tcard${state.sel===id?' sel':''}" data-id="${esc(id)}">
+          <div class="id"><span class="sdot s-${esc(st)}"></span>${esc(id)}${alm>0?` <span style="margin-left:auto;color:#ff9a92;font-size:11px">🚨${alm}</span>`:""}</div>
+          <div class="kw">${t["出力kw"]!=null?Math.round(t["出力kw"])+" kW":"–"}${t["出力率pct"]!=null?` ・ ${t["出力率pct"]}%`:""}</div>
         </div>`;
       }).join("");
       body.innerHTML = `<div class="turb-wrap">
@@ -161,41 +162,74 @@
         c.addEventListener("click", () => { state.sel = c.dataset.id; renderTurbines(); }));
       renderTurbineDetail();
     }
+
+    async function loadDetail(wtgId){
+      if(state.detail[wtgId]) return state.detail[wtgId];
+      const q = "?wtg_id=eq." + encodeURIComponent(wtgId);
+      const [base, alarms, comps, hist] = await Promise.all([
+        sb.get("v_wtg_detail_base" + q),
+        sb.get("v_wtg_detail_alarms" + q + "&order=発生日時_jst.desc"),
+        sb.get("v_wtg_detail_components" + q + "&order=current_health_score.asc"),
+        sb.get("v_wtg_detail_work_history" + q + "&order=実施日.desc")
+      ]);
+      const d = { base: base[0] || null, alarms, comps, hist };
+      state.detail[wtgId] = d;
+      return d;
+    }
+
     function renderTurbineDetail(){
       const box = document.getElementById("turbDetail");
       if(!box) return;
       if(!state.sel){ box.innerHTML = '<div class="dempty">← 一覧からタービンを選択してください。</div>'; return; }
-      const t = state.wtg.find(x => x.wtg_id === state.sel);
-      if(!t){ box.innerHTML = '<div class="dempty">該当データなし。</div>'; return; }
-      const st = t.status || "normal";
-      const al = state.alarms.filter(a => a.wtg_id === t.wtg_id);
-      const alOpen = al.filter(a => !a.resolved_at);
-      const ins = state.insp.filter(i => i.wtg_id === t.wtg_id);
-      const insUpcoming = ins.filter(i => i.date >= TODAY && i.status !== "cancelled");
+      const wtgId = state.sel;
+      const cached = state.detail[wtgId];
+      if(!cached){
+        box.innerHTML = '<div class="loading">詳細を読み込み中…</div>';
+        loadDetail(wtgId).then(() => { if(state.sel===wtgId) renderTurbineDetail(); })
+          .catch(e => { box.innerHTML = '<div class="err">詳細取得に失敗: '+esc(e.message)+'</div>'; });
+        return;
+      }
+      const b = cached.base;
+      if(!b){ box.innerHTML = '<div class="dempty">該当データなし。</div>'; return; }
+      const st = b.status || "normal";
 
-      const alarmRows = (al.length ? al : []).slice(0,6).map(a =>
-        `<div class="drow"><span class="sev sev-${esc(a.severity)}">${sevLabel[a.severity]||esc(a.severity)}</span>
-         <div><b>${esc(a.alarm_type)}</b>${a.resolved_at?' <span class="tag-done">解決済</span>':' <span class="tag-open">未解決</span>'}<br>
-         <span style="color:var(--muted)">${esc(a.detail||"")}</span></div></div>`).join("") || '<div class="dempty">アラームなし</div>';
+      const compRows = cached.comps.length ? cached.comps.map(c =>
+        `<div class="drow"><span style="white-space:nowrap">${esc(c["健全度表示"]||"")}</span>
+         <div><b>${esc(c.component_name_ja||c.component)}</b> <span style="color:var(--muted)">${c.current_health_score!=null?c.current_health_score+"点":""}</span><br>
+         <span style="color:var(--muted)">${esc(c.manufacturer||"")} ${esc(c.model_number||"")} / 設置${c["設置経過年"]!=null?c["設置経過年"]+"年":"–"}</span></div></div>`
+        ).join("") : '<div class="dempty">コンポーネント登録なし</div>';
 
-      const insRows = (ins.length ? ins : []).slice(0,6).map(i =>
-        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(i.date)}</span>
-         <div><b>${esc(i.work_type)}</b> <span style="color:var(--muted)">[${inspStatusLabel[i.status]||esc(i.status)}]</span><br>
-         <span style="color:var(--muted)">${fmtTime(i.time_start)}–${fmtTime(i.time_end)} / ${esc(i.required_qualification||"")} / ${i.worker_count||"?"}名</span></div></div>`).join("") || '<div class="dempty">点検予定なし</div>';
+      const alarmRows = cached.alarms.length ? cached.alarms.slice(0,6).map(a =>
+        `<div class="drow"><span class="sev sev-${esc(a.severity)}">${esc(a["深刻度表示"]||a.severity)}</span>
+         <div><b>${esc(a.alarm_type)}</b> ${a["解決日時_jst"]?'<span class="tag-done">解決済</span>':'<span class="tag-open">未解決</span>'}${a.recurrence_count>1?` <span style="color:var(--muted)">×${a.recurrence_count}</span>`:""}<br>
+         <span style="color:var(--muted)">${esc(a.detail||"")} <small>${esc(a["発生日時_jst"]||"")}</small></span></div></div>`
+        ).join("") : '<div class="dempty">アラームなし</div>';
+
+      const histRows = cached.hist.length ? cached.hist.slice(0,8).map(h =>
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(h["実施日"]||"")}</span>
+         <div><b>${esc(h["作業種別"]||"")}</b> <span style="color:var(--muted)">[${inspStatusLabel[h["状態"]]||esc(h["状態"]||"")}]</span>${h["ptw番号"]?` <span style="color:var(--muted)">${esc(h["ptw番号"])}</span>`:""}<br>
+         <span style="color:var(--muted)">${esc(h["種別"]==="work_order"?"作業票":"点検計画")} / ${h["作業員数"]||"?"}名</span></div></div>`
+        ).join("") : '<div class="dempty">作業履歴なし</div>';
 
       box.innerHTML = `
-        <div class="dhead"><span class="sdot s-${esc(st)}"></span><h2>${esc(t.wtg_id)}</h2>
-          <span class="pill p-${esc(st)}">${statusLabel[st]||esc(st)}</span></div>
-        <div style="font-size:11.5px;color:var(--muted)">最終更新 ${fmtDT(t.updated_at)}</div>
+        <div class="dhead"><span class="sdot s-${esc(st)}"></span><h2>${esc(b.wtg_id)}</h2>
+          <span class="pill p-${esc(st)}">${esc(b["状態表示"]||statusLabel[st]||st)}</span></div>
+        <div style="font-size:11.5px;color:var(--muted)">${esc(b.maker||"")} ${esc(b.model_name||"")} ・ ${esc(b.area||"")} ・ 設置 ${esc(b.installed_at||"–")}</div>
+        <div style="font-size:11.5px;color:var(--muted)">最終更新 ${esc(b["更新日時_jst"]||"")}</div>
         <div class="metrics">
-          <div class="metric"><div class="l">出力</div><div class="v">${t.output_kw!=null?Math.round(t.output_kw):"–"} <small>kW</small></div></div>
-          <div class="metric"><div class="l">風速</div><div class="v">${t.wind_speed_ms!=null?t.wind_speed_ms:"–"} <small>m/s</small></div></div>
-          <div class="metric"><div class="l">未解決アラーム</div><div class="v">${alOpen.length}<small> 件</small></div></div>
-          <div class="metric"><div class="l">今後の点検</div><div class="v">${insUpcoming.length}<small> 件</small></div></div>
+          <div class="metric"><div class="l">出力</div><div class="v">${b.output_kw!=null?Math.round(b.output_kw):"–"} <small>kW (${b["出力率pct"]!=null?b["出力率pct"]+"%":"–"})</small></div></div>
+          <div class="metric"><div class="l">風速</div><div class="v">${b.wind_speed_ms!=null?b.wind_speed_ms:"–"} <small>m/s</small></div></div>
+          <div class="metric"><div class="l">未解決アラーム</div><div class="v">${b["未解決アラーム数"]||0}<small> 件</small></div></div>
+          <div class="metric"><div class="l">未対応異常</div><div class="v">${b["未対応異常数"]||0}<small> 件</small></div></div>
         </div>
-        ${t.alarm_code?`<div style="font-size:12px;color:#f0c674">アラームコード: ${esc(t.alarm_code)}</div>`:""}
+        ${b.alarm_code?`<div style="font-size:12px;color:#f0c674">アラームコード: ${esc(b.alarm_code)}</div>`:""}
+        <div class="dsec">コンポーネント健全度</div>${compRows}
         <div class="dsec">関連アラーム</div>${alarmRows}
-        <div class="dsec">点検予定・履歴</div>${insRows}`;
+        <div class="dsec">作業履歴・予定</div>${histRows}
+        <div style="margin-top:16px;display:flex;gap:14px;font-size:12px">
+          <a href="./work-orders.html">📝 作業票一覧へ</a>
+          <a href="./report-candidates.html">⚖ 報告候補へ</a>
+        </div>`;
     }
 
     /* ---------- ALARMS ---------- */
@@ -276,12 +310,12 @@
     async function loadAll(){
       try{
         const [wtg, alarms, insp] = await Promise.all([
-          sb.get("wtg_status?select=*&order=wtg_id.asc"),
+          sb.get("v_top_wtg_list?order=風車id.asc"),
           sb.get("alarm_events?select=*&order=started_at.desc"),
           sb.get("inspection_plan?select=*&order=date.asc,time_start.asc")
         ]);
         state.wtg = wtg; state.alarms = alarms; state.insp = insp;
-        state.sel = wtg.length ? wtg[0].wtg_id : null;
+        state.sel = wtg.length ? wtg[0]["風車id"] : null;
         document.getElementById("cTurb").textContent = wtg.length;
         document.getElementById("cAlarm").textContent = alarms.filter(a=>!a.resolved_at).length + "/" + alarms.length;
         document.getElementById("cCal").textContent = insp.length;
