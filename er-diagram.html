@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O&M OS テーブル関係図 — 阿武隈風力発電</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --safety:#bc8cff;
+    --inv:#39c5cf; --approval:#db61a2; --hr:#e3b341; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:32px;line-height:1.5}
+  h1{font-size:24px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
+  .legend span{font-size:12px;padding:4px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:28px;font-size:13px}
+  .flow b{color:#fff}
+  .arrow{color:var(--muted);font-weight:bold}
+  .chip{padding:3px 9px;border-radius:6px;border:1px solid var(--line);background:#0d1117;white-space:nowrap}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .group{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .group h2{font-size:13px;padding:10px 14px;color:#fff;letter-spacing:.04em}
+  .tbl{border-top:1px solid var(--line);padding:10px 14px}
+  .tbl .name{font-weight:600;font-size:14px;color:#fff;margin-bottom:3px}
+  .tbl .rel{font-size:11.5px;color:var(--muted)}
+  .tbl .rel code{color:var(--master);background:#0d1117;padding:1px 4px;border-radius:4px;font-size:10.5px}
+  .pk{font-size:10px;color:var(--muted)}
+  footer{margin-top:32px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
+  .note{background:#1c2128;border-left:3px solid var(--master);padding:12px 16px;border-radius:6px;margin-bottom:24px;font-size:13px}
+</style>
+</head>
+<body>
+  <h1>風力発電 O&M OS — テーブル関係図</h1>
+  <div class="sub">阿武隈風力発電所 / Supabase プロジェクト kwhashtnuzrlzrpikhne / 26テーブル + 33ビュー（Issue #1〜#13 反映）</div>
+
+  <div class="note">
+    <b>同居方針:</b> 意思決定OS（朝会コックピット）と業務OS（O&M）はUI/目的を分離するが、Supabaseは同一プロジェクトに同居。
+    SCADA（朝会側 <code>alarm_events</code>）→ O&M側 <code>work_orders</code> へ自動起票で連携する。
+  </div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--master)"></i>マスター</span>
+    <span><i class="dot" style="background:var(--insp)"></i>点検</span>
+    <span><i class="dot" style="background:var(--defect)"></i>異常・是正フロー</span>
+    <span><i class="dot" style="background:var(--work)"></i>作業</span>
+    <span><i class="dot" style="background:var(--inv)"></i>在庫</span>
+    <span><i class="dot" style="background:var(--safety)"></i>安全・変更</span>
+    <span><i class="dot" style="background:var(--approval)"></i>承認・証跡</span>
+    <span><i class="dot" style="background:var(--hr)"></i>人事・契約</span>
+    <span><i class="dot" style="background:var(--ai)"></i>AI</span>
+  </div>
+
+  <!-- メインフロー -->
+  <h2 style="font-size:15px;margin-bottom:10px;color:#fff">▶ 点検→故障発見→是正→クローズ フロー（Issue #13）</h2>
+  <div class="flow">
+    <span class="chip" style="border-color:var(--insp)">inspection_plans</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--insp)">inspection_results</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--defect)">defect_findings</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--defect)">risk_assessments</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--defect)">rca_investigations</span>
+    <span class="arrow">/</span>
+    <span class="chip" style="border-color:var(--safety)">moc_changes</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--defect)">corrective_actions</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--work)">work_orders</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--work)">work_permits</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--work)">ky_records</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--defect)">closeout_reviews</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--approval)">approvals / attachments(BOX)</span>
+  </div>
+
+  <!-- テーブルグループ -->
+  <div class="grid">
+
+    <div class="group">
+      <h2 style="background:rgba(88,166,255,.15)"><i class="dot" style="background:var(--master)"></i>マスター</h2>
+      <div class="tbl"><div class="name">turbines</div><div class="pk">PK id</div><div class="rel">風車台帳（46基）。多くのテーブルが <code>turbine_id</code> で参照</div></div>
+      <div class="tbl"><div class="name">om_users</div><div class="pk">PK id = auth.users.id</div><div class="rel">担当者。<code>assigned_to / created_by / owner</code> 等で参照</div></div>
+      <div class="tbl"><div class="name">inspection_rules</div><div class="pk">PK id</div><div class="rel">点検ルール。計画・チェック項目が参照</div></div>
+      <div class="tbl"><div class="name">fault_codes</div><div class="pk">PK id</div><div class="rel">故障コード。チェック項目・作業票が参照</div></div>
+      <div class="tbl"><div class="name">parts</div><div class="pk">PK id</div><div class="rel">部品台帳。在庫・使用履歴が参照</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(63,185,80,.15)"><i class="dot" style="background:var(--insp)"></i>点検</h2>
+      <div class="tbl"><div class="name">inspection_plans</div><div class="rel">→ <code>rule_id</code> rules / <code>turbine_id</code> turbines / <code>assigned_to</code> users</div></div>
+      <div class="tbl"><div class="name">inspection_results</div><div class="rel">→ <code>plan_id</code> plans / <code>turbine_id</code> turbines。<b>has_anomaly</b> で異常起票へ分岐</div></div>
+      <div class="tbl"><div class="name">result_checklist</div><div class="rel">→ <code>result_id</code> results / <code>rule_id</code> rules / <code>fault_code_id</code> fault_codes</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(248,81,73,.15)"><i class="dot" style="background:var(--defect)"></i>異常・是正フロー</h2>
+      <div class="tbl"><div class="name">defect_findings</div><div class="rel">→ <code>turbine_id</code> / <code>source_id</code>（点検/SCADA/巡視/NM）。一次判定 initial_judgement</div></div>
+      <div class="tbl"><div class="name">risk_assessments</div><div class="rel">ポリモーフィック → <code>target_type/target_id</code>。recommended_action で A〜F分岐</div></div>
+      <div class="tbl"><div class="name">rca_investigations</div><div class="rel">→ <code>work_order_id</code> / <code>defect_finding_id</code>。根本原因調査</div></div>
+      <div class="tbl"><div class="name">corrective_actions</div><div class="rel">→ <code>work_order_id</code> / <code>rca_id</code> / <code>defect_finding_id</code></div></div>
+      <div class="tbl"><div class="name">closeout_reviews</div><div class="rel">→ <code>work_order_id</code>。復旧確認・横展開・クローズ</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(210,153,34,.15)"><i class="dot" style="background:var(--work)"></i>作業</h2>
+      <div class="tbl"><div class="name">work_orders ★中心</div><div class="rel">→ <code>turbine_id</code> / <code>result_id</code> / <code>defect_finding_id</code> / <code>fault_code_id</code>。番号 WO-自動採番</div></div>
+      <div class="tbl"><div class="name">work_permits</div><div class="rel">→ <code>turbine_id</code> / <code>work_order_id</code>。番号 PTW-自動採番。LOTO/隔離/風速制限</div></div>
+      <div class="tbl"><div class="name">ky_records</div><div class="rel">→ <code>turbine_id</code> / <code>work_order_id</code> / <code>permit_id</code>。hazard_items(jsonb)</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(57,197,207,.15)"><i class="dot" style="background:var(--inv)"></i>在庫</h2>
+      <div class="tbl"><div class="name">parts_stock</div><div class="rel">→ <code>part_id</code> parts。現在庫・最終入庫</div></div>
+      <div class="tbl"><div class="name">parts_usage</div><div class="rel">→ <code>work_order_id</code> / <code>part_id</code>。使用履歴</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(188,140,255,.15)"><i class="dot" style="background:var(--safety)"></i>安全・変更</h2>
+      <div class="tbl"><div class="name">near_miss_reports</div><div class="rel">→ <code>turbine_id</code>。事故知識DB・AI傾向分析対象</div></div>
+      <div class="tbl"><div class="name">moc_changes</div><div class="rel">→ <code>turbine_id</code>。設定/保護値/周期/手順変更の監査証跡</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(219,97,162,.15)"><i class="dot" style="background:var(--approval)"></i>承認・証跡</h2>
+      <div class="tbl"><div class="name">approvals</div><div class="rel">ポリモーフィック → <code>target_type/target_id</code>。承認/却下履歴</div></div>
+      <div class="tbl"><div class="name">attachments</div><div class="rel">ポリモーフィック → <code>target_type/target_id</code>。<b>BOX証跡リンクのみ</b>保持</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(227,179,65,.15)"><i class="dot" style="background:var(--hr)"></i>人事・契約</h2>
+      <div class="tbl"><div class="name">staff_qualifications</div><div class="rel">→ <code>staff_id</code> staff_roster。資格失効 expires_at 管理</div></div>
+      <div class="tbl"><div class="name">vendor_contracts</div><div class="rel">契約台帳。end_date・auto_renewal・予告日数</div></div>
+    </div>
+
+    <div class="group">
+      <h2 style="background:rgba(255,123,114,.15)"><i class="dot" style="background:var(--ai)"></i>AI（DELETE禁止）</h2>
+      <div class="tbl"><div class="name">ai_usage_logs</div><div class="rel">provider(openai/anthropic/gemini)・token・cost 記録</div></div>
+      <div class="tbl"><div class="name">ai_decisions</div><div class="rel">→ <code>linked_work_order_id / permit / near_miss / moc</code>。人間が approved_by_human で承認</div></div>
+    </div>
+
+  </div>
+
+  <footer>
+    凡例: ★=異常管理の中心テーブル / 「ポリモーフィック」=target_type+target_id で複数テーブルを参照。<br>
+    本図は本番Supabaseスキーマ（information_schema）を正本とする。詳細列定義は <b>Supabaseテーブル定義書.md</b> を参照。
+  </footer>
+</body>
+</html>

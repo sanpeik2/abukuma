@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>点検 → 是正フロー | O&M OS 補足仕様書</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+    background: #0d1117; color: #e6edf3;
+    padding: 32px 24px; line-height: 1.6;
+  }
+  h1 { font-size: 1.6rem; color: #58a6ff; margin-bottom: 4px; }
+  h2 { font-size: 1.15rem; color: #79c0ff; margin: 36px 0 14px; border-left: 3px solid #388bfd; padding-left: 10px; }
+  h3 { font-size: 0.95rem; color: #ffa657; margin: 18px 0 8px; }
+  .subtitle { color: #8b949e; font-size: 0.85rem; margin-bottom: 32px; }
+
+  /* ─── フローライン ─── */
+  .flow-container {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .flow-step {
+    background: #161b22; border: 1px solid #30363d;
+    border-radius: 10px; padding: 14px 28px;
+    text-align: center; min-width: 220px; position: relative;
+    font-size: 0.9rem;
+  }
+  .flow-step.start   { border-color: #388bfd; color: #58a6ff; font-weight: 600; }
+  .flow-step.action  { border-color: #3fb950; color: #3fb950; }
+  .flow-step.end     { border-color: #a371f7; color: #a371f7; font-weight: 600; }
+  .flow-arrow {
+    font-size: 1.4rem; color: #484f58; line-height: 1; padding: 2px 0;
+  }
+
+  /* ─── 判定分岐 ─── */
+  .branch-box {
+    background: #161b22; border: 1px solid #30363d;
+    border-radius: 8px; padding: 10px 20px;
+    font-size: 0.85rem; text-align: center; min-width: 180px;
+  }
+  .branch-q { color: #e3b341; font-weight: 600; }
+
+  /* ─── 判定パターンカード ─── */
+  .patterns { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 16px; margin-top: 8px; }
+  .pattern-card {
+    background: #161b22; border-radius: 10px;
+    border-left: 4px solid #30363d; padding: 18px;
+  }
+  .pattern-card.A { border-left-color: #3fb950; }
+  .pattern-card.B { border-left-color: #58a6ff; }
+  .pattern-card.C { border-left-color: #ffa657; }
+  .pattern-card.D { border-left-color: #f85149; }
+  .pattern-card.E { border-left-color: #a371f7; }
+  .pattern-card.F { border-left-color: #ff6e40; }
+
+  .pattern-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .pattern-badge {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+  }
+  .A .pattern-badge { background: #1a4a23; color: #3fb950; }
+  .B .pattern-badge { background: #1a3a5c; color: #58a6ff; }
+  .C .pattern-badge { background: #3d2800; color: #ffa657; }
+  .D .pattern-badge { background: #3d1e1e; color: #f85149; }
+  .E .pattern-badge { background: #2d1e4a; color: #a371f7; }
+  .F .pattern-badge { background: #3d2010; color: #ff6e40; }
+
+  .pattern-title { font-weight: 600; font-size: 0.95rem; }
+  .condition-list, .action-list { list-style: none; padding: 0; }
+  .condition-list li::before { content: "✓ "; color: #8b949e; }
+  .action-list   li::before { content: "→ "; color: #388bfd; }
+  .condition-list li, .action-list li {
+    font-size: 0.82rem; color: #8b949e; padding: 2px 0;
+  }
+  .section-label {
+    font-size: 0.72rem; color: #484f58; text-transform: uppercase;
+    letter-spacing: 0.08em; margin: 10px 0 4px;
+  }
+
+  /* ─── データフロー ─── */
+  .data-flow {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    align-items: center; margin-top: 12px;
+  }
+  .db-table {
+    background: #1c2128; border: 1px solid #30363d;
+    border-radius: 6px; padding: 8px 14px;
+    font-size: 0.82rem; font-family: 'Consolas', monospace;
+    color: #79c0ff;
+  }
+  .db-arrow { color: #484f58; font-size: 1.1rem; }
+  .db-branch { color: #484f58; font-size: 0.85rem; }
+
+  /* ─── 評価軸テーブル ─── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+  th { background: #1c2128; color: #8b949e; font-weight: 600;
+    padding: 9px 14px; text-align: left; border-bottom: 1px solid #30363d; }
+  td { padding: 8px 14px; border-bottom: 1px solid #21262d; }
+  tr:hover td { background: #1c2128; }
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 0.75rem; font-weight: 600; margin: 1px;
+  }
+  .tag-green  { background: #1a4a23; color: #3fb950; }
+  .tag-yellow { background: #3d2800; color: #e3b341; }
+  .tag-red    { background: #3d1e1e; color: #f85149; }
+  .tag-blue   { background: #1a3a5c; color: #58a6ff; }
+
+  /* ─── Budibase画面フロー ─── */
+  .screen-flow {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+    gap: 12px; margin-top: 12px;
+  }
+  .screen-card {
+    background: #1c2128; border: 1px solid #30363d; border-radius: 8px;
+    padding: 14px; text-align: center;
+  }
+  .screen-no {
+    font-size: 0.75rem; color: #484f58; margin-bottom: 4px;
+  }
+  .screen-name { font-size: 0.88rem; color: #e6edf3; font-weight: 600; margin-bottom: 6px; }
+  .screen-view { font-size: 0.72rem; color: #388bfd; font-family: monospace; }
+
+  /* ─── 大きな全体フロー ─── */
+  .main-flow {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr 40px 1fr 40px 1fr 40px 1fr;
+    gap: 0; align-items: start; margin: 16px 0;
+  }
+  .mf-col { display: flex; flex-direction: column; gap: 8px; }
+  .mf-arrow { display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: #484f58; padding-top: 18px; }
+  .mf-box {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 12px; font-size: 0.82rem; text-align: center;
+  }
+  .mf-box.blue   { border-color: #388bfd; color: #58a6ff; }
+  .mf-box.green  { border-color: #3fb950; color: #3fb950; }
+  .mf-box.orange { border-color: #ffa657; color: #ffa657; }
+  .mf-box.red    { border-color: #f85149; color: #f85149; }
+  .mf-box.purple { border-color: #a371f7; color: #a371f7; }
+  .mf-box.gray   { border-color: #484f58; color: #8b949e; }
+  .mf-label { font-size: 0.68rem; color: #484f58; text-align: center; margin-top: -4px; }
+
+  .divider { border: none; border-top: 1px solid #21262d; margin: 40px 0; }
+  .note { background: #1c2128; border: 1px solid #30363d; border-radius: 8px;
+    padding: 14px 18px; font-size: 0.83rem; color: #8b949e; margin-top: 12px; }
+  .note strong { color: #e3b341; }
+
+  /* ─── AIポイント ─── */
+  .ai-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 12px; margin-top: 12px; }
+  .ai-card {
+    background: #1c2128; border: 1px solid #30363d; border-radius: 8px;
+    padding: 14px 16px; font-size: 0.83rem;
+  }
+  .ai-card .icon { font-size: 1.4rem; margin-bottom: 6px; }
+  .ai-card .label { font-weight: 600; color: #a371f7; margin-bottom: 4px; }
+  .ai-card .desc { color: #8b949e; }
+</style>
+</head>
+<body>
+
+<h1>🔍 点検 → 故障発見 → 是正 → クローズ</h1>
+<p class="subtitle">O&M OS 補足仕様書 ／ 阿武隈風力発電 46基</p>
+
+<!-- ━━━ 全体フロー ━━━ -->
+<h2>全体フロー（9ステップ）</h2>
+<div class="flow-container">
+  <div class="flow-step start">🔍 点検（計画 / 臨時）</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step" style="border-color:#ffa657;color:#ffa657;">⚠️ 異常・故障候補の発見</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step" style="border-color:#e3b341;color:#e3b341;">🧭 一次評価（5つの評価軸）</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step" style="border-color:#a371f7;color:#a371f7;">📋 是正方針決定（A〜F）</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step" style="border-color:#58a6ff;color:#58a6ff;">🗓️ 作業計画</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step" style="border-color:#3fb950;color:#3fb950;">📄 作業許可 / Permit / KY</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step action">🔧 是正作業</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step action">✅ 復旧確認</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step end">🔒 再発防止・証跡保存・クローズ</div>
+</div>
+
+<hr class="divider">
+
+<!-- ━━━ 一次評価軸 ━━━ -->
+<h2>一次評価の5軸</h2>
+<table>
+  <thead>
+    <tr><th>評価軸</th><th>低・なし・明確</th><th>中・あり・推定</th><th>高・停止・不明 / 多発</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>安全影響</strong></td>
+      <td><span class="tag tag-green">低</span></td>
+      <td><span class="tag tag-yellow">中</span></td>
+      <td><span class="tag tag-red">高 → 即時停止</span></td>
+    </tr>
+    <tr>
+      <td><strong>運転影響</strong></td>
+      <td><span class="tag tag-green">なし</span></td>
+      <td><span class="tag tag-yellow">出力制限</span></td>
+      <td><span class="tag tag-red">停止</span></td>
+    </tr>
+    <tr>
+      <td><strong>原因明確性</strong></td>
+      <td><span class="tag tag-green">明確</span></td>
+      <td><span class="tag tag-yellow">推定</span></td>
+      <td><span class="tag tag-red">不明 → RCA</span></td>
+    </tr>
+    <tr>
+      <td><strong>再発性</strong></td>
+      <td><span class="tag tag-green">初回</span></td>
+      <td><span class="tag tag-yellow">再発</span></td>
+      <td><span class="tag tag-red">多発 → RCA</span></td>
+    </tr>
+    <tr>
+      <td><strong>保安規定影響</strong></td>
+      <td><span class="tag tag-green">なし</span></td>
+      <td><span class="tag tag-yellow">要確認</span></td>
+      <td><span class="tag tag-red">あり → エスカレ</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!-- ━━━ 判定パターン ━━━ -->
+<h2>判定パターン A 〜 F</h2>
+<div class="patterns">
+
+  <div class="pattern-card A">
+    <div class="pattern-header">
+      <div class="pattern-badge">A</div>
+      <div>
+        <div class="pattern-title">記録のみ</div>
+        <div style="font-size:0.78rem;color:#8b949e;">軽微・安全影響なし</div>
+      </div>
+    </div>
+    <div class="section-label">条件</div>
+    <ul class="condition-list">
+      <li>安全影響 低</li>
+      <li>運転影響 なし</li>
+      <li>原因が明確</li>
+      <li>初回発生</li>
+      <li>保安規定影響なし</li>
+    </ul>
+    <div class="section-label">対応</div>
+    <ul class="action-list">
+      <li>点検実績に記録・写真添付</li>
+      <li>次回点検で再確認</li>
+      <li>必要なら監視項目追加</li>
+    </ul>
+  </div>
+
+  <div class="pattern-card B">
+    <div class="pattern-header">
+      <div class="pattern-badge">B</div>
+      <div>
+        <div class="pattern-title">簡易補修</div>
+        <div style="font-size:0.78rem;color:#8b949e;">現場で処置可能</div>
+      </div>
+    </div>
+    <div class="section-label">条件</div>
+    <ul class="condition-list">
+      <li>現場で安全に補修できる</li>
+      <li>大きな停止・部品不要</li>
+      <li>原因が明確</li>
+    </ul>
+    <div class="section-label">対応</div>
+    <ul class="action-list">
+      <li>作業票作成</li>
+      <li>簡易補修・記録</li>
+      <li>復旧確認・クローズ</li>
+    </ul>
+  </div>
+
+  <div class="pattern-card C">
+    <div class="pattern-header">
+      <div class="pattern-badge">C</div>
+      <div>
+        <div class="pattern-title">部品交換</div>
+        <div style="font-size:0.78rem;color:#8b949e;">劣化・寿命・破損</div>
+      </div>
+    </div>
+    <div class="section-label">条件</div>
+    <ul class="condition-list">
+      <li>部品の劣化/寿命/破損が確認</li>
+      <li>交換で再発可能性が低い</li>
+      <li>MOCまでは不要</li>
+    </ul>
+    <div class="section-label">対応</div>
+    <ul class="action-list">
+      <li>作業票 → 部品手配</li>
+      <li>Permit / KY → 交換</li>
+      <li>試運転・復旧確認</li>
+    </ul>
+  </div>
+
+  <div class="pattern-card D">
+    <div class="pattern-header">
+      <div class="pattern-badge">D</div>
+      <div>
+        <div class="pattern-title">RCA必要</div>
+        <div style="font-size:0.78rem;color:#f85149;">根本原因調査</div>
+      </div>
+    </div>
+    <div class="section-label">条件（いずれか該当）</div>
+    <ul class="condition-list">
+      <li>原因が不明</li>
+      <li>同じ故障が再発・多発</li>
+      <li>複数風車で同様事象</li>
+      <li>重大事故の可能性</li>
+      <li>交換しても再発しそう</li>
+    </ul>
+    <div class="section-label">対応</div>
+    <ul class="action-list">
+      <li>暫定措置 → RCA起票</li>
+      <li>事実整理 → 原因仮説 → 根本原因特定</li>
+      <li>恒久是正案 → 必要ならMOC</li>
+    </ul>
+  </div>
+
+  <div class="pattern-card E">
+    <div class="pattern-header">
+      <div class="pattern-badge">E</div>
+      <div>
+        <div class="pattern-title">MOC必要</div>
+        <div style="font-size:0.78rem;color:#a371f7;">変更管理</div>
+      </div>
+    </div>
+    <div class="section-label">条件（いずれか該当）</div>
+    <ul class="condition-list">
+      <li>設備設定 / 保護値を変える</li>
+      <li>点検周期 / 手順を変える</li>
+      <li>部品型式を変更する</li>
+      <li>保安規定に影響する変更</li>
+    </ul>
+    <div class="section-label">対応</div>
+    <ul class="action-list">
+      <li>MOC申請 → リスク評価 → 承認</li>
+      <li>Permit / KY → 変更実施</li>
+      <li>有効性確認 → MOCクローズ</li>
+    </ul>
+  </div>
+
+  <div class="pattern-card F">
+    <div class="pattern-header">
+      <div class="pattern-badge">F</div>
+      <div>
+        <div class="pattern-title">安全・保安規定</div>
+        <div style="font-size:0.78rem;color:#ff6e40;">即時エスカレ</div>
+      </div>
+    </div>
+    <div class="section-label">条件（いずれか該当）</div>
+    <ul class="condition-list">
+      <li>人身災害の恐れ</li>
+      <li>火災・感電・落下・倒壊</li>
+      <li>保安規定の停止条件に該当</li>
+      <li>主任技術者の判断が必要</li>
+    </ul>
+    <div class="section-label">対応</div>
+    <ul class="action-list">
+      <li>即時停止 / 制限運転</li>
+      <li>責任者へエスカレーション</li>
+      <li>保安規定確認 → 証跡保存</li>
+    </ul>
+  </div>
+
+</div>
+
+<hr class="divider">
+
+<!-- ━━━ 是正の3種類 ━━━ -->
+<h2>是正の3種類</h2>
+<table>
+  <thead>
+    <tr><th>種類</th><th>目的</th><th>具体例</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="tag tag-yellow">⏱ 暫定是正</span></td>
+      <td>安全確保・被害拡大防止</td>
+      <td>停止、隔離、仮固定、監視強化、出力制限</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-green">🔩 恒久是正</span></td>
+      <td>根本的な再発防止</td>
+      <td>部品交換、設定変更、手順変更、点検周期変更</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-blue">🛡 予防処置（横展開）</span></td>
+      <td>同型機・類似設備への対応</td>
+      <td>他WTG一斉点検、同ロット確認、メーカー照会</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!-- ━━━ DBデータフロー ━━━ -->
+<h2>データの流れ（テーブル間の連鎖）</h2>
+<div class="data-flow" style="flex-direction:column;align-items:flex-start;gap:6px;">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div class="db-table">inspection_results</div>
+    <span class="db-arrow">→</span>
+    <div class="db-table">defect_findings</div>
+    <span class="db-arrow">→</span>
+    <div class="db-table">risk_assessments</div>
+    <span class="db-arrow">→</span>
+    <div class="db-table">work_orders</div>
+  </div>
+  <div style="padding-left:280px;display:flex;align-items:flex-start;gap:0;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="db-arrow" style="font-size:1rem;">↓ 原因不明・再発</span>
+        <div class="db-table" style="color:#f85149;">rca_investigations</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="db-arrow" style="font-size:1rem;">↓ 設定変更</span>
+        <div class="db-table" style="color:#a371f7;">moc_changes</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="db-arrow" style="font-size:1rem;">↓ 是正処置</span>
+        <div class="db-table">corrective_actions</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="db-arrow" style="font-size:1rem;">↓ 作業許可</span>
+        <div class="db-table">work_permits</div>
+        <span class="db-arrow">→</span>
+        <div class="db-table">ky_records</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="db-arrow" style="font-size:1rem;">↓ クローズ</span>
+        <div class="db-table" style="color:#3fb950;">closeout_reviews</div>
+        <span class="db-arrow">+</span>
+        <div class="db-table">attachments</div>
+        <span class="db-arrow">+</span>
+        <div class="db-table">ai_decisions</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ━━━ Budibase画面フロー ━━━ -->
+<h2>Budibase 画面フロー</h2>
+<div class="screen-flow">
+  <div class="screen-card">
+    <div class="screen-no">画面05</div>
+    <div class="screen-name">📝 点検実績入力</div>
+    <div class="screen-view">v_inspection_results_list</div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#484f58;">→</div>
+  <div class="screen-card" style="border-color:#ffa657;">
+    <div class="screen-no">異常あり</div>
+    <div class="screen-name">⚠️ 異常候補登録</div>
+    <div class="screen-view">defect_findings<br>v_defect_open</div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#484f58;">→</div>
+  <div class="screen-card" style="border-color:#e3b341;">
+    <div class="screen-no">一次評価</div>
+    <div class="screen-name">🧭 評価・方針決定</div>
+    <div class="screen-view">risk_assessments<br>v_defect_flow</div>
+  </div>
+</div>
+
+<div style="margin:12px 0 12px 60px;color:#484f58;font-size:1.3rem;">↓ 判定結果によって分岐</div>
+
+<div class="screen-flow">
+  <div class="screen-card" style="border-color:#3fb950;">
+    <div class="screen-no">A</div>
+    <div class="screen-name">📝 記録のみ</div>
+    <div class="screen-view">inspection_results<br>attachments</div>
+  </div>
+  <div class="screen-card" style="border-color:#58a6ff;">
+    <div class="screen-no">B・C</div>
+    <div class="screen-name">🔧 作業票作成</div>
+    <div class="screen-view">work_orders<br>v_work_orders_full</div>
+  </div>
+  <div class="screen-card" style="border-color:#f85149;">
+    <div class="screen-no">D</div>
+    <div class="screen-name">🔍 RCA起票</div>
+    <div class="screen-view">rca_investigations<br>v_rca_active</div>
+  </div>
+  <div class="screen-card" style="border-color:#a371f7;">
+    <div class="screen-no">E</div>
+    <div class="screen-name">📋 MOC申請</div>
+    <div class="screen-view">moc_changes<br>v_moc_full</div>
+  </div>
+  <div class="screen-card" style="border-color:#ff6e40;">
+    <div class="screen-no">F</div>
+    <div class="screen-name">🛑 即時エスカレ</div>
+    <div class="screen-view">approvals<br>v_approvals_pending_all</div>
+  </div>
+</div>
+
+<div style="margin:12px 0 12px 60px;color:#484f58;font-size:1.3rem;">↓ 作業準備</div>
+
+<div class="screen-flow">
+  <div class="screen-card" style="border-color:#3fb950;">
+    <div class="screen-no">画面08</div>
+    <div class="screen-name">📄 Permit申請</div>
+    <div class="screen-view">v_permits_full</div>
+  </div>
+  <div class="screen-card" style="border-color:#3fb950;">
+    <div class="screen-no">画面09</div>
+    <div class="screen-name">🦺 KY実施</div>
+    <div class="screen-view">v_ky_list</div>
+  </div>
+  <div class="screen-card" style="border-color:#58a6ff;">
+    <div class="screen-no">是正実施</div>
+    <div class="screen-name">🔩 是正処置</div>
+    <div class="screen-view">corrective_actions<br>v_corrective_actions_due</div>
+  </div>
+  <div class="screen-card" style="border-color:#a371f7;">
+    <div class="screen-no">クローズ</div>
+    <div class="screen-name">✅ 復旧確認</div>
+    <div class="screen-view">closeout_reviews<br>v_defect_flow</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ━━━ AI活用 ━━━ -->
+<h2>AI活用ポイント</h2>
+<div class="note" style="margin-bottom:16px;">
+  <strong>⚠️ 大原則：AIは判断を代行しない。</strong>
+  AIは「支援」のみ。最終判断は必ず人間が行い、<code>ai_decisions</code> テーブルに保存する。
+</div>
+<div class="ai-cards">
+  <div class="ai-card">
+    <div class="icon">🔎</div>
+    <div class="label">過去類似故障の検索</div>
+    <div class="desc">同じ風車・同じ部品での過去事象を fault_pattern_library・rca_investigations から検索</div>
+  </div>
+  <div class="ai-card">
+    <div class="icon">🧭</div>
+    <div class="label">RCA要否の参考コメント</div>
+    <div class="desc">一次評価の入力値を元に「RCA推奨」「交換で十分」の参考意見を出力</div>
+  </div>
+  <div class="ai-card">
+    <div class="icon">📝</div>
+    <div class="label">原因仮説の整理</div>
+    <div class="desc">SCADAデータ・アラーム履歴・過去点検結果から原因候補をリストアップ</div>
+  </div>
+  <div class="ai-card">
+    <div class="icon">🛠</div>
+    <div class="label">是正案のたたき台</div>
+    <div class="desc">部品交換・設定変更・手順変更の案を提示。人間が選択・修正して確定</div>
+  </div>
+  <div class="ai-card">
+    <div class="icon">🛡</div>
+    <div class="label">再発防止策の提案</div>
+    <div class="desc">同型機への横展開・点検周期変更・予備品追加などを提案</div>
+  </div>
+  <div class="ai-card">
+    <div class="icon">📋</div>
+    <div class="label">クローズレビュー要約</div>
+    <div class="desc">是正内容・教訓・フォローアップ事項を自動要約して closeout_reviews に下書き保存</div>
+  </div>
+</div>
+
+<div class="note" style="margin-top:16px;">
+  <strong>保存先：</strong> AI判断は <code>ai_decisions</code>（監査証跡）、コスト・トークンは <code>ai_usage_logs</code> に自動記録
+</div>
+
+<hr class="divider">
+<div style="text-align:center;color:#484f58;font-size:0.8rem;">
+  阿武隈風力発電 O&M OS 補足仕様書 ／ 2026-05-29 ／ Claude Sonnet 4.6
+</div>
+
+</body>
+</html>
