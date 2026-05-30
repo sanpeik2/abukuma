@@ -1,513 +1,513 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿武隈OS — 点検実績入力（ライブ）</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
-  a{color:var(--master);text-decoration:none}
-  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
-  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
-  .topbar h1{font-size:16px;color:#fff;font-weight:700}
-  .topbar .sub{font-size:11.5px;color:var(--muted)}
-  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
-  .wrap{padding:18px 22px 50px;max-width:1100px;margin:0 auto}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:24px}
-  .card h2{font-size:15px;color:#fff;margin-bottom:6px}
-  .hint{font-size:12px;color:var(--muted);margin-bottom:16px}
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-  label .req{color:#ff9a92;font-weight:700;margin-left:2px}
-  label .opt{color:var(--muted);font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:5px}
-  label .help{display:block;color:#6e7681;font-size:10.5px;font-weight:400;margin-top:2px}
-  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--master)}
-  input.bad,textarea.bad,select.bad{border-color:var(--defect)}
-  textarea{min-height:60px;resize:vertical}
-  .full{grid-column:1/-1}
-  .seg{display:flex;gap:6px;flex-wrap:wrap}
-  .seg button{flex:1;min-width:62px;background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:9px 6px;border-radius:8px;font-size:13px;cursor:pointer;transition:.12s}
-  .seg button:hover{border-color:var(--muted)}
-  .seg button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
-  .seg.sev button.on[data-v="critical"],.seg.sev button.on[data-v="high"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92}
-  .ferr{color:#ff9a92;font-size:11px;margin-top:5px;display:none}
-  .ferr.show{display:block}
-  /* checklist */
-  .clhead{display:flex;align-items:center;gap:10px;margin:6px 0 10px;flex-wrap:wrap}
-  .clhead .sets{display:flex;gap:6px;flex-wrap:wrap}
-  .clhead .sets button{background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:7px 12px;border-radius:8px;font-size:12.5px;cursor:pointer}
-  .clhead .sets button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
-  .summary{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
-  .summary .chip{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 11px;color:var(--muted)}
-  .summary .chip b{color:#fff}
-  .summary .chip.ng b{color:#ff9a92} .summary .chip.ok b{color:#7ee787} .summary .chip.todo b{color:#f0c674}
-  .items{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}
-  .item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel2)}
-  .item.ok{border-color:rgba(63,185,80,.5)} .item.ng{border-color:rgba(248,81,73,.6);background:rgba(248,81,73,.05)} .item.na{opacity:.5}
-  .item .nm{font-size:13.5px;color:#fff;font-weight:700;display:flex;align-items:center;gap:8px}
-  .item .crit{font-size:11px;color:var(--muted);margin:2px 0 9px}
-  .item .meas{display:flex;align-items:center;gap:8px}
-  .item .meas input{max-width:120px}
-  .item .meas .unit{font-size:12px;color:var(--muted)}
-  .item .meas .prev{font-size:11px;color:#6e7681}
-  .jbadge{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid;margin-left:auto;white-space:nowrap}
-  .jbadge.j-ok{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
-  .jbadge.j-ng{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
-  .jbadge.j-na{color:var(--muted);border-color:var(--line)}
-  .jbadge.j-none{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
-  .vbtns{display:flex;gap:6px;margin-top:2px}
-  .vbtns button{flex:1;background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:8px;border-radius:7px;font-size:12.5px;cursor:pointer}
-  .vbtns button.on[data-v="ok"]{border-color:var(--insp);background:rgba(63,185,80,.16);color:#7ee787;font-weight:700}
-  .vbtns button.on[data-v="ng"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92;font-weight:700}
-  .vbtns button.on[data-v="na"]{border-color:var(--muted);color:#fff;font-weight:700}
-  .nabtn{margin-left:6px;background:#0d1117;border:1px solid var(--line);color:var(--muted);font-size:11px;padding:4px 9px;border-radius:7px;cursor:pointer}
-  .nabtn.on{border-color:var(--muted);color:#fff}
-  .icomment{margin-top:9px;display:none} .icomment.show{display:block}
-  .icomment textarea{min-height:42px;font-size:12px}
-  .submit{margin-top:18px}
-  .submit .errsum{font-size:12.5px;color:#f0c674;margin-bottom:10px;display:none}
-  .submit .errsum.show{display:block}
-  .btn{border:none;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer}
-  .btn-primary{background:var(--master);color:#04183a}
-  .btn-go{background:var(--insp);color:#04210d}
-  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
-  .btn:disabled{opacity:.45;cursor:default}
-  .msg{font-size:13px;font-weight:700;margin-left:12px}
-  .msg.ok{color:#7ee787} .msg.ng{color:#ff9a92}
-  .confirm{border:1px solid var(--master);background:rgba(88,166,255,.06);border-radius:10px;padding:16px 18px;margin-top:16px;display:none}
-  .confirm.show{display:block}
-  .confirm h3{font-size:13.5px;color:#9cd2ff;margin-bottom:12px}
-  .confirm .crow{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
-  .confirm .ck{width:96px;color:var(--muted);flex-shrink:0}
-  .confirm .cv{color:#fff} .confirm .cv.warn{color:#ff9a92;font-weight:700}
-  .confirm table{margin-top:10px}
-  .confirm .cbtns{display:flex;gap:10px;margin-top:14px}
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);font-weight:600;font-size:11px}
-  tr.anom td,tr.ng td{background:rgba(248,81,73,.06)}
-  .loading{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
-  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
-</style>
-</head>
-<body>
-<nav id="omFlowBar" aria-label="業務フロー現在地" style="background:#0d1117;border-bottom:1px solid #30363d;padding:7px 14px;display:flex;align-items:center;gap:5px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;">業務フロー現在地</span><a href="./index.html" title="今日の管制塔へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">今日の管制塔</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./live-board.html" title="監視へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">監視</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./inspection-plan.html" title="点検計画へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">点検計画</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><span style="flex:0 0 auto;font-size:11px;padding:3px 10px;border-radius:999px;background:#1f6feb;color:#fff;font-weight:700;cursor:default;">点検実施</span><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">異常判断</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./work-orders.html" title="作業票へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">作業票</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">PTW/KY</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./approvals.html" title="承認へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">承認</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./work-orders.html" title="作業へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">作業</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">復旧確認</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">クローズ/報告</a></nav>
-  <div class="topbar">
-    <div class="mark">AW</div>
-    <div>
-      <h1>点検実績入力</h1>
-      <div class="sub">阿武隈OS ライブ盤 — 項目別チェック（測定値→基準で自動判定）</div>
-    </div>
-    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
-  </div>
-
-  <div class="wrap">
-    <div class="card">
-      <h2>📝 新規 点検実績を登録</h2>
-      <div class="hint"><span style="color:#ff9a92">*</span> は必須。<b>点検セットを選ぶと項目が出ます</b>。測定値を入れると<b>基準と自動照合してOK/NGを判定</b>します（判定ミス防止）。目視項目はOK/NGを選択。点検しない項目は「対象外」。全項目に入力すると登録できます。 → <a href="./guide-inspection-do.html">② 点検実行の基本</a></div>
-
-      <div class="form-grid" id="form">
-        <div>
-          <label>号機<span class="req">*</span></label>
-          <select id="f_wtg"></select>
-          <div class="ferr" id="e_wtg">号機を選択してください。</div>
-        </div>
-        <div>
-          <label>実施日<span class="req">*</span><span class="help">未来の日付は選べません</span></label>
-          <input type="date" id="f_date">
-          <div class="ferr" id="e_date">実施日が不正です（未来日は不可）。</div>
-        </div>
-        <div>
-          <label>天候<span class="opt">任意</span></label>
-          <div class="seg" id="seg_weather" data-clear="1">
-            <button type="button" data-v="晴れ">晴れ</button>
-            <button type="button" data-v="曇り">曇り</button>
-            <button type="button" data-v="雨">雨</button>
-            <button type="button" data-v="雪">雪</button>
-            <button type="button" data-v="強風">強風</button>
-          </div>
-        </div>
-        <div>
-          <label>風速 (m/s)<span class="opt">任意</span><span class="help">0〜40 の範囲</span></label>
-          <input type="number" id="f_wind" step="0.1" min="0" max="40" placeholder="例: 5.2">
-          <div class="ferr" id="e_wind">風速は 0〜40 m/s で入力してください。</div>
-        </div>
-      </div>
-
-      <div style="margin-top:18px">
-        <label>点検セット<span class="req">*</span><span class="help">何を点検するか。セットで項目が決まります</span></label>
-        <div class="clhead">
-          <div class="sets" id="sets">
-            <button type="button" data-s="drive">駆動系・電気（測定）</button>
-            <button type="button" data-s="visual">目視巡視</button>
-            <button type="button" data-s="both">両方（全項目）</button>
-          </div>
-        </div>
-        <div class="summary" id="summary"></div>
-        <div class="ferr" id="e_set" style="margin-bottom:8px">点検セットを選んでください。</div>
-        <div class="items" id="items"></div>
-        <div class="ferr" id="e_items">未入力の項目があります。すべて OK / NG / 対象外 を入力してください。</div>
-      </div>
-
-      <div class="form-grid" style="margin-top:18px">
-        <div class="full" id="sevWrap" style="display:none">
-          <label>全体の深刻度<span class="req">*</span><span class="help">NG項目があるため必須</span></label>
-          <div class="seg sev" id="seg_sev">
-            <button type="button" data-v="low">低</button>
-            <button type="button" data-v="medium">中</button>
-            <button type="button" data-v="high">高</button>
-            <button type="button" data-v="critical">重大</button>
-          </div>
-          <div class="ferr" id="e_sev">NG項目があるため深刻度は必須です。</div>
-        </div>
-        <div class="full"><label>全体コメント<span class="opt">任意</span></label><textarea id="f_comment" placeholder="所見・備考（異常なしでも気づきがあれば）"></textarea></div>
-        <div class="full">
-          <label>写真 / BOX リンク (URL)<span class="opt">任意</span></label>
-          <input type="url" id="f_box" placeholder="https://app.box.com/...">
-          <div class="ferr" id="e_box">URL は http(s):// で始めてください。</div>
-        </div>
-      </div>
-
-      <div class="submit">
-        <div class="errsum" id="errsum"></div>
-        <button class="btn btn-primary" id="checkBtn">内容を確認</button>
-        <span class="msg" id="formMsg"></span>
-      </div>
-
-      <div class="confirm" id="confirm">
-        <h3>この内容で登録します。よろしいですか？</h3>
-        <div id="confirmBody"></div>
-        <div class="cbtns">
-          <button class="btn btn-go" id="goBtn">この内容で登録</button>
-          <button class="btn btn-ghost" id="backBtn">修正に戻る</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>📋 最近の点検実績</h2>
-      <div id="listBody" class="loading">読み込み中…</div>
-    </div>
-  </div>
-
-  <script src="./lib/supabase.js"></script>
-  <script>
-    const esc = sb.esc;
-    const $ = id => document.getElementById(id);
-    const sevLabel = { low:"低", medium:"中", high:"高", critical:"重大" };
-
-    // ===== 組込みカタログ（点検項目マスタ。後でSupabaseに移行可）=====
-    const CATALOG = {
-      drive: { label:"駆動系・電気（測定）", items:[
-        {k:"vib_main", n:"主軸受 振動値",   unit:"mm/s", min:0,   max:4.5},
-        {k:"tmp_main", n:"主軸受 温度",     unit:"℃",   min:0,   max:75},
-        {k:"prs_gear", n:"増速機 油圧",     unit:"bar",  min:2.5, max:4.0},
-        {k:"fe_gear",  n:"増速機 鉄粉濃度", unit:"ppm",  min:0,   max:100},
-        {k:"oil_gear", n:"増速機 油温",     unit:"℃",   min:0,   max:80},
-        {k:"tmp_gen",  n:"発電機 巻線温度", unit:"℃",   min:0,   max:155},
-        {k:"tmp_conv", n:"コンバータ 温度", unit:"℃",   min:0,   max:80},
-        {k:"cur_yaw",  n:"ヨー旋回 電流",   unit:"A",    min:0,   max:40},
-        {k:"oil_trf",  n:"変圧器 油温",     unit:"℃",   min:0,   max:90}
-      ]},
-      visual: { label:"目視巡視", items:[
-        {k:"v_blade", n:"ブレード前縁 エロージョン", visual:true, crit:"著しい損傷・剥離なし"},
-        {k:"v_bolt",  n:"タワー/基礎ボルト 緩み・脱落", visual:true, crit:"緩み・脱落なし"},
-        {k:"v_leak",  n:"油漏れ（増速機/油圧系）",     visual:true, crit:"漏れなし"},
-        {k:"v_noise", n:"異音・異臭",                 visual:true, crit:"なし"},
-        {k:"v_nac",   n:"ナセル内 清掃・腐食",         visual:true, crit:"異常なし"}
-      ]}
-    };
-
-    const state = { turbines:[], userId:null, weather:"", sev:"", set:"", items:{}, submitting:false };
-
-    function curItems(){
-      if(state.set==="drive")  return CATALOG.drive.items;
-      if(state.set==="visual") return CATALOG.visual.items;
-      if(state.set==="both")   return CATALOG.drive.items.concat(CATALOG.visual.items);
-      return [];
-    }
-    function st(k){ return state.items[k] || (state.items[k]={value:"",vis:"",na:false,comment:""}); }
-    // item の判定: '' | 'ok' | 'ng' | 'na'
-    function judge(it){
-      const s = st(it.k);
-      if(s.na) return "na";
-      if(it.visual) return s.vis || "";
-      if(s.value==="" || s.value===null) return "";
-      const v = Number(s.value);
-      if(isNaN(v)) return "";
-      return (v >= it.min && v <= it.max) ? "ok" : "ng";
-    }
-    const badgeTxt = {ok:"OK", ng:"NG", na:"対象外", "":"未入力"};
-    const badgeCls = {ok:"j-ok", ng:"j-ng", na:"j-na", "":"j-none"};
-
-    // ===== checklist 描画 =====
-    function renderChecklist(){
-      const wrap = $("items"); const its = curItems();
-      if(!its.length){ wrap.innerHTML=""; return; }
-      wrap.innerHTML = its.map(it=>{
-        const s = st(it.k); const j = judge(it);
-        const crit = it.visual ? ("基準: "+it.crit) : ("基準: "+it.min+"〜"+it.max+" "+it.unit);
-        const meas = it.visual
-          ? `<div class="vbtns" data-k="${it.k}">
-               <button type="button" data-v="ok"  class="${s.vis==='ok'?'on':''}">OK</button>
-               <button type="button" data-v="ng"  class="${s.vis==='ng'?'on':''}">NG</button>
-               <button type="button" data-v="na"  class="${s.na?'on':''}">対象外</button>
-             </div>`
-          : `<div class="meas">
-               <input type="number" step="0.1" data-k="${it.k}" value="${s.na?'':esc(s.value)}" ${s.na?'disabled':''} placeholder="測定値">
-               <span class="unit">${esc(it.unit)}</span>
-               <button type="button" class="nabtn ${s.na?'on':''}" data-na="${it.k}">対象外</button>
-             </div>`;
-        return `<div class="item ${j}" data-item="${it.k}">
-          <div class="nm">${esc(it.n)}<span class="jbadge ${badgeCls[j]}" data-badge="${it.k}">${badgeTxt[j]}</span></div>
-          <div class="crit">${esc(crit)}</div>
-          ${meas}
-          <div class="icomment ${j==='ng'?'show':''}" data-cmt="${it.k}">
-            <textarea placeholder="NGの内容（どこが・どう異常か）" data-cval="${it.k}">${esc(s.comment)}</textarea>
-          </div>
-        </div>`;
-      }).join("");
-      bindItemEvents();
-      validate();
-    }
-
-    function refreshItem(it){
-      const j = judge(it);
-      const card = document.querySelector(`[data-item="${it.k}"]`);
-      if(!card) return;
-      card.className = "item " + j;
-      const b = card.querySelector(`[data-badge="${it.k}"]`);
-      b.className = "jbadge " + badgeCls[j]; b.textContent = badgeTxt[j];
-      const cmt = card.querySelector(`[data-cmt="${it.k}"]`);
-      cmt.classList.toggle("show", j==="ng");
-    }
-
-    function bindItemEvents(){
-      // 測定値入力 → 自動判定
-      $("items").querySelectorAll('input[type="number"][data-k]').forEach(inp=>
-        inp.addEventListener("input", e=>{
-          const k=e.target.dataset.k; st(k).value=e.target.value; st(k).na=false;
-          refreshItem(curItems().find(x=>x.k===k)); validate();
-        }));
-      // 対象外（測定項目）
-      $("items").querySelectorAll('[data-na]').forEach(btn=>
-        btn.addEventListener("click", e=>{
-          const k=e.target.dataset.na; const s=st(k); s.na=!s.na; if(s.na) s.value="";
-          renderChecklist();
-        }));
-      // 目視 OK/NG/対象外
-      $("items").querySelectorAll('.vbtns').forEach(g=>
-        g.querySelectorAll("button").forEach(btn=>
-          btn.addEventListener("click", ()=>{
-            const k=g.dataset.k; const v=btn.dataset.v; const s=st(k);
-            if(v==="na"){ s.na=!s.na; s.vis=""; }
-            else { s.na=false; s.vis = (s.vis===v? "" : v); }
-            renderChecklist();
-          })));
-      // NGコメント
-      $("items").querySelectorAll('[data-cval]').forEach(t=>
-        t.addEventListener("input", e=>{ st(e.target.dataset.cval).comment=e.target.value; }));
-    }
-
-    // ===== セット選択 =====
-    $("sets").querySelectorAll("button").forEach(b=>
-      b.addEventListener("click", ()=>{
-        $("sets").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
-        b.classList.add("on");
-        state.set = b.dataset.s; state.items = {};   // セット変更で項目リセット
-        renderChecklist(); validate();
-      }));
-
-    // ===== 共通 segmented =====
-    function bindSeg(segId, onPick){
-      const seg=$(segId);
-      seg.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
-        const v=b.dataset.v; const already=b.classList.contains("on");
-        seg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
-        let picked=v; if(already && seg.dataset.clear){picked="";} else b.classList.add("on");
-        onPick(picked);
-      }));
-    }
-    bindSeg("seg_weather", v=>{ state.weather=v; });
-    bindSeg("seg_sev", v=>{ state.sev=v; validate(); });
-
-    // ===== バリデーション =====
-    function setErr(el,errId,bad){ if(errId)$(errId).classList.toggle("show",bad); if(el)el.classList.toggle("bad",bad); }
-    function counts(){
-      const its=curItems(); let ok=0,ng=0,na=0,todo=0;
-      its.forEach(it=>{ const j=judge(it); if(j==="ok")ok++; else if(j==="ng")ng++; else if(j==="na")na++; else todo++; });
-      return {total:its.length, ok, ng, na, todo};
-    }
-    function renderSummary(){
-      const c=counts(); const s=$("summary");
-      if(!curItems().length){ s.innerHTML=""; return; }
-      s.innerHTML =
-        `<span class="chip">項目 <b>${c.total}</b></span>
-         <span class="chip ok">OK <b>${c.ok}</b></span>
-         <span class="chip ng">NG <b>${c.ng}</b></span>
-         <span class="chip">対象外 <b>${c.na}</b></span>
-         <span class="chip todo">未入力 <b>${c.todo}</b></span>`;
-    }
-    function collect(){
-      const windRaw=$("f_wind").value;
-      return { wtg:$("f_wtg").value, date:$("f_date").value,
-        wind: windRaw===""?null:Number(windRaw), windRaw,
-        box:$("f_box").value.trim(), comment:$("f_comment").value.trim(), weather:state.weather };
-    }
-    function validate(){
-      const d=collect(); const c=counts(); const today=new Date().toISOString().slice(0,10);
-      const errs=[];
-      const eW=!d.wtg; setErr($("f_wtg"),"e_wtg",eW); if(eW)errs.push("号機");
-      const eD=!d.date||d.date>today; setErr($("f_date"),"e_date",eD); if(eD)errs.push("実施日");
-      const eSet=!state.set; setErr(null,"e_set",eSet); if(eSet)errs.push("点検セット");
-      const eWind=d.wind!==null&&(isNaN(d.wind)||d.wind<0||d.wind>40); setErr($("f_wind"),"e_wind",eWind); if(eWind)errs.push("風速");
-      const eBox=d.box!==""&&!/^https?:\/\//i.test(d.box); setErr($("f_box"),"e_box",eBox); if(eBox)errs.push("BOXリンク");
-      const eItems = !eSet && c.todo>0; setErr(null,"e_items",eItems); if(eItems)errs.push("未入力項目 "+c.todo+"件");
-      // NGがあれば深刻度必須
-      const hasNg=c.ng>0; $("sevWrap").style.display=hasNg?"block":"none";
-      const eSev=hasNg && !state.sev; setErr(null,"e_sev",eSev); if(eSev)errs.push("深刻度");
-      // 全項目対象外は不可（最低1つは点検）
-      const eAllNa = !eSet && c.total>0 && c.ok===0 && c.ng===0; if(eAllNa)errs.push("少なくとも1項目は点検");
-
-      renderSummary();
-      const ok=errs.length===0; $("checkBtn").disabled=!ok;
-      const sum=$("errsum");
-      if(ok){ sum.classList.remove("show"); sum.textContent=""; }
-      else { sum.classList.add("show"); sum.textContent="未入力・不正: "+errs.join(" / "); }
-      return ok ? d : null;
-    }
-    ["f_wtg","f_date","f_wind","f_box","f_comment"].forEach(id=>$(id).addEventListener("input",validate));
-
-    // ===== 確認ステップ =====
-    function checkedItems(){ return curItems().filter(it=>{const j=judge(it);return j==="ok"||j==="ng";}); }
-    function showConfirm(d){
-      const wtgNo=(state.turbines.find(t=>t.id===d.wtg)||{}).turbine_no||d.wtg;
-      const c=counts(); const overall=c.ng>0?"NG（異常あり）":"OK（異常なし）";
-      let rows=`
-        <div class="crow"><div class="ck">号機</div><div class="cv">${esc(wtgNo)}</div></div>
-        <div class="crow"><div class="ck">実施日</div><div class="cv">${esc(d.date)}</div></div>
-        <div class="crow"><div class="ck">点検セット</div><div class="cv">${esc(state.set==='drive'?CATALOG.drive.label:state.set==='visual'?CATALOG.visual.label:'両方（全項目）')}</div></div>
-        <div class="crow"><div class="ck">総合判定</div><div class="cv ${c.ng>0?'warn':''}">${esc(overall)}（OK ${c.ok} / NG ${c.ng} / 対象外 ${c.na}）</div></div>`;
-      if(c.ng>0) rows+=`<div class="crow"><div class="ck">深刻度</div><div class="cv ${(state.sev==='high'||state.sev==='critical')?'warn':''}">${esc(sevLabel[state.sev]||"（未選択）")}</div></div>`;
-      rows+=`<div class="crow"><div class="ck">天候 / 風速</div><div class="cv">${esc(d.weather||"—")} ${d.wind!=null?esc(d.wind)+" m/s":""}</div></div>`;
-      if(d.comment) rows+=`<div class="crow"><div class="ck">コメント</div><div class="cv">${esc(d.comment)}</div></div>`;
-      if(d.box) rows+=`<div class="crow"><div class="ck">BOX</div><div class="cv">${esc(d.box)}</div></div>`;
-      // 項目テーブル
-      const trs=checkedItems().map(it=>{const j=judge(it);const s=st(it.k);
-        const val=it.visual?"目視":(esc(s.value)+" "+esc(it.unit));
-        const crit=it.visual?esc(it.crit):(it.min+"〜"+it.max);
-        return `<tr class="${j==='ng'?'ng':''}"><td>${esc(it.n)}</td><td>${val}</td><td style="color:var(--muted)">${crit}</td><td><b style="color:${j==='ng'?'#ff9a92':'#7ee787'}">${badgeTxt[j]}</b></td><td>${esc(s.comment||"")}</td></tr>`;
-      }).join("");
-      rows+=`<table><thead><tr><th>項目</th><th>測定値</th><th>基準</th><th>判定</th><th>備考</th></tr></thead><tbody>${trs}</tbody></table>`;
-      $("confirmBody").innerHTML=rows;
-      $("confirm").classList.add("show"); $("checkBtn").style.display="none";
-      $("confirm").scrollIntoView({behavior:"smooth",block:"nearest"});
-    }
-    $("checkBtn").addEventListener("click",()=>{const d=validate(); if(d)showConfirm(d);});
-    $("backBtn").addEventListener("click",()=>{$("confirm").classList.remove("show");$("checkBtn").style.display="inline-block";$("formMsg").textContent="";});
-
-    async function getUserId(){
-      const res=await fetch(`${sb.URL}/auth/v1/user`,{headers:sb.headers()});
-      if(!res.ok) return null; return (await res.json()).id||null;
-    }
-
-    // ===== 登録（確認後）=====
-    $("goBtn").addEventListener("click", async ()=>{
-      if(state.submitting) return;
-      const d=validate(); if(!d){ $("backBtn").click(); return; }
-      state.submitting=true;
-      const go=$("goBtn"), msg=$("formMsg");
-      go.disabled=true; $("backBtn").disabled=true; msg.className="msg"; msg.textContent="登録中…";
-      try{
-        if(!state.userId) state.userId=await getUserId();
-        const items=checkedItems();
-        const ngItems=items.filter(it=>judge(it)==="ng");
-        const overall = ngItems.length>0 ? "ng" : "ok";
-        let comment=d.comment; if(d.box) comment=(comment?comment+"\n":"")+"BOX: "+d.box;
-        const anomDesc = ngItems.length
-          ? ngItems.map(it=>{const s=st(it.k);return it.n+(it.visual?"":"："+s.value+it.unit)+(s.comment?("（"+s.comment+"）"):"");}).join(" / ")
-          : null;
-        // 1) 親: inspection_results
-        const ins=await sb.write("POST","inspection_results",{
-          turbine_id:d.wtg, executed_date:d.date, executed_by:state.userId,
-          weather:d.weather||null, wind_speed_ms:d.wind,
-          result_status:overall, has_anomaly:ngItems.length>0,
-          anomaly_description:anomDesc, severity:(ngItems.length>0?state.sev:null),
-          comments:comment||null, submitted_at:new Date().toISOString()
-        });
-        const resultId=Array.isArray(ins)?ins[0].id:ins.id;
-        // 2) 子: result_checklist（OK/NG項目のみ。対象外は登録しない）
-        const rows=items.map(it=>{const s=st(it.k);const j=judge(it);
-          return { result_id:resultId, check_item:it.n, check_result:j,
-            measured_value: it.visual?null:(s.value===""?null:Number(s.value)),
-            unit: it.visual?null:it.unit,
-            criteria_min: it.visual?null:it.min, criteria_max: it.visual?null:it.max,
-            criteria_text: it.visual?it.crit:null,
-            comment: s.comment||null };
-        });
-        if(rows.length) await sb.write("POST","result_checklist",rows);
-
-        msg.className="msg ok"; msg.textContent="✓ 登録しました（項目 "+rows.length+"件）";
-        // reset
-        $("confirm").classList.remove("show"); $("checkBtn").style.display="inline-block";
-        $("f_comment").value=""; $("f_box").value=""; $("f_wind").value="";
-        state.weather=""; state.sev=""; state.set=""; state.items={};
-        $("sets").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
-        $("seg_weather").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
-        $("seg_sev").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
-        $("sevWrap").style.display="none";
-        renderChecklist(); validate();
-        await reloadList();
-      }catch(e){
-        msg.className="msg ng"; msg.textContent="登録失敗: "+e.message+"（修正に戻って再試行できます）";
-      }finally{
-        state.submitting=false; go.disabled=false; $("backBtn").disabled=false;
-      }
-    });
-
-    // ===== 最近の実績 =====
-    function renderList(rows){
-      const body=$("listBody");
-      if(!rows.length){ body.innerHTML='<div style="color:var(--muted)">点検実績はまだありません。</div>'; return; }
-      const trs=rows.map(r=>`<tr class="${r["異常あり"]?'anom':''}">
-        <td style="white-space:nowrap">${esc(r["実施日"]||"")}</td>
-        <td><b style="color:#fff">${esc(r["風車"]||"")}</b></td>
-        <td style="white-space:nowrap">${esc(r["結果表示"]||r["結果"]||"")}</td>
-        <td style="white-space:nowrap">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</td>
-        <td>${esc(r["異常内容"]||"")}</td>
-        <td style="white-space:nowrap">${esc(r["深刻度"]||"–")}</td>
-        <td style="white-space:nowrap;color:var(--muted)">${esc(r["天候"]||"")} ${r["風速ms"]!=null?esc(r["風速ms"])+"m/s":""}</td>
-        <td style="color:var(--muted)">${esc(r["コメント"]||"")}</td>
-      </tr>`).join("");
-      body.innerHTML=`<table><thead><tr>
-        <th>実施日</th><th>号機</th><th>判定</th><th>チェック</th><th>異常内容</th><th>深刻度</th><th>天候</th><th>コメント</th>
-      </tr></thead><tbody>${trs}</tbody></table>`;
-    }
-    async function reloadList(){
-      const rows=await sb.get("v_inspection_results_list?order=実施日.desc&limit=30");
-      renderList(rows);
-    }
-
-    async function loadAll(){
-      try{
-        state.turbines=await sb.get("turbines?select=id,turbine_no&order=turbine_no.asc");
-        $("f_wtg").innerHTML='<option value="">選択…</option>'+
-          state.turbines.map(t=>`<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`).join("");
-        const today=new Date().toISOString().slice(0,10);
-        $("f_date").value=today; $("f_date").max=today;
-        renderChecklist(); validate();
-        await reloadList();
-      }catch(e){
-        $("listBody").innerHTML='<div class="err">データ取得に失敗しました: '+esc(e.message)+'</div>';
-      }
-    }
-    sb.requireLogin({ onReady: loadAll });
-  </script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 点検実績入力（ライブ）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:18px 22px 50px;max-width:1100px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:24px}
+  .card h2{font-size:15px;color:#fff;margin-bottom:6px}
+  .hint{font-size:12px;color:var(--muted);margin-bottom:16px}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  label .req{color:#ff9a92;font-weight:700;margin-left:2px}
+  label .opt{color:var(--muted);font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:5px}
+  label .help{display:block;color:#6e7681;font-size:10.5px;font-weight:400;margin-top:2px}
+  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--master)}
+  input.bad,textarea.bad,select.bad{border-color:var(--defect)}
+  textarea{min-height:60px;resize:vertical}
+  .full{grid-column:1/-1}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:62px;background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:9px 6px;border-radius:8px;font-size:13px;cursor:pointer;transition:.12s}
+  .seg button:hover{border-color:var(--muted)}
+  .seg button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
+  .seg.sev button.on[data-v="critical"],.seg.sev button.on[data-v="high"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92}
+  .ferr{color:#ff9a92;font-size:11px;margin-top:5px;display:none}
+  .ferr.show{display:block}
+  /* checklist */
+  .clhead{display:flex;align-items:center;gap:10px;margin:6px 0 10px;flex-wrap:wrap}
+  .clhead .sets{display:flex;gap:6px;flex-wrap:wrap}
+  .clhead .sets button{background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:7px 12px;border-radius:8px;font-size:12.5px;cursor:pointer}
+  .clhead .sets button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
+  .summary{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+  .summary .chip{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 11px;color:var(--muted)}
+  .summary .chip b{color:#fff}
+  .summary .chip.ng b{color:#ff9a92} .summary .chip.ok b{color:#7ee787} .summary .chip.todo b{color:#f0c674}
+  .items{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}
+  .item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel2)}
+  .item.ok{border-color:rgba(63,185,80,.5)} .item.ng{border-color:rgba(248,81,73,.6);background:rgba(248,81,73,.05)} .item.na{opacity:.5}
+  .item .nm{font-size:13.5px;color:#fff;font-weight:700;display:flex;align-items:center;gap:8px}
+  .item .crit{font-size:11px;color:var(--muted);margin:2px 0 9px}
+  .item .meas{display:flex;align-items:center;gap:8px}
+  .item .meas input{max-width:120px}
+  .item .meas .unit{font-size:12px;color:var(--muted)}
+  .item .meas .prev{font-size:11px;color:#6e7681}
+  .jbadge{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid;margin-left:auto;white-space:nowrap}
+  .jbadge.j-ok{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
+  .jbadge.j-ng{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+  .jbadge.j-na{color:var(--muted);border-color:var(--line)}
+  .jbadge.j-none{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
+  .vbtns{display:flex;gap:6px;margin-top:2px}
+  .vbtns button{flex:1;background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:8px;border-radius:7px;font-size:12.5px;cursor:pointer}
+  .vbtns button.on[data-v="ok"]{border-color:var(--insp);background:rgba(63,185,80,.16);color:#7ee787;font-weight:700}
+  .vbtns button.on[data-v="ng"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92;font-weight:700}
+  .vbtns button.on[data-v="na"]{border-color:var(--muted);color:#fff;font-weight:700}
+  .nabtn{margin-left:6px;background:#0d1117;border:1px solid var(--line);color:var(--muted);font-size:11px;padding:4px 9px;border-radius:7px;cursor:pointer}
+  .nabtn.on{border-color:var(--muted);color:#fff}
+  .icomment{margin-top:9px;display:none} .icomment.show{display:block}
+  .icomment textarea{min-height:42px;font-size:12px}
+  .submit{margin-top:18px}
+  .submit .errsum{font-size:12.5px;color:#f0c674;margin-bottom:10px;display:none}
+  .submit .errsum.show{display:block}
+  .btn{border:none;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-primary{background:var(--master);color:#04183a}
+  .btn-go{background:var(--insp);color:#04210d}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .msg{font-size:13px;font-weight:700;margin-left:12px}
+  .msg.ok{color:#7ee787} .msg.ng{color:#ff9a92}
+  .confirm{border:1px solid var(--master);background:rgba(88,166,255,.06);border-radius:10px;padding:16px 18px;margin-top:16px;display:none}
+  .confirm.show{display:block}
+  .confirm h3{font-size:13.5px;color:#9cd2ff;margin-bottom:12px}
+  .confirm .crow{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .confirm .ck{width:96px;color:var(--muted);flex-shrink:0}
+  .confirm .cv{color:#fff} .confirm .cv.warn{color:#ff9a92;font-weight:700}
+  .confirm table{margin-top:10px}
+  .confirm .cbtns{display:flex;gap:10px;margin-top:14px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11px}
+  tr.anom td,tr.ng td{background:rgba(248,81,73,.06)}
+  .loading{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+</style>
+</head>
+<body>
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:#0d1117;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:7px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:5px;color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;letter-spacing:.02em;"><span style="font-size:12px;">🔄</span>業務フロー現在地</span><a href="./index.html" title="今日の管制塔へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>今日の管制塔</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./live-board.html" title="監視へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>監視</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-plan.html" title="点検計画へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.85);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.40);"><span style="font-size:10px;color:rgb(63,185,80);flex:0 0 auto;">✓</span>点検計画</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:#fff;background:rgb(63,185,80);border:1px solid rgb(63,185,80);font-weight:700;box-shadow:0 0 0 3px rgba(63,185,80,.25);cursor:default;"><span style="width:7px;height:7px;border-radius:50%;background:#fff;flex:0 0 auto;"></span>点検実施</span><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>異常判断</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業票へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業票</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>PTW/KY</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./approvals.html" title="承認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>承認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>復旧確認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(219,97,162,.95);background:transparent;border:1px solid rgba(219,97,162,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(219,97,162,.75);flex:0 0 auto;"></span>クローズ/報告</a></nav>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div>
+      <h1>点検実績入力</h1>
+      <div class="sub">阿武隈OS ライブ盤 — 項目別チェック（測定値→基準で自動判定）</div>
+    </div>
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h2>📝 新規 点検実績を登録</h2>
+      <div class="hint"><span style="color:#ff9a92">*</span> は必須。<b>点検セットを選ぶと項目が出ます</b>。測定値を入れると<b>基準と自動照合してOK/NGを判定</b>します（判定ミス防止）。目視項目はOK/NGを選択。点検しない項目は「対象外」。全項目に入力すると登録できます。 → <a href="./guide-inspection-do.html">② 点検実行の基本</a></div>
+
+      <div class="form-grid" id="form">
+        <div>
+          <label>号機<span class="req">*</span></label>
+          <select id="f_wtg"></select>
+          <div class="ferr" id="e_wtg">号機を選択してください。</div>
+        </div>
+        <div>
+          <label>実施日<span class="req">*</span><span class="help">未来の日付は選べません</span></label>
+          <input type="date" id="f_date">
+          <div class="ferr" id="e_date">実施日が不正です（未来日は不可）。</div>
+        </div>
+        <div>
+          <label>天候<span class="opt">任意</span></label>
+          <div class="seg" id="seg_weather" data-clear="1">
+            <button type="button" data-v="晴れ">晴れ</button>
+            <button type="button" data-v="曇り">曇り</button>
+            <button type="button" data-v="雨">雨</button>
+            <button type="button" data-v="雪">雪</button>
+            <button type="button" data-v="強風">強風</button>
+          </div>
+        </div>
+        <div>
+          <label>風速 (m/s)<span class="opt">任意</span><span class="help">0〜40 の範囲</span></label>
+          <input type="number" id="f_wind" step="0.1" min="0" max="40" placeholder="例: 5.2">
+          <div class="ferr" id="e_wind">風速は 0〜40 m/s で入力してください。</div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <label>点検セット<span class="req">*</span><span class="help">何を点検するか。セットで項目が決まります</span></label>
+        <div class="clhead">
+          <div class="sets" id="sets">
+            <button type="button" data-s="drive">駆動系・電気（測定）</button>
+            <button type="button" data-s="visual">目視巡視</button>
+            <button type="button" data-s="both">両方（全項目）</button>
+          </div>
+        </div>
+        <div class="summary" id="summary"></div>
+        <div class="ferr" id="e_set" style="margin-bottom:8px">点検セットを選んでください。</div>
+        <div class="items" id="items"></div>
+        <div class="ferr" id="e_items">未入力の項目があります。すべて OK / NG / 対象外 を入力してください。</div>
+      </div>
+
+      <div class="form-grid" style="margin-top:18px">
+        <div class="full" id="sevWrap" style="display:none">
+          <label>全体の深刻度<span class="req">*</span><span class="help">NG項目があるため必須</span></label>
+          <div class="seg sev" id="seg_sev">
+            <button type="button" data-v="low">低</button>
+            <button type="button" data-v="medium">中</button>
+            <button type="button" data-v="high">高</button>
+            <button type="button" data-v="critical">重大</button>
+          </div>
+          <div class="ferr" id="e_sev">NG項目があるため深刻度は必須です。</div>
+        </div>
+        <div class="full"><label>全体コメント<span class="opt">任意</span></label><textarea id="f_comment" placeholder="所見・備考（異常なしでも気づきがあれば）"></textarea></div>
+        <div class="full">
+          <label>写真 / BOX リンク (URL)<span class="opt">任意</span></label>
+          <input type="url" id="f_box" placeholder="https://app.box.com/...">
+          <div class="ferr" id="e_box">URL は http(s):// で始めてください。</div>
+        </div>
+      </div>
+
+      <div class="submit">
+        <div class="errsum" id="errsum"></div>
+        <button class="btn btn-primary" id="checkBtn">内容を確認</button>
+        <span class="msg" id="formMsg"></span>
+      </div>
+
+      <div class="confirm" id="confirm">
+        <h3>この内容で登録します。よろしいですか？</h3>
+        <div id="confirmBody"></div>
+        <div class="cbtns">
+          <button class="btn btn-go" id="goBtn">この内容で登録</button>
+          <button class="btn btn-ghost" id="backBtn">修正に戻る</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 最近の点検実績</h2>
+      <div id="listBody" class="loading">読み込み中…</div>
+    </div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+  <script>
+    const esc = sb.esc;
+    const $ = id => document.getElementById(id);
+    const sevLabel = { low:"低", medium:"中", high:"高", critical:"重大" };
+
+    // ===== 組込みカタログ（点検項目マスタ。後でSupabaseに移行可）=====
+    const CATALOG = {
+      drive: { label:"駆動系・電気（測定）", items:[
+        {k:"vib_main", n:"主軸受 振動値",   unit:"mm/s", min:0,   max:4.5},
+        {k:"tmp_main", n:"主軸受 温度",     unit:"℃",   min:0,   max:75},
+        {k:"prs_gear", n:"増速機 油圧",     unit:"bar",  min:2.5, max:4.0},
+        {k:"fe_gear",  n:"増速機 鉄粉濃度", unit:"ppm",  min:0,   max:100},
+        {k:"oil_gear", n:"増速機 油温",     unit:"℃",   min:0,   max:80},
+        {k:"tmp_gen",  n:"発電機 巻線温度", unit:"℃",   min:0,   max:155},
+        {k:"tmp_conv", n:"コンバータ 温度", unit:"℃",   min:0,   max:80},
+        {k:"cur_yaw",  n:"ヨー旋回 電流",   unit:"A",    min:0,   max:40},
+        {k:"oil_trf",  n:"変圧器 油温",     unit:"℃",   min:0,   max:90}
+      ]},
+      visual: { label:"目視巡視", items:[
+        {k:"v_blade", n:"ブレード前縁 エロージョン", visual:true, crit:"著しい損傷・剥離なし"},
+        {k:"v_bolt",  n:"タワー/基礎ボルト 緩み・脱落", visual:true, crit:"緩み・脱落なし"},
+        {k:"v_leak",  n:"油漏れ（増速機/油圧系）",     visual:true, crit:"漏れなし"},
+        {k:"v_noise", n:"異音・異臭",                 visual:true, crit:"なし"},
+        {k:"v_nac",   n:"ナセル内 清掃・腐食",         visual:true, crit:"異常なし"}
+      ]}
+    };
+
+    const state = { turbines:[], userId:null, weather:"", sev:"", set:"", items:{}, submitting:false };
+
+    function curItems(){
+      if(state.set==="drive")  return CATALOG.drive.items;
+      if(state.set==="visual") return CATALOG.visual.items;
+      if(state.set==="both")   return CATALOG.drive.items.concat(CATALOG.visual.items);
+      return [];
+    }
+    function st(k){ return state.items[k] || (state.items[k]={value:"",vis:"",na:false,comment:""}); }
+    // item の判定: '' | 'ok' | 'ng' | 'na'
+    function judge(it){
+      const s = st(it.k);
+      if(s.na) return "na";
+      if(it.visual) return s.vis || "";
+      if(s.value==="" || s.value===null) return "";
+      const v = Number(s.value);
+      if(isNaN(v)) return "";
+      return (v >= it.min && v <= it.max) ? "ok" : "ng";
+    }
+    const badgeTxt = {ok:"OK", ng:"NG", na:"対象外", "":"未入力"};
+    const badgeCls = {ok:"j-ok", ng:"j-ng", na:"j-na", "":"j-none"};
+
+    // ===== checklist 描画 =====
+    function renderChecklist(){
+      const wrap = $("items"); const its = curItems();
+      if(!its.length){ wrap.innerHTML=""; return; }
+      wrap.innerHTML = its.map(it=>{
+        const s = st(it.k); const j = judge(it);
+        const crit = it.visual ? ("基準: "+it.crit) : ("基準: "+it.min+"〜"+it.max+" "+it.unit);
+        const meas = it.visual
+          ? `<div class="vbtns" data-k="${it.k}">
+               <button type="button" data-v="ok"  class="${s.vis==='ok'?'on':''}">OK</button>
+               <button type="button" data-v="ng"  class="${s.vis==='ng'?'on':''}">NG</button>
+               <button type="button" data-v="na"  class="${s.na?'on':''}">対象外</button>
+             </div>`
+          : `<div class="meas">
+               <input type="number" step="0.1" data-k="${it.k}" value="${s.na?'':esc(s.value)}" ${s.na?'disabled':''} placeholder="測定値">
+               <span class="unit">${esc(it.unit)}</span>
+               <button type="button" class="nabtn ${s.na?'on':''}" data-na="${it.k}">対象外</button>
+             </div>`;
+        return `<div class="item ${j}" data-item="${it.k}">
+          <div class="nm">${esc(it.n)}<span class="jbadge ${badgeCls[j]}" data-badge="${it.k}">${badgeTxt[j]}</span></div>
+          <div class="crit">${esc(crit)}</div>
+          ${meas}
+          <div class="icomment ${j==='ng'?'show':''}" data-cmt="${it.k}">
+            <textarea placeholder="NGの内容（どこが・どう異常か）" data-cval="${it.k}">${esc(s.comment)}</textarea>
+          </div>
+        </div>`;
+      }).join("");
+      bindItemEvents();
+      validate();
+    }
+
+    function refreshItem(it){
+      const j = judge(it);
+      const card = document.querySelector(`[data-item="${it.k}"]`);
+      if(!card) return;
+      card.className = "item " + j;
+      const b = card.querySelector(`[data-badge="${it.k}"]`);
+      b.className = "jbadge " + badgeCls[j]; b.textContent = badgeTxt[j];
+      const cmt = card.querySelector(`[data-cmt="${it.k}"]`);
+      cmt.classList.toggle("show", j==="ng");
+    }
+
+    function bindItemEvents(){
+      // 測定値入力 → 自動判定
+      $("items").querySelectorAll('input[type="number"][data-k]').forEach(inp=>
+        inp.addEventListener("input", e=>{
+          const k=e.target.dataset.k; st(k).value=e.target.value; st(k).na=false;
+          refreshItem(curItems().find(x=>x.k===k)); validate();
+        }));
+      // 対象外（測定項目）
+      $("items").querySelectorAll('[data-na]').forEach(btn=>
+        btn.addEventListener("click", e=>{
+          const k=e.target.dataset.na; const s=st(k); s.na=!s.na; if(s.na) s.value="";
+          renderChecklist();
+        }));
+      // 目視 OK/NG/対象外
+      $("items").querySelectorAll('.vbtns').forEach(g=>
+        g.querySelectorAll("button").forEach(btn=>
+          btn.addEventListener("click", ()=>{
+            const k=g.dataset.k; const v=btn.dataset.v; const s=st(k);
+            if(v==="na"){ s.na=!s.na; s.vis=""; }
+            else { s.na=false; s.vis = (s.vis===v? "" : v); }
+            renderChecklist();
+          })));
+      // NGコメント
+      $("items").querySelectorAll('[data-cval]').forEach(t=>
+        t.addEventListener("input", e=>{ st(e.target.dataset.cval).comment=e.target.value; }));
+    }
+
+    // ===== セット選択 =====
+    $("sets").querySelectorAll("button").forEach(b=>
+      b.addEventListener("click", ()=>{
+        $("sets").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+        b.classList.add("on");
+        state.set = b.dataset.s; state.items = {};   // セット変更で項目リセット
+        renderChecklist(); validate();
+      }));
+
+    // ===== 共通 segmented =====
+    function bindSeg(segId, onPick){
+      const seg=$(segId);
+      seg.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+        const v=b.dataset.v; const already=b.classList.contains("on");
+        seg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+        let picked=v; if(already && seg.dataset.clear){picked="";} else b.classList.add("on");
+        onPick(picked);
+      }));
+    }
+    bindSeg("seg_weather", v=>{ state.weather=v; });
+    bindSeg("seg_sev", v=>{ state.sev=v; validate(); });
+
+    // ===== バリデーション =====
+    function setErr(el,errId,bad){ if(errId)$(errId).classList.toggle("show",bad); if(el)el.classList.toggle("bad",bad); }
+    function counts(){
+      const its=curItems(); let ok=0,ng=0,na=0,todo=0;
+      its.forEach(it=>{ const j=judge(it); if(j==="ok")ok++; else if(j==="ng")ng++; else if(j==="na")na++; else todo++; });
+      return {total:its.length, ok, ng, na, todo};
+    }
+    function renderSummary(){
+      const c=counts(); const s=$("summary");
+      if(!curItems().length){ s.innerHTML=""; return; }
+      s.innerHTML =
+        `<span class="chip">項目 <b>${c.total}</b></span>
+         <span class="chip ok">OK <b>${c.ok}</b></span>
+         <span class="chip ng">NG <b>${c.ng}</b></span>
+         <span class="chip">対象外 <b>${c.na}</b></span>
+         <span class="chip todo">未入力 <b>${c.todo}</b></span>`;
+    }
+    function collect(){
+      const windRaw=$("f_wind").value;
+      return { wtg:$("f_wtg").value, date:$("f_date").value,
+        wind: windRaw===""?null:Number(windRaw), windRaw,
+        box:$("f_box").value.trim(), comment:$("f_comment").value.trim(), weather:state.weather };
+    }
+    function validate(){
+      const d=collect(); const c=counts(); const today=new Date().toISOString().slice(0,10);
+      const errs=[];
+      const eW=!d.wtg; setErr($("f_wtg"),"e_wtg",eW); if(eW)errs.push("号機");
+      const eD=!d.date||d.date>today; setErr($("f_date"),"e_date",eD); if(eD)errs.push("実施日");
+      const eSet=!state.set; setErr(null,"e_set",eSet); if(eSet)errs.push("点検セット");
+      const eWind=d.wind!==null&&(isNaN(d.wind)||d.wind<0||d.wind>40); setErr($("f_wind"),"e_wind",eWind); if(eWind)errs.push("風速");
+      const eBox=d.box!==""&&!/^https?:\/\//i.test(d.box); setErr($("f_box"),"e_box",eBox); if(eBox)errs.push("BOXリンク");
+      const eItems = !eSet && c.todo>0; setErr(null,"e_items",eItems); if(eItems)errs.push("未入力項目 "+c.todo+"件");
+      // NGがあれば深刻度必須
+      const hasNg=c.ng>0; $("sevWrap").style.display=hasNg?"block":"none";
+      const eSev=hasNg && !state.sev; setErr(null,"e_sev",eSev); if(eSev)errs.push("深刻度");
+      // 全項目対象外は不可（最低1つは点検）
+      const eAllNa = !eSet && c.total>0 && c.ok===0 && c.ng===0; if(eAllNa)errs.push("少なくとも1項目は点検");
+
+      renderSummary();
+      const ok=errs.length===0; $("checkBtn").disabled=!ok;
+      const sum=$("errsum");
+      if(ok){ sum.classList.remove("show"); sum.textContent=""; }
+      else { sum.classList.add("show"); sum.textContent="未入力・不正: "+errs.join(" / "); }
+      return ok ? d : null;
+    }
+    ["f_wtg","f_date","f_wind","f_box","f_comment"].forEach(id=>$(id).addEventListener("input",validate));
+
+    // ===== 確認ステップ =====
+    function checkedItems(){ return curItems().filter(it=>{const j=judge(it);return j==="ok"||j==="ng";}); }
+    function showConfirm(d){
+      const wtgNo=(state.turbines.find(t=>t.id===d.wtg)||{}).turbine_no||d.wtg;
+      const c=counts(); const overall=c.ng>0?"NG（異常あり）":"OK（異常なし）";
+      let rows=`
+        <div class="crow"><div class="ck">号機</div><div class="cv">${esc(wtgNo)}</div></div>
+        <div class="crow"><div class="ck">実施日</div><div class="cv">${esc(d.date)}</div></div>
+        <div class="crow"><div class="ck">点検セット</div><div class="cv">${esc(state.set==='drive'?CATALOG.drive.label:state.set==='visual'?CATALOG.visual.label:'両方（全項目）')}</div></div>
+        <div class="crow"><div class="ck">総合判定</div><div class="cv ${c.ng>0?'warn':''}">${esc(overall)}（OK ${c.ok} / NG ${c.ng} / 対象外 ${c.na}）</div></div>`;
+      if(c.ng>0) rows+=`<div class="crow"><div class="ck">深刻度</div><div class="cv ${(state.sev==='high'||state.sev==='critical')?'warn':''}">${esc(sevLabel[state.sev]||"（未選択）")}</div></div>`;
+      rows+=`<div class="crow"><div class="ck">天候 / 風速</div><div class="cv">${esc(d.weather||"—")} ${d.wind!=null?esc(d.wind)+" m/s":""}</div></div>`;
+      if(d.comment) rows+=`<div class="crow"><div class="ck">コメント</div><div class="cv">${esc(d.comment)}</div></div>`;
+      if(d.box) rows+=`<div class="crow"><div class="ck">BOX</div><div class="cv">${esc(d.box)}</div></div>`;
+      // 項目テーブル
+      const trs=checkedItems().map(it=>{const j=judge(it);const s=st(it.k);
+        const val=it.visual?"目視":(esc(s.value)+" "+esc(it.unit));
+        const crit=it.visual?esc(it.crit):(it.min+"〜"+it.max);
+        return `<tr class="${j==='ng'?'ng':''}"><td>${esc(it.n)}</td><td>${val}</td><td style="color:var(--muted)">${crit}</td><td><b style="color:${j==='ng'?'#ff9a92':'#7ee787'}">${badgeTxt[j]}</b></td><td>${esc(s.comment||"")}</td></tr>`;
+      }).join("");
+      rows+=`<table><thead><tr><th>項目</th><th>測定値</th><th>基準</th><th>判定</th><th>備考</th></tr></thead><tbody>${trs}</tbody></table>`;
+      $("confirmBody").innerHTML=rows;
+      $("confirm").classList.add("show"); $("checkBtn").style.display="none";
+      $("confirm").scrollIntoView({behavior:"smooth",block:"nearest"});
+    }
+    $("checkBtn").addEventListener("click",()=>{const d=validate(); if(d)showConfirm(d);});
+    $("backBtn").addEventListener("click",()=>{$("confirm").classList.remove("show");$("checkBtn").style.display="inline-block";$("formMsg").textContent="";});
+
+    async function getUserId(){
+      const res=await fetch(`${sb.URL}/auth/v1/user`,{headers:sb.headers()});
+      if(!res.ok) return null; return (await res.json()).id||null;
+    }
+
+    // ===== 登録（確認後）=====
+    $("goBtn").addEventListener("click", async ()=>{
+      if(state.submitting) return;
+      const d=validate(); if(!d){ $("backBtn").click(); return; }
+      state.submitting=true;
+      const go=$("goBtn"), msg=$("formMsg");
+      go.disabled=true; $("backBtn").disabled=true; msg.className="msg"; msg.textContent="登録中…";
+      try{
+        if(!state.userId) state.userId=await getUserId();
+        const items=checkedItems();
+        const ngItems=items.filter(it=>judge(it)==="ng");
+        const overall = ngItems.length>0 ? "ng" : "ok";
+        let comment=d.comment; if(d.box) comment=(comment?comment+"\n":"")+"BOX: "+d.box;
+        const anomDesc = ngItems.length
+          ? ngItems.map(it=>{const s=st(it.k);return it.n+(it.visual?"":"："+s.value+it.unit)+(s.comment?("（"+s.comment+"）"):"");}).join(" / ")
+          : null;
+        // 1) 親: inspection_results
+        const ins=await sb.write("POST","inspection_results",{
+          turbine_id:d.wtg, executed_date:d.date, executed_by:state.userId,
+          weather:d.weather||null, wind_speed_ms:d.wind,
+          result_status:overall, has_anomaly:ngItems.length>0,
+          anomaly_description:anomDesc, severity:(ngItems.length>0?state.sev:null),
+          comments:comment||null, submitted_at:new Date().toISOString()
+        });
+        const resultId=Array.isArray(ins)?ins[0].id:ins.id;
+        // 2) 子: result_checklist（OK/NG項目のみ。対象外は登録しない）
+        const rows=items.map(it=>{const s=st(it.k);const j=judge(it);
+          return { result_id:resultId, check_item:it.n, check_result:j,
+            measured_value: it.visual?null:(s.value===""?null:Number(s.value)),
+            unit: it.visual?null:it.unit,
+            criteria_min: it.visual?null:it.min, criteria_max: it.visual?null:it.max,
+            criteria_text: it.visual?it.crit:null,
+            comment: s.comment||null };
+        });
+        if(rows.length) await sb.write("POST","result_checklist",rows);
+
+        msg.className="msg ok"; msg.textContent="✓ 登録しました（項目 "+rows.length+"件）";
+        // reset
+        $("confirm").classList.remove("show"); $("checkBtn").style.display="inline-block";
+        $("f_comment").value=""; $("f_box").value=""; $("f_wind").value="";
+        state.weather=""; state.sev=""; state.set=""; state.items={};
+        $("sets").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+        $("seg_weather").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+        $("seg_sev").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+        $("sevWrap").style.display="none";
+        renderChecklist(); validate();
+        await reloadList();
+      }catch(e){
+        msg.className="msg ng"; msg.textContent="登録失敗: "+e.message+"（修正に戻って再試行できます）";
+      }finally{
+        state.submitting=false; go.disabled=false; $("backBtn").disabled=false;
+      }
+    });
+
+    // ===== 最近の実績 =====
+    function renderList(rows){
+      const body=$("listBody");
+      if(!rows.length){ body.innerHTML='<div style="color:var(--muted)">点検実績はまだありません。</div>'; return; }
+      const trs=rows.map(r=>`<tr class="${r["異常あり"]?'anom':''}">
+        <td style="white-space:nowrap">${esc(r["実施日"]||"")}</td>
+        <td><b style="color:#fff">${esc(r["風車"]||"")}</b></td>
+        <td style="white-space:nowrap">${esc(r["結果表示"]||r["結果"]||"")}</td>
+        <td style="white-space:nowrap">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</td>
+        <td>${esc(r["異常内容"]||"")}</td>
+        <td style="white-space:nowrap">${esc(r["深刻度"]||"–")}</td>
+        <td style="white-space:nowrap;color:var(--muted)">${esc(r["天候"]||"")} ${r["風速ms"]!=null?esc(r["風速ms"])+"m/s":""}</td>
+        <td style="color:var(--muted)">${esc(r["コメント"]||"")}</td>
+      </tr>`).join("");
+      body.innerHTML=`<table><thead><tr>
+        <th>実施日</th><th>号機</th><th>判定</th><th>チェック</th><th>異常内容</th><th>深刻度</th><th>天候</th><th>コメント</th>
+      </tr></thead><tbody>${trs}</tbody></table>`;
+    }
+    async function reloadList(){
+      const rows=await sb.get("v_inspection_results_list?order=実施日.desc&limit=30");
+      renderList(rows);
+    }
+
+    async function loadAll(){
+      try{
+        state.turbines=await sb.get("turbines?select=id,turbine_no&order=turbine_no.asc");
+        $("f_wtg").innerHTML='<option value="">選択…</option>'+
+          state.turbines.map(t=>`<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`).join("");
+        const today=new Date().toISOString().slice(0,10);
+        $("f_date").value=today; $("f_date").max=today;
+        renderChecklist(); validate();
+        await reloadList();
+      }catch(e){
+        $("listBody").innerHTML='<div class="err">データ取得に失敗しました: '+esc(e.message)+'</div>';
+      }
+    }
+    sb.requireLogin({ onReady: loadAll });
+  </script>
+</body>
+</html>
