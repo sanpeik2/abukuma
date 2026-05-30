@@ -473,7 +473,7 @@
 
 
 
-        ['計画日','号機','作業種別','区分','状態','期限','時間','必要資格','人数','PTW'].map(h=>`<th>${h}</th>`).join('') +
+        ['計画日','号機','作業種別','区分','状態','期限','時間','必要資格','人数','PTW','操作'].map(h=>`<th>${h}</th>`).join('') +
 
 
 
@@ -549,6 +549,7 @@
 
 
             <td>${esc(r["ptw番号"]||"—")}</td>
+            <td style="white-space:nowrap;"><a href="./inspection-input.html?plan_id=${encodeURIComponent(r["計画id"]||"")}" style="text-decoration:none;font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 7px;margin-right:5px;">点検を開始</a><a href="./work-orders.html?inspection_plan_id=${encodeURIComponent(r["計画id"]||"")}" style="text-decoration:none;font-size:11px;color:#11161d;background:#3fb950;font-weight:700;border-radius:6px;padding:3px 8px;">作業票を作成</a></td>
 
 
 
