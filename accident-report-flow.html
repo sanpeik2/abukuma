@@ -93,6 +93,51 @@
     </div>
   </div>
 
+  <!-- ───────── 0. 緊急時チェックリスト ───────── -->
+  <h2 class="section" style="border-left-color:var(--defect)">🚨 緊急時チェックリスト<small>覚知したらこの順で。チェックは目視確認用（記録は下記ライブ画面に残す）</small></h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-bottom:10px">
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--defect);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">A. 初動（人命・二次災害防止が最優先）</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">負傷者の有無を確認・救護／119番</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">当該設備を停止・隔離（必要ならLOTO）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">二次災害防止（退避・消火・立入禁止）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">電気主任技術者へ即連絡</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">現場保全・写真記録（原因調査用）</label>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--work);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">B. 報告要否の判定（主任技術者）</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">①の分類表で「要報告」に該当するか確認</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">人身／火災／他物損壊・波及／主要機器破損／風車損壊か</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">供給支障の規模を確認（規模次第の判定）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">迷う場合は産業保安監督部に確認</label>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--legal);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">C. 期限管理（要報告の場合）</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">速報：覚知後 速やかに（目安24時間以内）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">詳報：発生から（目安30日以内）報告書提出</label>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">※具体時間・日数は最新の電気関係報告規則／自所の保安規定の条文が正本</div>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--insp);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">D. 証跡・完了確認</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">写真・運転記録・点検記録をBOXに保存</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">速報・詳報の控えを記録</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">RCA・再発防止・横展開を起票</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">主任技術者の承認を取得</label>
+    </div>
+  </div>
+
+  <div class="note" style="border-color:var(--insp)">
+    <b>📋 記録はここに残す（このページはチェック用・記録はライブ画面）:</b>
+    覚知・停止 → <code>defect_findings</code> / <code>work_orders</code>（<a href="./defect-rca.html" style="color:var(--master)">🔧 故障/RCA</a>） ／
+    報告候補の抽出 → <a href="./report-candidates.html" style="color:var(--master)">⚖ 保安規定 報告候補</a> ／
+    証跡写真・報告書 → BOX＋<code>attachments</code> ／
+    承認 → <a href="./approvals.html" style="color:var(--master)">✅ 承認待ち一覧</a>（<code>approvals</code>）
+  </div>
+
   <!-- ───────── 1. そもそも報告対象か ───────── -->
   <h2 class="section">① まず「国への報告対象の事故か」を判定する<small>電気関係報告規則 第3条（事故報告）の典型分類</small></h2>
   <div class="note">
