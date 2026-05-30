@@ -37,6 +37,22 @@
   <h1>風力発電 O&M OS — テーブル関係図</h1>
   <div class="sub">阿武隈風力発電所 / Supabase プロジェクト kwhashtnuzrlzrpikhne / 26テーブル + 33ビュー（Issue #1〜#13 反映）</div>
 
+  <div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #58a6ff;border-radius:10px;padding:14px 18px;margin:16px 0 20px;font-size:12.5px;line-height:1.7">
+    <div style="color:#9cd2ff;font-weight:700;font-size:12px;letter-spacing:.04em;margin-bottom:8px">📘 このDocsの使い方</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:5px 18px">
+      <div><b style="color:#8b949e">👥 対象者</b>　開発・運用設計者（業務担当の参照可）</div>
+      <div><b style="color:#8b949e">🕐 使う場面</b>　データ構造の確認・画面設計・影響範囲の調査</div>
+      <div><b style="color:#8b949e">⚖️ 注意</b>　これは設計参照図。業務判断は各ライブ画面で行う</div>
+      <div><b style="color:#8b949e">📋 対になる資料</b>　各画面のデータ出所は データソースマップ 参照</div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="color:#8b949e">🔗 関連：</span>
+      <a href="./data-source-map.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">🔌 データソースマップ</a>
+      <a href="./defect-flow.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">🔧 異常是正フロー</a>
+      <a href="./menu.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">≡ メニュー</a>
+    </div>
+  </div>
+
   <div class="note">
     <b>同居方針:</b> 意思決定OS（朝会コックピット）と業務OS（O&M）はUI/目的を分離するが、Supabaseは同一プロジェクトに同居。
     SCADA（朝会側 <code>alarm_events</code>）→ O&M側 <code>work_orders</code> へ自動起票で連携する。
