@@ -184,6 +184,10 @@
 
 
   .empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
+  /* 主任確認バッジ */
+  .chief-pd{color:#d29922;font-weight:700}
+  .chief-ok{color:#3fb950;font-weight:700}
+  .chief-ng{color:#f85149;font-weight:700}
 
 
 
@@ -289,6 +293,7 @@
 
 
     <div class="kpi"><div class="v" id="kReg">–</div><div class="l">保安規定影響あり</div></div>
+    <div class="kpi"><div class="v" id="kOutage">–</div><div class="l">停止記録フラグあり</div></div>
 
 
 
@@ -353,7 +358,7 @@
 
 
 
-        <th>停止(分)</th><th>損失(kWh)</th><th>作業票</th><th>状態</th>
+        <th>停止(分)</th><th>損失(kWh)</th><th>逸失売電額(円)</th><th>停止報告</th><th>主任確認</th><th>作業票</th><th>状態</th>
 
 
 
@@ -373,7 +378,7 @@
 
 
 
-      <tr><td colspan="12" class="empty">ログインするとデータを取得します…</td></tr>
+      <tr><td colspan="15" class="empty">ログインするとデータを取得します…</td></tr>
 
 
 
@@ -398,7 +403,7 @@
 
 
 
-    データ元: <code>v_report_candidates</code>（defect_findings × risk_assessments × work_orders）。
+    データ元: <code>v_report_candidates</code>（defect_findings × risk_assessments × work_orders × v_work_order_outages_summary）。
 
 
 
@@ -437,6 +442,13 @@
 
 
 
+
+    const CHIEF_CFG = {
+      not_required: {cls:'',         text:'–'},
+      pending:      {cls:'chief-pd', text:'🟡 待ち'},
+      confirmed:    {cls:'chief-ok', text:'✅ 済'},
+      rejected:     {cls:'chief-ng', text:'🔴 差戻'}
+    };
 
     async function load(){
 
@@ -514,6 +526,7 @@
 
 
       document.getElementById('kReg').textContent     = d.filter(r=>r.regulation_impact==='yes').length;
+      document.getElementById('kOutage').textContent  = d.filter(r=>r.outage_report_candidate).length;
 
 
 
@@ -528,7 +541,7 @@
 
 
 
-      if(!d.length){ rows.innerHTML = '<tr><td colspan="12" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
+      if(!d.length){ rows.innerHTML = '<tr><td colspan="15" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
 
 
 
@@ -614,10 +627,9 @@
 
 
           <td>${r.estimated_loss_kwh??'–'}</td>
-
-
-
-
+          <td>${r.total_lost_revenue_jpy>0?'¥'+Math.round(r.total_lost_revenue_jpy).toLocaleString('ja-JP'):'–'}</td>
+          <td>${r.outage_report_candidate?'<span class="tag must">🔴 候補</span>':'–'}</td>
+          <td>${(()=>{const c=CHIEF_CFG[r.chief_engineer_review_status]||CHIEF_CFG.not_required;return'<span class="'+c.cls+'">'+c.text+'</span>';})()}</td>
           <td>${sb.esc(r.work_order_no)||'–'}</td>
 
 
