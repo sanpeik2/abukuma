@@ -52,6 +52,31 @@
 
   .arrow{text-align:center;color:var(--muted);font-size:16px;margin:-8px 0 6px}
 
+  /* ===== 2レーン入口（日常運用／異常対応） ===== */
+  .lanes-intro{font-size:12.5px;color:var(--muted);margin:2px 0 14px}
+  .lane{border:1px solid var(--line);border-radius:12px;padding:14px 14px 16px;margin-bottom:16px;background:var(--panel)}
+  .lane.daily{border-left:4px solid var(--insp)}
+  .lane.event{border-left:4px solid var(--defect)}
+  .lane .lh{display:flex;align-items:center;gap:9px;font-size:14px;color:#fff;font-weight:700;margin-bottom:3px}
+  .lane .lh .pill{font-size:10.5px;font-weight:700;padding:1px 9px;border-radius:999px}
+  .lane.daily .lh .pill{color:#7ee787;background:rgba(63,185,80,.14);border:1px solid var(--insp)}
+  .lane.event .lh .pill{color:#ff9c92;background:rgba(248,81,73,.14);border:1px solid var(--defect)}
+  .lane .lsub{font-size:11.5px;color:var(--muted);margin-bottom:11px}
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0}
+  .step{flex:0 0 auto;width:158px;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:#0d1117}
+  .step .sn{color:#fff;font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:5px;margin-bottom:5px}
+  .step .sn .no{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--panel2);font-size:10px;color:var(--muted);flex-shrink:0}
+  .step .who{display:block;font-size:10.5px;color:#8fc3ff;margin-bottom:5px}
+  .step .who::before{content:"👤 "}
+  .step a.scrl,.step span.scrl{display:block;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:3px 7px;margin-bottom:3px;background:var(--panel);color:#cfe3ff;text-decoration:none}
+  .step a.scrl:hover{border-color:var(--master)}
+  .step span.scrl{color:var(--muted)}
+  .sarrow{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;color:var(--muted);font-size:15px}
+  .sarrow .cond{font-size:9.5px;color:#f0c674;max-width:70px;text-align:center;line-height:1.25}
+  .branch{flex:0 0 auto;width:158px;border:1px dashed var(--insp);border-radius:9px;padding:9px 10px;background:rgba(63,185,80,.05);font-size:11px;color:#7ee787;align-self:center}
+  .branch b{color:#fff}
+  @media(max-width:760px){.step,.branch{width:46%}.sarrow{transform:rotate(90deg)}}
+
   /* parallel events */
   .evgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:680px){.evgrid{grid-template-columns:1fr}}
@@ -92,7 +117,61 @@
       <span class="st"><span class="badge b-soon">予定</span> 未実装</span>
     </div>
 
-    <h2 class="sec">本流：点検計画 → 実行 → 是正 → 作業 → 許可 → 承認 → 報告</h2>
+    <!-- ===== 2レーン入口 ===== -->
+    <h2 class="sec">▶ まず全体像：O&M業務は「2つのレーン」で動く</h2>
+    <div class="lanes-intro">毎日まわす<b style="color:#7ee787">日常運用</b>と、アラーム/故障/事故が起きたときの<b style="color:#ff9c92">異常対応</b>。各ステップに <b>担当</b>／<b>使う画面</b>／矢印に<b>次へ進む条件</b>を出しています。詳しい画面対応はこの下の段階別マッピングへ。</div>
+
+    <!-- 日常運用レーン -->
+    <div class="lane daily">
+      <div class="lh"><span class="pill">日常運用レーン</span>毎日・毎週・毎月まわす計画業務</div>
+      <div class="lsub">点検を計画 → 実施し、異常がなければ記録してクローズ。異常があれば作業の流れへ合流する。</div>
+      <div class="flow">
+        <div class="step"><span class="sn"><span class="no">1</span>点検計画</span><span class="who">O&M計画担当</span><a class="scrl" href="./inspection-plan.html">点検計画一覧</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">計画日到来</span></div>
+        <div class="step"><span class="sn"><span class="no">2</span>点検実施</span><span class="who">現場担当</span><a class="scrl" href="./inspection-input.html">点検実績入力</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">結果を記録</span></div>
+        <div class="step"><span class="sn"><span class="no">3</span>異常判定</span><span class="who">O&Mリーダー</span><a class="scrl" href="./decision-flow.html">考え方フロー</a><a class="scrl" href="./defect-flow.html">是正フロー</a></div>
+        <div class="branch">分岐：<b>異常なし</b> → そのまま記録してクローズ／<b>異常あり</b> → ↓ 作業へ</div>
+        <div class="sarrow"><span>→</span><span class="cond">異常あり＝起票</span></div>
+        <div class="step"><span class="sn"><span class="no">4</span>作業票</span><span class="who">O&M担当</span><a class="scrl" href="./work-orders.html">作業票一覧</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">作業内容確定</span></div>
+        <div class="step"><span class="sn"><span class="no">5</span>PTW / KY</span><span class="who">作業責任者</span><a class="scrl" href="./permits.html">作業許可(PTW)</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">許可申請</span></div>
+        <div class="step"><span class="sn"><span class="no">6</span>主任承認</span><span class="who">電気主任技術者</span><a class="scrl" href="./approvals.html">承認待ち一覧</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">承認済</span></div>
+        <div class="step"><span class="sn"><span class="no">7</span>作業実施</span><span class="who">現場担当</span><a class="scrl" href="./work-orders.html">作業票（進捗）</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">作業完了</span></div>
+        <div class="step"><span class="sn"><span class="no">8</span>復旧確認</span><span class="who">O&Mリーダー</span><a class="scrl" href="./defect-rca.html">故障/RCA一覧</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">正常を確認</span></div>
+        <div class="step"><span class="sn"><span class="no">9</span>記録・報告</span><span class="who">管理部・主任技術者</span><a class="scrl" href="./report-candidates.html">報告候補</a><a class="scrl" href="./accident-report-flow.html">事故報告フロー</a></div>
+      </div>
+    </div>
+
+    <!-- 異常対応レーン -->
+    <div class="lane event">
+      <div class="lh"><span class="pill">異常対応レーン</span>アラーム・故障・事故が起きた時の例外業務</div>
+      <div class="lsub">SCADA/現場で異常を覚知 → 一次評価 → A〜F判定。是正は作業の流れに合流し、クローズ後に横展開で再発を防ぐ。</div>
+      <div class="flow">
+        <div class="step"><span class="sn"><span class="no">1</span>SCADA/現場異常</span><span class="who">SCADA・当直</span><a class="scrl" href="./index.html">朝会コックピット</a><a class="scrl" href="./live-board.html">アラーム一覧</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">覚知</span></div>
+        <div class="step"><span class="sn"><span class="no">2</span>一次評価</span><span class="who">O&Mリーダー</span><a class="scrl" href="./decision-flow.html">考え方フロー</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">重大度を評価</span></div>
+        <div class="step"><span class="sn"><span class="no">3</span>A〜F判定</span><span class="who">O&Mリーダー／主任</span><a class="scrl" href="./decision-flow.html">A〜F判定</a><a class="scrl" href="./defect-rca.html">故障/RCA一覧</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">対応種別を決定</span></div>
+        <div class="step"><span class="sn"><span class="no">4</span>作業票/RCA/MOC/事故報告</span><span class="who">O&M担当</span><a class="scrl" href="./work-orders.html">作業票</a><a class="scrl" href="./defect-rca.html">RCA</a><a class="scrl" href="./report-candidates.html">報告候補</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">起票・申請</span></div>
+        <div class="step"><span class="sn"><span class="no">5</span>承認</span><span class="who">電気主任技術者</span><a class="scrl" href="./approvals.html">承認待ち一覧</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">承認済</span></div>
+        <div class="step"><span class="sn"><span class="no">6</span>是正</span><span class="who">現場担当</span><a class="scrl" href="./work-orders.html">作業票（処置）</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">処置完了</span></div>
+        <div class="step"><span class="sn"><span class="no">7</span>クローズ</span><span class="who">O&Mリーダー</span><a class="scrl" href="./defect-rca.html">復旧確認</a></div>
+        <div class="sarrow"><span>→</span><span class="cond">再発防止</span></div>
+        <div class="step"><span class="sn"><span class="no">8</span>横展開</span><span class="who">O&M・管理部</span><a class="scrl" href="./guide-rca.html">⑦RCAの基本</a><a class="scrl" href="./defect-rca.html">恒久処置</a></div>
+      </div>
+    </div>
+
+    <h2 class="sec">▼ ここから下は段階別の画面マッピング詳細</h2>
+    <h2 class="sec" style="border-bottom:none;margin-bottom:6px">本流：点検計画 → 実行 → 是正 → 作業 → 許可 → 承認 → 報告</h2>
     <div class="colhd"><div></div><div class="h1c h3">▌実際の業務</div><div class="h2c">▌O&M OS の画面</div></div>
 
     <!-- 1 -->
