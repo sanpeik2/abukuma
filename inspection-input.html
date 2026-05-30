@@ -999,6 +999,72 @@
 
 
     const esc = sb.esc;
+    const READONLY = new URLSearchParams(location.search).get('readonly') === '1';
+
+    /* ===== 結果閲覧モード（readonly=1 で遷移した場合）===== */
+    async function enterReadonly(){
+      const pid = new URLSearchParams(location.search).get('plan_id');
+      // タイトル・見出し変更
+      document.title = '点検結果（閲覧） — 阿武隈風力発電';
+      document.querySelector('.topbar h1').textContent = '点検結果（閲覧モード）';
+      document.querySelector('.topbar .sub').textContent = '完了済み点検計画の結果を表示しています（入力・登録不可）';
+      // 登録フォームカードを非表示
+      const allCards = document.querySelectorAll('.wrap .card');
+      allCards[0].style.display = 'none';
+      allCards[1].querySelector('h2').textContent = '📋 点検結果（閲覧モード）';
+      const body = $('listBody');
+      if(!pid){
+        body.innerHTML = '<div class="err">plan_id が指定されていません。<a href="./inspection-plan.html">← 点検計画一覧へ</a></div>';
+        return;
+      }
+      try{
+        const [planRows, irRows] = await Promise.all([
+          sb.get(`inspection_plans?id=eq.${encodeURIComponent(pid)}&select=turbine_id,planned_date,work_type,status`),
+          sb.get(`inspection_results?plan_id=eq.${encodeURIComponent(pid)}&order=submitted_at.desc`)
+        ]);
+        const plan = planRows && planRows[0];
+        let html = '';
+        // 計画情報バナー
+        if(plan){
+          const tno = (state.turbines.find(t => t.id === plan.turbine_id)||{}).turbine_no || '(不明)';
+          html += `<div style="margin-bottom:14px;padding:10px 14px;border:1px solid rgba(63,185,80,.4);border-radius:9px;background:rgba(63,185,80,.08);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;">
+            <span style="color:#7ee787;">📋 点検計画</span>
+            <b style="color:#fff;">${esc(tno)}</b>
+            ${plan.planned_date ? `<span style="color:var(--muted);">予定日: ${esc(plan.planned_date)}</span>` : ''}
+            ${plan.work_type ? `<span style="color:var(--muted);">${esc(plan.work_type)}</span>` : ''}
+            <a href="./inspection-plan.html" style="margin-left:auto;font-size:12px;color:#58a6ff;text-decoration:none;">← 点検計画一覧へ戻る</a>
+          </div>`;
+        }
+        // 結果テーブル
+        const SEV_JA = {low:'低', medium:'中', high:'高', critical:'重大'};
+        if(!irRows || !irRows.length){
+          html += '<div style="color:var(--muted);padding:12px 0;">この計画の点検結果はまだ登録されていません。</div>';
+        } else {
+          const trs = irRows.map(r => {
+            const tno2 = (state.turbines.find(t => t.id === r.turbine_id)||{}).turbine_no || '–';
+            const overall = (r.result_status === 'ng' || r.has_anomaly)
+              ? '<b style="color:#ff9a92;">🔴 NG（異常あり）</b>'
+              : '<b style="color:#7ee787;">🟢 OK</b>';
+            const sev = r.severity ? (SEV_JA[r.severity] || r.severity) : '–';
+            return `<tr class="${r.has_anomaly ? 'anom' : ''}">
+              <td style="white-space:nowrap">${esc(r.executed_date || '–')}</td>
+              <td><b style="color:#fff">${esc(tno2)}</b></td>
+              <td>${overall}</td>
+              <td>${esc(r.anomaly_description || '–')}</td>
+              <td style="white-space:nowrap">${esc(sev)}</td>
+              <td style="color:var(--muted)">${esc(r.weather || '–')}</td>
+              <td style="color:var(--muted)">${esc(r.comments || '–')}</td>
+            </tr>`;
+          }).join('');
+          html += `<table><thead><tr>
+            <th>実施日</th><th>号機</th><th>判定</th><th>異常内容</th><th>深刻度</th><th>天候</th><th>コメント</th>
+          </tr></thead><tbody>${trs}</tbody></table>`;
+        }
+        body.innerHTML = html;
+      }catch(e){
+        body.innerHTML = `<div class="err">取得エラー: ${esc(e.message)}</div>`;
+      }
+    }
 
 
 
@@ -2528,6 +2594,7 @@
 
 
         $("f_date").value=today; $("f_date").max=today;
+        if(READONLY){ await enterReadonly(); return; }
         await applyPlanParam();
 
 
