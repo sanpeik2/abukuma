@@ -1,1181 +1,666 @@
 <!DOCTYPE html>
-
-
-
-
 <html lang="ja">
-
-
-
-
 <head>
-
-
-
-
 <meta charset="UTF-8">
-
-
-
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-
-
 <title>作業票一覧 — 阿武隈風力発電</title>
-
-
-
-
 <style>
-
-
-
-
   :root{
-
-
-
-
     --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-
-
-
-
     --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --stop:#ff5630;
-
-
-
-
   }
-
-
-
-
   *{box-sizing:border-box;margin:0;padding:0}
-
-
-
-
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px;line-height:1.6;max-width:1280px;margin:0 auto}
-
-
-
-
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px;line-height:1.6;max-width:1400px;margin:0 auto}
   h1{font-size:23px;margin-bottom:4px}
-
-
-
-
   .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
-
-
-
-
   .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-
-
-
-
   .bar input,.bar select{background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 10px;border-radius:8px;font-size:12.5px}
-
-
-
-
   button.r{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12.5px}
-
-
-
-
   button.r:hover{border-color:var(--master)}
-
-
-
-
-
-
-
-
-
   .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-
-
-
-
   .kpi{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
-
-
-
-
   .kpi .v{font-size:26px;font-weight:700;color:#fff}
-
-
-
-
   .kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px}
-
-
-
-
   .kpi.alert .v{color:var(--stop)}
-
-
-
-
-
-
-
-
-
-  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px}
-
-
-
-
-  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-
-
-
-
-  th{background:var(--panel2);color:#fff;font-size:11.5px;white-space:nowrap}
-
-
-
-
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:var(--panel2);color:#fff;font-size:11px;white-space:nowrap}
   tr:last-child td{border-bottom:none}
-
-
-
-
   td.no{color:#fff;font-weight:600;white-space:nowrap}
-
-
-
-
-  td.desc{max-width:280px}
-
-
-
-
+  td.desc{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
-
-
-
-
   footer{margin-top:28px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
-
-
-
-
   code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
-
-
-
-
   a.menu{color:#58a6ff;text-decoration:none;font-size:12.5px}
-
-
-
-
   tbody tr{cursor:pointer}
-
-
-
-
   tbody tr:hover{background:var(--panel2)}
 
+  /* 停止バッジ */
+  .badge-stop{display:inline-block;background:rgba(248,81,73,.18);color:#f85149;border:1px solid rgba(248,81,73,.4);border-radius:999px;font-size:10.5px;font-weight:700;padding:1px 8px;white-space:nowrap}
+  .badge-none{color:var(--muted);font-size:12px}
 
+  /* 主任確認バッジ */
+  .badge-chief{display:inline-block;border-radius:999px;font-size:10.5px;font-weight:700;padding:1px 8px;white-space:nowrap}
+  .bc-nr   {color:var(--muted)}
+  .bc-pd   {background:rgba(210,153,34,.18);color:#d29922;border:1px solid rgba(210,153,34,.4)}
+  .bc-ok   {background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.4)}
+  .bc-ng   {background:rgba(248,81,73,.18);color:#f85149;border:1px solid rgba(248,81,73,.4)}
 
-
+  /* ドロワー */
   #ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50}
-
-
-
-
   #ov.show{display:block}
-
-
-
-
-  #drawer{position:fixed;top:0;right:0;width:min(560px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
-
-
-
-
+  #drawer{position:fixed;top:0;right:0;width:min(620px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
   #ov.show #drawer{transform:none}
-
-
-
-
   .dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:10px}
-
-
-
-
   .dhd .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
-
-
-
-
   .dhd h2{font-size:17px;color:#fff}
-
-
-
-
   .dbody{padding:18px 20px 40px}
-
-
-
-
   .dno{font-family:monospace;font-size:12px;color:var(--master);margin-bottom:10px}
-
-
-
-
   .dpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
-
-
-
-
   .dpill{font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
-
-
-
-
   .dsec{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
-
-
-
-
   .dval{font-size:13px;color:var(--txt);white-space:pre-wrap}
-
-
-
-
   .dval.empty{color:var(--muted)}
-
-
-
-
   .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0}
-
-
-
-
   .dgrid .l{font-size:11px;color:var(--muted)}
-
-
-
-
   .dgrid .v{font-size:14px;color:#fff;font-weight:600}
 
+  /* 停止詳細テーブル（ドロワー内） */
+  .otbl{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px}
+  .otbl th{background:var(--panel2);color:var(--muted);padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:10.5px;font-weight:700}
+  .otbl td{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--txt);vertical-align:top}
+  .otbl tr:last-child td{border-bottom:none}
+  .otbl .act{display:flex;gap:6px}
+  .btn-sm{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:2px 8px;border-radius:6px;cursor:pointer;font-size:11px}
+  .btn-sm:hover{border-color:var(--master)}
+  .btn-del{color:#f85149;border-color:rgba(248,81,73,.3)}
+  .btn-del:hover{background:rgba(248,81,73,.1);border-color:#f85149}
 
-
-
+  /* 停止追加フォーム（ドロワー内） */
+  #outageForm{background:var(--panel2);border:1px solid rgba(88,166,255,.35);border-radius:10px;padding:14px 16px;margin-top:10px}
+  .of-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .of-grid label{display:block;color:var(--muted);font-size:11px;margin-bottom:3px;font-weight:600}
+  .of-inp{width:100%;background:#0d1117;border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:6px 9px;font-size:12px;font-family:inherit}
+  .of-span2{grid-column:1/3}
 </style>
-
-
-
-
 </head>
-
-
-
-
 <body>
-
-
-
 
 <nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:14px 18px 12px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;"><span style="display:flex;flex-direction:column;line-height:1.15;border-left:3px solid rgb(210,153,34);padding-left:9px;flex:0 0 auto;"><b style="color:#e6edf3;font-size:12.5px;font-weight:800;letter-spacing:.04em;">業務フロー</b><span style="color:#6e7681;font-size:10px;">現在地</span></span><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(210,153,34);background:rgba(210,153,34,.13);border:1px solid rgba(210,153,34,.45);">🟠 異常〜作業フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">6 / 11</span><span style="flex:0 0 auto;display:inline-block;width:120px;max-width:30vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:50%;border-radius:999px;background:rgb(210,153,34);"></span></span></div><div style="display:flex;align-items:flex-start;flex-wrap:wrap;row-gap:6px;"><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./index.html" title="今日の管制塔（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">今日の管制塔</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./live-board.html" title="監視（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">監視</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-plan.html" title="点検計画（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検計画</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-input.html" title="点検実施（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="異常判断（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">異常判断</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><div title="現在この画面です" aria-current="step" style="display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:rgb(210,153,34);color:#11161d;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:2px solid rgb(210,153,34);box-shadow:0 0 0 4px rgba(210,153,34,.22);box-sizing:border-box;">6</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#fff;font-weight:800;max-width:78px;word-break:break-word;">作業票</span></div></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./permits.html" title="PTW/KY（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">7</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">PTW/KY</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./approvals.html" title="承認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">8</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">承認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">9</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="復旧確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">10</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">復旧確認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./report-candidates.html" title="クローズ・報告確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">11</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">クローズ・報告確認</span></a></div></div></nav>
 
+<div style="margin-bottom:10px"><a class="menu" href="./menu.html">≡ メニューへ戻る</a></div>
+<h1>作業票一覧</h1>
+<div class="sub">阿武隈風力発電所 / <code>v_work_orders_full</code> ＋ <code>v_work_order_outages_summary</code> をライブ取得</div>
 
+<div class="cards">
+  <div class="kpi"><div class="v" id="kTotal">–</div><div class="l">作業票（合計）</div></div>
+  <div class="kpi alert"><div class="v" id="kOpen">–</div><div class="l">未完了</div></div>
+  <div class="kpi"><div class="v" id="kStop">–</div><div class="l">停止影響あり</div></div>
+  <div class="kpi"><div class="v" id="kChief">–</div><div class="l">主任確認待ち</div></div>
+</div>
 
+<div id="woCreate" style="display:none;margin:0 0 16px;"></div>
 
-  <div style="margin-bottom:10px"><a class="menu" href="./menu.html">≡ メニューへ戻る</a></div>
+<div class="bar">
+  <button class="r" onclick="openManualNew()" style="background:#1f6feb;color:#fff;border:none;font-weight:700;">＋ 新規作業票</button>
+  <input id="q" type="text" placeholder="🔍 風車・番号・概要で絞り込み" oninput="apply()">
+  <select id="fOpen" onchange="apply()">
+    <option value="all">すべて</option>
+    <option value="open">未完了のみ</option>
+    <option value="done">完了のみ</option>
+  </select>
+  <select id="fStop" onchange="apply()">
+    <option value="all">停止: すべて</option>
+    <option value="yes">停止あり</option>
+    <option value="no">停止なし</option>
+  </select>
+  <button class="r" onclick="load()">↻ 再読み込み</button>
+</div>
 
+<table>
+  <thead>
+    <tr>
+      <th>作業票番号</th><th>風車</th><th>種別</th><th>概要</th>
+      <th>優先度</th><th>状態</th>
+      <th>停止</th><th>停止時間(分)</th><th>逸失電力(kWh)</th><th>逸失売電額(円)</th><th>主任確認</th>
+      <th>添付</th><th>起票日時</th>
+    </tr>
+  </thead>
+  <tbody id="rows">
+    <tr><td colspan="13" class="empty">ログインするとデータを取得します…</td></tr>
+  </tbody>
+</table>
 
+<footer>
+  データ元: <code>v_work_orders_full</code>（作業票基本情報）＋ <code>v_work_order_outages_summary</code>（停止・発電影響集約）。行クリックで詳細を表示。
+</footer>
 
-
-  <h1>作業票一覧</h1>
-
-
-
-
-  <div class="sub">阿武隈風力発電所 / ビュー <code>v_work_orders_full</code> をライブ取得（JST・絵文字ステータス付与済み）</div>
-
-
-
-
-
-
-
-
-
-  <div class="cards">
-
-
-
-
-    <div class="kpi"><div class="v" id="kTotal">–</div><div class="l">作業票（合計）</div></div>
-
-
-
-
-    <div class="kpi alert"><div class="v" id="kOpen">–</div><div class="l">未完了</div></div>
-
-
-
-
-    <div class="kpi"><div class="v" id="kStop">–</div><div class="l">停止影響あり</div></div>
-
-
-
-
-    <div class="kpi"><div class="v" id="kAtt">–</div><div class="l">添付あり</div></div>
-
-
-
-
+<div id="ov" onclick="if(event.target.id==='ov')closeDetail()">
+  <div id="drawer">
+    <div class="dhd"><h2 id="dTitle">作業票詳細</h2><button class="x" onclick="closeDetail()">×</button></div>
+    <div class="dbody" id="dBody"></div>
   </div>
-
-
-
-
-
-
-
-
-
-  <div id="woCreate" style="display:none;margin:0 0 16px;"></div>
-
-  <div class="bar">
-    <button class="r" onclick="openManualNew()" style="background:#1f6feb;color:#fff;border:none;font-weight:700;">＋ 新規作業票</button>
-
-
-
-
-    <input id="q" type="text" placeholder="🔍 風車・番号・概要で絞り込み" oninput="apply()">
-
-
-
-
-    <select id="fOpen" onchange="apply()">
-
-
-
-
-      <option value="all">すべて</option>
-
-
-
-
-      <option value="open">未完了のみ</option>
-
-
-
-
-      <option value="done">完了のみ</option>
-
-
-
-
-    </select>
-
-
-
-
-    <button class="r" onclick="load()">↻ 再読み込み</button>
-
-
-
-
-  </div>
-
-
-
-
-
-
-
-
-
-  <table>
-
-
-
-
-    <thead>
-
-
-
-
-      <tr>
-
-
-
-
-        <th>作業票番号</th><th>風車</th><th>種別</th><th>概要</th>
-
-
-
-
-        <th>優先度</th><th>状態</th><th>対応予定</th><th>停止(分)</th>
-
-
-
-
-        <th>逸失kWh</th><th>添付</th><th>起票日時</th>
-
-
-
-
-      </tr>
-
-
-
-
-    </thead>
-
-
-
-
-    <tbody id="rows">
-
-
-
-
-      <tr><td colspan="11" class="empty">ログインするとデータを取得します…</td></tr>
-
-
-
-
-    </tbody>
-
-
-
-
-  </table>
-
-
-
-
-
-
-
-
-
-  <footer>
-
-
-
-
-    データ元: <code>v_work_orders_full</code>（work_orders ＋ 関連異常・添付数・JST変換）。行をクリックすると詳細を表示します。
-
-
-
-
-  </footer>
-
-
-
-
-
-
-
-
-
-  <div id="ov" onclick="if(event.target.id==='ov')closeDetail()">
-
-
-
-
-    <div id="drawer">
-
-
-
-
-      <div class="dhd"><h2 id="dTitle">作業票詳細</h2><button class="x" onclick="closeDetail()">×</button></div>
-
-
-
-
-      <div class="dbody" id="dBody"></div>
-
-
-
-
+</div>
+
+<script src="./lib/supabase.js"></script>
+<script>
+let ALL = [];
+let SUMMARY_MAP = {}; // work_order_id → v_work_order_outages_summary row
+
+/* ===== データ取得 ===== */
+async function load(){
+  const rows = document.getElementById('rows');
+  rows.innerHTML = '<tr><td colspan="13" class="empty">取得中…</td></tr>';
+  try{
+    const order = encodeURIComponent('起票日時_jst');
+    const [woRows, sumRows] = await Promise.all([
+      sb.get(`v_work_orders_full?select=*&order=${order}.desc`),
+      sb.get(`v_work_order_outages_summary?select=*`)
+    ]);
+    ALL = woRows || [];
+    SUMMARY_MAP = {};
+    (sumRows||[]).forEach(s => { SUMMARY_MAP[s.work_order_id] = s; });
+    renderKpi(ALL);
+    apply();
+  }catch(e){
+    rows.innerHTML = `<tr><td colspan="13" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
+  }
+}
+
+function renderKpi(d){
+  document.getElementById('kTotal').textContent  = d.length;
+  document.getElementById('kOpen').textContent   = d.filter(r=>!r['完了日時_jst']).length;
+  document.getElementById('kStop').textContent   = d.filter(r => SUMMARY_MAP[r['id']]?.outage_occurred).length;
+  document.getElementById('kChief').textContent  = Object.values(SUMMARY_MAP).filter(s=>s.chief_engineer_review_status==='pending').length;
+}
+
+/* ===== フィルタ ===== */
+function apply(){
+  const q    = document.getElementById('q').value.trim().toLowerCase();
+  const fOp  = document.getElementById('fOpen').value;
+  const fSt  = document.getElementById('fStop').value;
+  let d = ALL;
+  if(fOp==='open') d = d.filter(r=>!r['完了日時_jst']);
+  if(fOp==='done') d = d.filter(r=> r['完了日時_jst']);
+  if(fSt==='yes')  d = d.filter(r=>  SUMMARY_MAP[r['id']]?.outage_occurred);
+  if(fSt==='no')   d = d.filter(r=> !SUMMARY_MAP[r['id']]?.outage_occurred);
+  if(q){
+    d = d.filter(r => [r['作業票番号'],r['風車'],r['異常概要'],r['関連異常タイトル'],r['作業種別']]
+      .some(v => (v||'').toLowerCase().includes(q)));
+  }
+  render(d);
+}
+
+/* ===== 一覧レンダリング ===== */
+const OUTAGE_TYPE_JA = {forced:'故障停止',planned:'計画停止',grid_request:'系統要請',safety_measure:'保安措置',curtailment:'出力抑制',test:'試験',other:'その他'};
+const CHIEF_CFG = {not_required:{cls:'bc-nr',text:'–'},pending:{cls:'bc-pd badge-chief',text:'🟡 主任待ち'},confirmed:{cls:'bc-ok badge-chief',text:'✅ 済'},rejected:{cls:'bc-ng badge-chief',text:'🔴 差戻'}};
+
+function stopBadge(s){
+  if(!s || !s.outage_occurred) return '<span class="badge-none">–</span>';
+  return `<span class="badge-stop">🔴 停止 ${s.outage_count||''}件</span>`;
+}
+function chiefBadge(status){
+  const c = CHIEF_CFG[status] || CHIEF_CFG.not_required;
+  return `<span class="${c.cls}">${c.text}</span>`;
+}
+function fmtYen(v){ return v>0 ? '¥'+Math.round(v).toLocaleString('ja-JP') : '–'; }
+function fmtNum(v, unit){ return (v!=null && v>0) ? v.toLocaleString('ja-JP')+(unit?'<small>'+unit+'</small>':'') : '–'; }
+
+function render(d){
+  const rows = document.getElementById('rows');
+  if(!d.length){ rows.innerHTML = '<tr><td colspan="13" class="empty">該当する作業票はありません</td></tr>'; return; }
+  rows.innerHTML = d.map(r=>{
+    const s = SUMMARY_MAP[r['id']] || null;
+    return `<tr onclick="openDetail('${sb.esc(r['id'])}')">
+      <td class="no">${sb.esc(r['作業票番号'])}</td>
+      <td>${sb.esc(r['風車'])||'–'}</td>
+      <td>${sb.esc(r['作業種別'])||'–'}</td>
+      <td class="desc">${sb.esc(r['異常概要']||r['関連異常タイトル'])||'–'}</td>
+      <td>${sb.esc(r['優先度表示']||r['優先度'])||'–'}</td>
+      <td>${sb.esc(r['状態表示']||r['状態'])||'–'}</td>
+      <td>${stopBadge(s)}</td>
+      <td>${s && s.total_downtime_minutes>0 ? s.total_downtime_minutes : '–'}</td>
+      <td>${s && s.total_lost_energy_kwh>0 ? s.total_lost_energy_kwh.toLocaleString('ja-JP') : '–'}</td>
+      <td>${s ? fmtYen(s.total_lost_revenue_jpy) : '–'}</td>
+      <td>${chiefBadge(s?.chief_engineer_review_status)}</td>
+      <td>${(r['添付数']||0)>0?('📎'+r['添付数']):'–'}</td>
+      <td>${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ===== 詳細ドロワー ===== */
+function fld(label, val){
+  const empty = val==null || val==='';
+  return `<div class="dsec">${label}</div><div class="dval${empty?' empty':''}">${empty?'（記載なし）':sb.esc(val)}</div>`;
+}
+
+async function openDetail(id){
+  const r = ALL.find(x => String(x['id'])===String(id));
+  if(!r) return;
+  const s = SUMMARY_MAP[id] || null;
+  document.getElementById('dTitle').textContent = (r['風車']||'') + ' 作業票';
+  document.getElementById('dBody').innerHTML = buildDetailHtml(r, s);
+  document.getElementById('ov').classList.add('show');
+  // 停止詳細行を非同期で取得してセクションを更新
+  refreshOutageSection(id, r['turbine_id']||null);
+}
+
+function buildDetailHtml(r, s){
+  const id = r['id'];
+  const tid = r['turbine_id']||'';
+  return `
+    <div class="dno">${sb.esc(r['作業票番号']||'')}</div>
+    <div class="dpills">
+      <span class="dpill">${sb.esc(r['状態表示']||r['状態']||'')}</span>
+      <span class="dpill">${sb.esc(r['優先度表示']||r['優先度']||'')}</span>
+      ${r['深刻度']?`<span class="dpill">深刻度 ${sb.esc(r['深刻度'])}</span>`:''}
+      ${r['作業種別']?`<span class="dpill">${sb.esc(r['作業種別'])}</span>`:''}
     </div>
-
-
-
-
-  </div>
-
-
-
-
-
-
-
-
-
-  <script src="./lib/supabase.js"></script>
-
-
-
-
-  <script>
-
-
-
-
-    let ALL = [];
-
-
-
-
-
-
-
-
-
-    async function load(){
-
-
-
-
-      const rows = document.getElementById('rows');
-
-
-
-
-      rows.innerHTML = '<tr><td colspan="11" class="empty">取得中…</td></tr>';
-
-
-
-
-      try{
-
-
-
-
-        const order = encodeURIComponent('起票日時_jst');
-
-
-
-
-        ALL = await sb.get(`v_work_orders_full?select=*&order=${order}.desc`);
-
-
-
-
-        renderKpi(ALL);
-
-
-
-
-        apply();
-
-
-
-
-      }catch(e){
-
-
-
-
-        rows.innerHTML = `<tr><td colspan="11" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
-
-
-
-
-      }
-
-
-
-
+    <div class="dgrid">
+      <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
+      <div><div class="l">対応予定日</div><div class="v">${sb.esc(r['対応予定日']||'–')}</div></div>
+    </div>
+    ${fld('異常概要', r['異常概要'])}
+    ${fld('関連異常', r['関連異常タイトル'])}
+    ${fld('根本原因', r['根本原因'])}
+    ${fld('暫定処置', r['暫定処置'])}
+    ${fld('恒久処置', r['恒久処置'])}
+    <div class="dgrid" style="margin-top:14px">
+      <div><div class="l">起票日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['起票日時_jst']||'–')}</div></div>
+      <div><div class="l">完了日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['完了日時_jst']||'–')}</div></div>
+    </div>
+    <div class="dsec">添付</div>
+    <div class="dval${(r['添付数']||0)>0?'':' empty'}">${(r['添付数']||0)>0?('📎 '+r['添付数']+' 件'):'なし'}</div>
+
+    <!-- 停止・発電影響セクション -->
+    <div class="dsec" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
+      <span>停止・発電影響</span>
+      <button class="btn-sm" onclick="openOutageAdd('${sb.esc(id)}','${sb.esc(tid)}',null,{})">＋ 停止時間帯を追加</button>
+    </div>
+    ${outageSummaryHtml(s)}
+    <div id="outageList" style="margin-top:8px"><div style="color:var(--muted);font-size:12px;">読み込み中…</div></div>
+    <div id="outageForm" style="display:none;"></div>
+
+    <div style="margin-top:20px;display:flex;gap:14px;font-size:12.5px">
+      <a class="menu" href="./permits.html">🔒 関連する作業許可(PTW)</a>
+      <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
+    </div>`;
+}
+
+function outageSummaryHtml(s){
+  if(!s || !s.outage_occurred){
+    return `<div style="color:var(--muted);font-size:12px;padding:6px 0;">停止記録なし</div>`;
+  }
+  return `<div style="background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);border-radius:8px;padding:10px 14px;margin-top:6px;">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;">
+      <div><div style="font-size:10.5px;color:var(--muted);">停止件数</div><div style="font-size:16px;font-weight:700;color:#f85149;">${s.outage_count}件</div></div>
+      <div><div style="font-size:10.5px;color:var(--muted);">合計停止時間</div><div style="font-size:16px;font-weight:700;color:#fff;">${s.total_downtime_minutes.toLocaleString('ja-JP')}<small style="font-size:11px;font-weight:normal;color:var(--muted);"> 分</small></div></div>
+      <div><div style="font-size:10.5px;color:var(--muted);">逸失電力量</div><div style="font-size:16px;font-weight:700;color:#fff;">${s.total_lost_energy_kwh>0?s.total_lost_energy_kwh.toLocaleString('ja-JP'):'–'}<small style="font-size:11px;font-weight:normal;color:var(--muted);"> kWh</small></div></div>
+      <div><div style="font-size:10.5px;color:var(--muted);">逸失売電額</div><div style="font-size:16px;font-weight:700;color:#d29922;">${s.total_lost_revenue_jpy>0?'¥'+Math.round(s.total_lost_revenue_jpy).toLocaleString('ja-JP'):'–'}</div></div>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap;font-size:12px;">
+      <span>主任確認: ${chiefBadge(s.chief_engineer_review_status)}</span>
+      <span style="color:${s.regulatory_report_candidate?'#f85149':'var(--muted)'};">保安規定報告: ${s.regulatory_report_candidate?'🔴 候補あり':'–'}</span>
+      <span style="color:${s.aggregator_contact_required?'#d29922':'var(--muted)'};">アグリゲーター: ${s.aggregator_contact_required?'🟡 連絡要':'–'}</span>
+    </div>
+  </div>`;
+}
+
+async function refreshOutageSection(woId, turbineId){
+  const listEl = document.getElementById('outageList');
+  if(!listEl) return;
+  try{
+    const rows = await sb.get(`work_order_outages?work_order_id=eq.${encodeURIComponent(woId)}&order=started_at.asc`);
+    listEl.innerHTML = outageTableHtml(rows||[], woId, turbineId||'');
+    // サマリも更新
+    const sums = await sb.get(`v_work_order_outages_summary?work_order_id=eq.${encodeURIComponent(woId)}`);
+    if(sums && sums.length){
+      SUMMARY_MAP[woId] = sums[0];
+    } else {
+      delete SUMMARY_MAP[woId];
     }
+    // 一覧の停止カラムをその場で更新（完全再レンダリングは重いので KPI のみ）
+    renderKpi(ALL);
+  }catch(e){
+    if(listEl) listEl.innerHTML = `<div style="color:#f85149;font-size:12px;">取得エラー: ${sb.esc(e.message)}</div>`;
+  }
+}
 
+function fmtDt(v){ if(!v) return '–'; return String(v).replace('T',' ').replace('+09:00','').slice(5,16); }
 
+function outageTableHtml(rows, woId, turbineId){
+  if(!rows.length) return '<div style="color:var(--muted);font-size:12px;padding:4px 0;">停止時間帯の記録はありません</div>';
+  const trs = rows.map(o=>{
+    const eid = sb.esc(o.id);
+    const eWo = sb.esc(woId);
+    const eTid = sb.esc(turbineId);
+    return `<tr>
+      <td>${sb.esc(OUTAGE_TYPE_JA[o.outage_type]||o.outage_type||'–')}</td>
+      <td>${fmtDt(o.started_at)}</td>
+      <td>${fmtDt(o.ended_at)}</td>
+      <td>${o.downtime_minutes!=null?o.downtime_minutes+'分':'–'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${sb.esc(o.outage_reason||'')}">${sb.esc(o.outage_reason)||'–'}</td>
+      <td>${sb.esc(o.decided_by||'–')}</td>
+      <td>${fmtDt(o.decided_at)}</td>
+      <td>${o.regulatory_report_candidate?'🔴':'–'}</td>
+      <td>${o.aggregator_contact_required?'🟡':'–'}</td>
+      <td class="act">
+        <button class="btn-sm" onclick="openOutageAdd('${eWo}','${eTid}','${eid}',${JSON.stringify({
+          outage_type:o.outage_type||'',
+          outage_reason:o.outage_reason||'',
+          started_at:o.started_at?o.started_at.slice(0,16):'',
+          ended_at:o.ended_at?o.ended_at.slice(0,16):'',
+          downtime_minutes:o.downtime_minutes||'',
+          lost_energy_kwh:o.lost_energy_kwh||'',
+          unit_price_jpy:o.unit_price_jpy||'',
+          decided_by:o.decided_by||'',
+          decided_role:o.decided_role||'',
+          decided_at:o.decided_at?o.decided_at.slice(0,16):'',
+          regulatory_report_candidate:!!o.regulatory_report_candidate,
+          aggregator_contact_required:!!o.aggregator_contact_required,
+          chief_engineer_review_status:o.chief_engineer_review_status||'not_required',
+          note:o.note||''
+        }).replace(/"/g,"'")})">編集</button>
+        <button class="btn-sm btn-del" onclick="deleteOutage('${eid}','${eWo}','${eTid}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+  return `<table class="otbl">
+    <thead><tr>
+      <th>種別</th><th>停止開始</th><th>停止終了</th><th>停止時間</th><th>停止理由</th>
+      <th>判断者</th><th>判断時刻</th><th>保安規定</th><th>AGG</th><th>操作</th>
+    </tr></thead>
+    <tbody>${trs}</tbody>
+  </table>`;
+}
 
+/* ===== 停止時間帯 追加/編集フォーム ===== */
+function openOutageAdd(woId, turbineId, editId, prefill){
+  // prefillはJSON文字列（テーブル内でattribute経由）またはオブジェクト
+  if(typeof prefill === 'string') try{ prefill=JSON.parse(prefill.replace(/'/g,'"')); }catch(e){ prefill={}; }
+  const p = prefill||{};
+  const inp = 'class="of-inp"';
+  const lab = v => `<label>${v}</label>`;
+  const sel = (id, opts, cur) => `<select id="${id}" ${inp}>${opts.map(([v,t])=>`<option value="${v}"${v===cur?' selected':''}>${t}</option>`).join('')}</select>`;
+  const formEl = document.getElementById('outageForm');
+  const isEdit = !!editId;
+  formEl.style.display = 'block';
+  formEl.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <b style="font-size:13px;color:#fff;">${isEdit?'停止時間帯を編集':'停止時間帯を追加'}</b>
+      <button class="btn-sm" onclick="document.getElementById('outageForm').style.display='none'">✕ 閉じる</button>
+    </div>
+    <div class="of-grid">
+      <div>${lab('停止種別')}${sel('of_type',[['forced','故障停止'],['planned','計画停止'],['grid_request','系統要請'],['safety_measure','保安措置'],['curtailment','出力抑制'],['test','試験'],['other','その他']],p.outage_type||'forced')}</div>
+      <div>${lab('停止理由')}<input id="of_reason" ${inp} value="${sb.esc(p.outage_reason||'')}" placeholder="例: ピッチ系異常"></div>
+      <div>${lab('停止開始')}<input id="of_start" type="datetime-local" ${inp} value="${sb.esc(p.started_at||'')}" oninput="ofCalcDt()"></div>
+      <div>${lab('停止終了')}<input id="of_end" type="datetime-local" ${inp} value="${sb.esc(p.ended_at||'')}" oninput="ofCalcDt()"></div>
+      <div>${lab('停止時間（分）')}<input id="of_dt" type="number" min="0" ${inp} value="${sb.esc(String(p.downtime_minutes||''))}" placeholder="自動算出"></div>
+      <div></div>
+      <div>${lab('逸失電力量（kWh）')}<input id="of_kwh" type="number" min="0" step="0.1" ${inp} value="${sb.esc(String(p.lost_energy_kwh||''))}" oninput="ofCalcRev()"></div>
+      <div>${lab('単価（円/kWh）')}<input id="of_price" type="number" min="0" step="0.01" ${inp} value="${sb.esc(String(p.unit_price_jpy||''))}" oninput="ofCalcRev()"></div>
+      <div>${lab('逸失売電額（概算）')}<input id="of_rev" ${inp} readonly placeholder="自動算出"></div>
+      <div>${lab('電気主任技術者確認')}${sel('of_chief',[['not_required','確認不要'],['pending','主任確認待ち'],['confirmed','主任確認済み'],['rejected','差戻し']],p.chief_engineer_review_status||'not_required')}</div>
+      <div>${lab('停止判断者')}<input id="of_decby" ${inp} value="${sb.esc(p.decided_by||'')}" placeholder="責任の所在"></div>
+      <div>${lab('役割')}${sel('of_decrole',[['','—'],['代表','代表'],['管理部長','管理部長'],['設備運用部長','設備運用部長'],['電気主任技術者','電気主任技術者'],['現場責任者','現場責任者'],['その他','その他']],p.decided_role||'')}</div>
+      <div>${lab('判断時刻')}<input id="of_decat" type="datetime-local" ${inp} value="${sb.esc(p.decided_at||'')}"></div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:8px;padding-top:14px;">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;"><input type="checkbox" id="of_reg" ${p.regulatory_report_candidate?'checked':''} style="width:14px;height:14px;">保安規定報告候補</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;"><input type="checkbox" id="of_agg" ${p.aggregator_contact_required?'checked':''} style="width:14px;height:14px;">アグリゲーター連絡要</label>
+      </div>
+      <div class="of-span2">${lab('備考')}<input id="of_note" ${inp} value="${sb.esc(p.note||'')}"></div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
+      <button onclick="submitOutageAdd('${sb.esc(woId)}','${sb.esc(turbineId)}','${sb.esc(editId||'')}')" style="background:#1f6feb;color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-weight:700;font-size:12.5px;">${isEdit?'更新':'追加'}</button>
+      <button class="btn-sm" onclick="document.getElementById('outageForm').style.display='none'">キャンセル</button>
+      <span id="of_msg" style="font-size:12px;color:var(--muted);"></span>
+    </div>`;
+  // 初期売電額表示
+  ofCalcRev();
+  formEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 
+function ofCalcDt(){
+  const s=document.getElementById('of_start').value, e=document.getElementById('of_end').value;
+  if(s&&e){ const m=Math.round((new Date(e)-new Date(s))/60000); if(m>=0) document.getElementById('of_dt').value=m; }
+}
+function ofCalcRev(){
+  const k=parseFloat(document.getElementById('of_kwh')?.value), p=parseFloat(document.getElementById('of_price')?.value);
+  const r=document.getElementById('of_rev');
+  if(r) r.value=(!isNaN(k)&&!isNaN(p))?('¥'+Math.round(k*p).toLocaleString('ja-JP')):'';
+}
 
-
-
-
-
-    function renderKpi(d){
-
-
-
-
-      document.getElementById('kTotal').textContent = d.length;
-
-
-
-
-      document.getElementById('kOpen').textContent  = d.filter(r=>!r['完了日時_jst']).length;
-
-
-
-
-      document.getElementById('kStop').textContent  = d.filter(r=>(r['停止時間min']||0)>0).length;
-
-
-
-
-      document.getElementById('kAtt').textContent   = d.filter(r=>(r['添付数']||0)>0).length;
-
-
-
-
+async function submitOutageAdd(woId, turbineId, editId){
+  const g = id => document.getElementById(id);
+  const msg = g('of_msg');
+  const oz = v => v ? new Date(v).toISOString() : null;
+  const body = {
+    work_order_id: woId,
+    turbine_id: turbineId||null,
+    outage_occurred: true,
+    outage_type: g('of_type').value||null,
+    outage_reason: g('of_reason').value||null,
+    started_at: oz(g('of_start').value),
+    ended_at: oz(g('of_end').value),
+    downtime_minutes: g('of_dt').value ? parseInt(g('of_dt').value,10) : null,
+    lost_energy_kwh: g('of_kwh').value ? parseFloat(g('of_kwh').value) : null,
+    unit_price_jpy: g('of_price').value ? parseFloat(g('of_price').value) : null,
+    decided_by: g('of_decby').value||null,
+    decided_role: g('of_decrole').value||null,
+    decided_at: oz(g('of_decat').value),
+    regulatory_report_candidate: g('of_reg').checked,
+    aggregator_contact_required: g('of_agg').checked,
+    chief_engineer_review_status: g('of_chief').value,
+    chief_engineer_confirmed: g('of_chief').value==='confirmed',
+    chief_engineer_confirmed_at: g('of_chief').value==='confirmed' ? new Date().toISOString() : null,
+    note: g('of_note').value||null
+  };
+  msg.style.color='#8b949e'; msg.textContent='保存中…';
+  try{
+    if(editId){
+      await sbPatch(`work_order_outages?id=eq.${encodeURIComponent(editId)}`, body);
+    } else {
+      body.created_at = new Date().toISOString();
+      await sb.write('POST','work_order_outages', body);
     }
+    msg.style.color='#7ee787'; msg.textContent='✔ 保存しました';
+    document.getElementById('outageForm').style.display='none';
+    await refreshOutageSection(woId, turbineId);
+    setTimeout(()=>{ if(msg) msg.textContent=''; }, 2000);
+  }catch(e){
+    msg.style.color='#f85149'; msg.textContent='保存失敗: '+sb.esc(e.message);
+  }
+}
+
+async function deleteOutage(oid, woId, turbineId){
+  if(!confirm('この停止時間帯を削除しますか？')) return;
+  try{
+    await sbDelete(`work_order_outages?id=eq.${encodeURIComponent(oid)}`);
+    await refreshOutageSection(woId, turbineId);
+  }catch(e){
+    alert('削除失敗: '+e.message);
+  }
+}
+
+/* Supabase REST PATCH/DELETE helpers */
+async function sbPatch(path, body){
+  const res = await fetch(`${sb.URL}/rest/v1/${path}`, {
+    method:'PATCH',
+    headers: sb.headers({'Prefer':'return=minimal'}),
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){ const t=await res.text(); throw new Error(t||res.status); }
+}
+async function sbDelete(path){
+  const res = await fetch(`${sb.URL}/rest/v1/${path}`, {
+    method:'DELETE',
+    headers: sb.headers({'Prefer':'return=minimal'})
+  });
+  if(!res.ok){ const t=await res.text(); throw new Error(t||res.status); }
+}
+
+function closeDetail(){ document.getElementById('ov').classList.remove('show'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDetail(); });
 
 
+/* ===== 作業票 起票（4起票元） ===== */
+function qparam(k){ return new URLSearchParams(location.search).get(k); }
+function enc(v){ return encodeURIComponent(v); }
+function warnBox(m){ return `<div style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#1c2128;color:#f85149;">${m}</div>`; }
+function closeCreate(){ const b=document.getElementById('woCreate'); b.style.display='none'; b.innerHTML=''; history.replaceState({},'',location.pathname); }
+function openManualNew(){ history.replaceState({},'','?new=1'); openCreate('manual', null); }
+async function turbineNo(tid){ if(!tid) return ''; try{ const t=await sb.get(`turbines?id=eq.${enc(tid)}&select=turbine_no`); return (t&&t.length)?(t[0].turbine_no||''):''; }catch(e){ return ''; } }
 
+async function checkCreateParam(){
+  const did=qparam('defect_finding_id'), pid=qparam('inspection_plan_id'), rid=qparam('inspection_result_id'), nw=qparam('new');
+  if(did) return openCreate('defect', did);
+  if(pid) return openCreate('inspection_plan', pid);
+  if(rid) return openCreate('inspection_result', rid);
+  if(nw)  return openCreate('manual', null);
+}
 
+const SRC = {
+  defect:            {badge:'異常起点',     rgb:'210,153,34', note:'defect_finding_id を引き継いで保存します'},
+  inspection_plan:   {badge:'点検計画起点', rgb:'63,185,80',  note:'計画ID(source_id)を引き継いで保存します'},
+  inspection_result: {badge:'点検実施起点', rgb:'63,185,80',  note:'点検結果ID(result_id)を引き継いで保存します'},
+  manual:            {badge:'新規（手動）', rgb:'88,166,255', note:'起票元と起票理由を記録します'}
+};
 
+function dupPanel(w){
+  return `<div style="padding:14px 16px;border:1px solid rgba(63,185,80,.45);border-radius:10px;background:rgba(63,185,80,.10);display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-size:20px;">✔</span><div style="flex:1 1 auto;"><div style="color:#7ee787;font-weight:700;">この起票元には既に作業票があります</div><div style="color:#c9d1d9;font-size:12.5px;margin-top:3px;">${sb.esc(w.work_order_no||w.id)}（状態: ${sb.esc(w.status||'—')}）— 重複起票を防止しました</div></div><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;">閉じる</button></div>`;
+}
 
-
-
-
-    function apply(){
-
-
-
-
-      const q = document.getElementById('q').value.trim().toLowerCase();
-
-
-
-
-      const f = document.getElementById('fOpen').value;
-
-
-
-
-      let d = ALL;
-
-
-
-
-      if(f==='open') d = d.filter(r=>!r['完了日時_jst']);
-
-
-
-
-      if(f==='done') d = d.filter(r=> r['完了日時_jst']);
-
-
-
-
-      if(q){
-
-
-
-
-        d = d.filter(r => [r['作業票番号'],r['風車'],r['異常概要'],r['関連異常タイトル'],r['作業種別']]
-
-
-
-
-          .some(v => (v||'').toLowerCase().includes(q)));
-
-
-
-
-      }
-
-
-
-
-      render(d);
-
-
-
-
+async function openCreate(kind, sid){
+  const box=document.getElementById('woCreate');
+  box.style.display='block';
+  box.innerHTML='<div style="padding:14px;color:#8b949e;">読み込み中…</div>';
+  box.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    const ctx={ kind, source_type:kind, work_type:'corrective' };
+    if(kind==='defect'){
+      const dups=await sb.get(`work_orders?defect_finding_id=eq.${enc(sid)}&select=id,work_order_no,status`);
+      if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
+      const ds=await sb.get(`defect_findings?id=eq.${enc(sid)}&select=*`);
+      if(!ds||!ds.length){ box.innerHTML=warnBox('対象の異常が見つかりませんでした'); return; }
+      const d=ds[0];
+      ctx.defect_finding_id=sid; ctx.turbine_id=d.turbine_id||'';
+      ctx.desc=[d.finding_title,d.finding_detail].filter(Boolean).join('\n');
+      if(d.safety_impact) ctx.desc+=(ctx.desc?'\n':'')+'【安全影響】'+d.safety_impact;
+    }else if(kind==='inspection_plan'){
+      const dups=await sb.get(`work_orders?source_type=eq.inspection_plan&source_id=eq.${enc(sid)}&select=id,work_order_no,status`);
+      if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
+      const ps=await sb.get(`inspection_plans?id=eq.${enc(sid)}&select=*`);
+      if(!ps||!ps.length){ box.innerHTML=warnBox('対象の点検計画が見つかりませんでした'); return; }
+      const p=ps[0];
+      ctx.source_id=sid; ctx.turbine_id=p.turbine_id||'';
+      ctx.planned_date=p.planned_date||''; ctx.desc=p.notes||''; ctx.work_type='preventive';
+    }else if(kind==='inspection_result'){
+      const dups=await sb.get(`work_orders?result_id=eq.${enc(sid)}&select=id,work_order_no,status`);
+      if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
+      const rs=await sb.get(`inspection_results?id=eq.${enc(sid)}&select=*`);
+      if(!rs||!rs.length){ box.innerHTML=warnBox('対象の点検結果が見つかりませんでした'); return; }
+      const r=rs[0];
+      ctx.result_id=sid; ctx.turbine_id=r.turbine_id||'';
+      ctx.desc=r.anomaly_description||''; ctx.severity=r.severity||'';
     }
-
-
-
-
-
-
-
-
-
-    function render(d){
-
-
-
-
-      const rows = document.getElementById('rows');
-
-
-
-
-      if(!d.length){ rows.innerHTML = '<tr><td colspan="11" class="empty">該当する作業票はありません</td></tr>'; return; }
-
-
-
-
-      rows.innerHTML = d.map(r=>`<tr onclick="openDetail('${sb.esc(r['id'])}')">
-
-
-
-
-        <td class="no">${sb.esc(r['作業票番号'])}</td>
-
-
-
-
-        <td>${sb.esc(r['風車'])||'–'}</td>
-
-
-
-
-        <td>${sb.esc(r['作業種別'])||'–'}</td>
-
-
-
-
-        <td class="desc">${sb.esc(r['異常概要']||r['関連異常タイトル'])||'–'}</td>
-
-
-
-
-        <td>${sb.esc(r['優先度表示']||r['優先度'])||'–'}</td>
-
-
-
-
-        <td>${sb.esc(r['状態表示']||r['状態'])||'–'}</td>
-
-
-
-
-        <td>${sb.esc(r['対応予定日'])||'–'}</td>
-
-
-
-
-        <td>${r['停止時間min']??'–'}</td>
-
-
-
-
-        <td>${r['逸失電力kwh']??'–'}</td>
-
-
-
-
-        <td>${(r['添付数']||0)>0?('📎'+r['添付数']):'–'}</td>
-
-
-
-
-        <td>${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
-
-
-
-
-      </tr>`).join('');
-
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    function fld(label, val){
-
-
-
-
-      const empty = val==null || val==='';
-
-
-
-
-      return `<div class="dsec">${label}</div><div class="dval${empty?' empty':''}">${empty?'（記載なし）':sb.esc(val)}</div>`;
-
-
-
-
-    }
-
-
-
-
-    function openDetail(id){
-
-
-
-
-      const r = ALL.find(x => String(x['id'])===String(id));
-
-
-
-
-      if(!r) return;
-
-
-
-
-      document.getElementById('dTitle').textContent = (r['風車']||'') + ' 作業票';
-
-
-
-
-      document.getElementById('dBody').innerHTML = `
-
-
-
-
-        <div class="dno">${sb.esc(r['作業票番号']||'')}</div>
-
-
-
-
-        <div class="dpills">
-
-
-
-
-          <span class="dpill">${sb.esc(r['状態表示']||r['状態']||'')}</span>
-
-
-
-
-          <span class="dpill">${sb.esc(r['優先度表示']||r['優先度']||'')}</span>
-
-
-
-
-          ${r['深刻度']?`<span class="dpill">深刻度 ${sb.esc(r['深刻度'])}</span>`:''}
-
-
-
-
-          ${r['作業種別']?`<span class="dpill">${sb.esc(r['作業種別'])}</span>`:''}
-
-
-
-
-        </div>
-
-
-
-
-        <div class="dgrid">
-
-
-
-
-          <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
-
-
-
-
-          <div><div class="l">対応予定日</div><div class="v">${sb.esc(r['対応予定日']||'–')}</div></div>
-
-
-
-
-          <div><div class="l">停止時間</div><div class="v">${r['停止時間min']??'–'} <small>分</small></div></div>
-
-
-
-
-          <div><div class="l">逸失電力</div><div class="v">${r['逸失電力kwh']??'–'} <small>kWh</small></div></div>
-
-
-
-
-        </div>
-
-
-
-
-        ${fld('異常概要', r['異常概要'])}
-
-
-
-
-        ${fld('関連異常', r['関連異常タイトル'])}
-
-
-
-
-        ${fld('根本原因', r['根本原因'])}
-
-
-
-
-        ${fld('暫定処置', r['暫定処置'])}
-
-
-
-
-        ${fld('恒久処置', r['恒久処置'])}
-
-
-
-
-        <div class="dgrid" style="margin-top:14px">
-
-
-
-
-          <div><div class="l">起票日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['起票日時_jst']||'–')}</div></div>
-
-
-
-
-          <div><div class="l">完了日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['完了日時_jst']||'–')}</div></div>
-
-
-
-
-        </div>
-
-
-
-
-        <div class="dsec">添付</div><div class="dval${(r['添付数']||0)>0?'':' empty'}">${(r['添付数']||0)>0?('📎 '+r['添付数']+' 件'):'なし'}</div>
-
-
-
-
-        <div style="margin-top:20px;display:flex;gap:14px;font-size:12.5px">
-
-
-
-
-          <a class="menu" href="./permits.html">🔒 関連する作業許可(PTW)</a>
-
-
-
-
-          <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
-
-
-
-
-        </div>`;
-
-
-
-
-      document.getElementById('ov').classList.add('show');
-
-
-
-
-    }
-
-
-
-
-    function closeDetail(){ document.getElementById('ov').classList.remove('show'); }
-
-
-
-
-    document.addEventListener('keydown', e => { if(e.key==='Escape') closeDetail(); });
-
-
-
-
-
-
-
-
-
-
-    /* ===== 作業票 起票（4起票元: 異常判断 / 点検計画 / 点検実施 / 新規） ===== */
-    function qparam(k){ return new URLSearchParams(location.search).get(k); }
-    function enc(v){ return encodeURIComponent(v); }
-    function warnBox(m){ return `<div style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#1c2128;color:#f85149;">${m}</div>`; }
-    function closeCreate(){ const b=document.getElementById('woCreate'); b.style.display='none'; b.innerHTML=''; history.replaceState({},'',location.pathname); }
-    function openManualNew(){ history.replaceState({},'','?new=1'); openCreate('manual', null); }
-    async function turbineNo(tid){ if(!tid) return ''; try{ const t=await sb.get(`turbines?id=eq.${enc(tid)}&select=turbine_no`); return (t&&t.length)?(t[0].turbine_no||''):''; }catch(e){ return ''; } }
-
-    async function checkCreateParam(){
-      const did=qparam('defect_finding_id'), pid=qparam('inspection_plan_id'), rid=qparam('inspection_result_id'), nw=qparam('new');
-      if(did) return openCreate('defect', did);
-      if(pid) return openCreate('inspection_plan', pid);
-      if(rid) return openCreate('inspection_result', rid);
-      if(nw)  return openCreate('manual', null);
-    }
-
-    const SRC = {
-      defect:            {badge:'異常起点',     rgb:'210,153,34', note:'defect_finding_id を引き継いで保存します'},
-      inspection_plan:   {badge:'点検計画起点', rgb:'63,185,80',  note:'計画ID(source_id)を引き継いで保存します'},
-      inspection_result: {badge:'点検実施起点', rgb:'63,185,80',  note:'点検結果ID(result_id)を引き継いで保存します'},
-      manual:            {badge:'新規（手動）', rgb:'88,166,255', note:'起票元と起票理由を記録します'}
-    };
-
-    function dupPanel(w){
-      return `<div style="padding:14px 16px;border:1px solid rgba(63,185,80,.45);border-radius:10px;background:rgba(63,185,80,.10);display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-size:20px;">✔</span><div style="flex:1 1 auto;"><div style="color:#7ee787;font-weight:700;">この起票元には既に作業票があります</div><div style="color:#c9d1d9;font-size:12.5px;margin-top:3px;">${sb.esc(w.work_order_no||w.id)}（状態: ${sb.esc(w.status||'—')}）— 重複起票を防止しました</div></div><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;">閉じる</button></div>`;
-    }
-
-    async function openCreate(kind, sid){
-      const box=document.getElementById('woCreate');
-      box.style.display='block';
-      box.innerHTML='<div style="padding:14px;color:#8b949e;">読み込み中…</div>';
-      box.scrollIntoView({behavior:'smooth',block:'start'});
-      try{
-        const ctx={ kind, source_type:kind, work_type:'corrective' };
-        if(kind==='defect'){
-          const dups=await sb.get(`work_orders?defect_finding_id=eq.${enc(sid)}&select=id,work_order_no,status`);
-          if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
-          const ds=await sb.get(`defect_findings?id=eq.${enc(sid)}&select=*`);
-          if(!ds||!ds.length){ box.innerHTML=warnBox('対象の異常が見つかりませんでした'); return; }
-          const d=ds[0];
-          ctx.defect_finding_id=sid; ctx.turbine_id=d.turbine_id||'';
-          ctx.desc=[d.finding_title,d.finding_detail].filter(Boolean).join('\n');
-          if(d.safety_impact) ctx.desc+=(ctx.desc?'
-':'')+'【安全影響】'+d.safety_impact;
-        }else if(kind==='inspection_plan'){
-          const dups=await sb.get(`work_orders?source_type=eq.inspection_plan&source_id=eq.${enc(sid)}&select=id,work_order_no,status`);
-          if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
-          const ps=await sb.get(`inspection_plans?id=eq.${enc(sid)}&select=*`);
-          if(!ps||!ps.length){ box.innerHTML=warnBox('対象の点検計画が見つかりませんでした'); return; }
-          const p=ps[0];
-          ctx.source_id=sid; ctx.turbine_id=p.turbine_id||'';
-          ctx.planned_date=p.planned_date||''; ctx.desc=p.notes||''; ctx.work_type='preventive';
-        }else if(kind==='inspection_result'){
-          const dups=await sb.get(`work_orders?result_id=eq.${enc(sid)}&select=id,work_order_no,status`);
-          if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
-          const rs=await sb.get(`inspection_results?id=eq.${enc(sid)}&select=*`);
-          if(!rs||!rs.length){ box.innerHTML=warnBox('対象の点検結果が見つかりませんでした'); return; }
-          const r=rs[0];
-          ctx.result_id=sid; ctx.turbine_id=r.turbine_id||'';
-          ctx.desc=r.anomaly_description||''; ctx.severity=r.severity||'';
-        }
-        ctx.tno=await turbineNo(ctx.turbine_id);
-        box.innerHTML=createForm(ctx);
-      }catch(e){ box.innerHTML=warnBox('読み込みエラー: '+sb.esc(e.message)); }
-    }
-
-    function createForm(ctx){
-      const meta=SRC[ctx.kind]||SRC.manual;
-      const wono='WO-'+new Date().toISOString().replace(/[^0-9]/g,'').slice(2,14);
-      const inp='width:100%;background:#0d1117;border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;';
-      const lab='display:block;color:#8b949e;font-size:11.5px;margin:0 0 4px;font-weight:600;';
-      const sel=(v,cur)=>v===cur?' selected':'';
-      const manualBlock = ctx.kind==='manual' ? `<div><label style="${lab}">起票元（必須）</label><select id="f_origin" style="${inp}"><option>その他故障是正</option><option>予防保全</option><option>緊急対応</option><option>管理部依頼</option></select></div><div style="grid-column:1/3;"><label style="${lab}">起票理由（必須）</label><textarea id="f_reason" rows="2" style="${inp}resize:vertical;" placeholder="なぜこの作業票を起票するか"></textarea></div>` : '';
-      const turbineField = ctx.kind==='manual'
-        ? `<div><label style="${lab}">対象WTG（号機・任意）</label><input id="f_tno" style="${inp}" value="${sb.esc(ctx.tno||'')}" placeholder="例: T01"></div>`
-        : `<div><label style="${lab}">対象WTG</label><input style="${inp}opacity:.8;" value="${sb.esc(ctx.tno||'(不明)')}" readonly></div>`;
-      const oOn = ctx.kind==='defect';
-      const outageBlock = `<div style="grid-column:1/3;margin-top:4px;border:1px solid rgba(248,81,73,.35);border-radius:10px;background:rgba(248,81,73,.05);padding:12px 14px;"><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;"><span style="background:#f85149;color:#11161d;font-weight:800;font-size:10.5px;padding:2px 8px;border-radius:999px;">判断ブロック</span><b style="color:#f0f6fc;font-size:13px;">停止・発電影響</b><span style="color:#8b949e;font-size:10.5px;">work_order_outages に正本保存</span><label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:#c9d1d9;font-size:12px;cursor:pointer;"><input type="checkbox" id="f_o_occurred" onchange="toggleOutage()" ${oOn?'checked':''} style="width:15px;height:15px;">停止が発生した</label></div><div id="f_o_detail" style="display:${oOn?'grid':'none'};grid-template-columns:1fr 1fr;gap:10px;margin-top:11px;"><div><label style="${lab}">停止種別</label><select id="f_o_type" style="${inp}"><option value="forced">故障停止</option><option value="planned">計画停止</option><option value="grid_request">系統要請</option><option value="safety_measure">保安措置</option><option value="curtailment">出力抑制</option><option value="test">試験・試運転</option><option value="other">その他</option></select></div><div><label style="${lab}">停止理由</label><input id="f_o_reason" style="${inp}" placeholder="例: ピッチ系異常により停止"></div><div><label style="${lab}">停止開始</label><input id="f_o_start" type="datetime-local" style="${inp}" oninput="calcDowntime()"></div><div><label style="${lab}">停止終了</label><input id="f_o_end" type="datetime-local" style="${inp}" oninput="calcDowntime()"></div><div><label style="${lab}">停止時間（分）</label><input id="f_dt" type="number" min="0" style="${inp}" placeholder="開始/終了から自動算出"></div><div></div><div><label style="${lab}">逸失電力量（kWh）</label><input id="f_kwh" type="number" min="0" step="0.1" style="${inp}" oninput="calcRevenue()" placeholder="例: 350"></div><div><label style="${lab}">単価（円/kWh）</label><input id="f_o_price" type="number" min="0" step="0.01" style="${inp}" oninput="calcRevenue()" placeholder="例: 12.50"></div><div><label style="${lab}">逸失売電額（概算）</label><input id="f_o_rev" style="${inp}opacity:.85;" readonly placeholder="自動算出"></div><div><label style="${lab}">電気主任技術者 確認</label><select id="f_o_chief_status" style="${inp}"><option value="not_required">確認不要</option><option value="pending">主任確認待ち</option><option value="confirmed">主任確認済み</option><option value="rejected">差戻し</option></select></div><div><label style="${lab}">停止判断者（氏名）</label><input id="f_o_decby" style="${inp}" placeholder="責任の所在"></div><div><label style="${lab}">役割</label><select id="f_o_decrole" style="${inp}"><option value="">—</option><option>代表</option><option>管理部長</option><option>設備運用部長</option><option>電気主任技術者</option><option>現場責任者</option><option>その他</option></select></div><div><label style="${lab}">判断時刻</label><input id="f_o_decat" type="datetime-local" style="${inp}"></div><div style="display:flex;flex-direction:column;justify-content:center;gap:7px;padding-top:14px;"><label style="display:inline-flex;align-items:center;gap:6px;color:#c9d1d9;font-size:12px;cursor:pointer;"><input type="checkbox" id="f_o_regflag" style="width:15px;height:15px;">保安規定報告候補</label><label style="display:inline-flex;align-items:center;gap:6px;color:#c9d1d9;font-size:12px;cursor:pointer;"><input type="checkbox" id="f_o_agg" style="width:15px;height:15px;">アグリゲーター連絡要</label></div><div style="grid-column:1/3;"><label style="${lab}">備考</label><input id="f_o_note" style="${inp}"></div></div></div>`;
-      return `<div style="padding:16px 18px;border:1px solid rgba(${meta.rgb},.5);border-radius:12px;background:linear-gradient(180deg,rgba(${meta.rgb},.08),#161b22);"><div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap;"><span style="background:rgb(${meta.rgb});color:#11161d;font-weight:800;font-size:11px;padding:3px 9px;border-radius:999px;">${meta.badge}</span><h2 style="font-size:15px;margin:0;color:#fff;">作業票を作成</h2><span style="margin-left:auto;color:#8b949e;font-size:11px;">${meta.note}</span></div><input type="hidden" id="f_kind" value="${sb.esc(ctx.kind)}"><input type="hidden" id="f_did" value="${sb.esc(ctx.defect_finding_id||'')}"><input type="hidden" id="f_tid" value="${sb.esc(ctx.turbine_id||'')}"><input type="hidden" id="f_sid" value="${sb.esc(ctx.source_id||'')}"><input type="hidden" id="f_rid" value="${sb.esc(ctx.result_id||'')}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div><label style="${lab}">作業票番号</label><input id="f_no" style="${inp}" value="${sb.esc(wono)}"></div>${turbineField}<div><label style="${lab}">作業種別</label><select id="f_type" style="${inp}"><option value="corrective"${sel('corrective',ctx.work_type)}>是正</option><option value="preventive"${sel('preventive',ctx.work_type)}>予防</option><option value="inspection"${sel('inspection',ctx.work_type)}>点検</option><option value="other"${sel('other',ctx.work_type)}>その他</option></select></div><div><label style="${lab}">優先度</label><select id="f_prio" style="${inp}"><option>緊急</option><option>高</option><option selected>中</option><option>低</option></select></div>${manualBlock}<div style="grid-column:1/3;"><label style="${lab}">概要</label><textarea id="f_desc" rows="3" style="${inp}resize:vertical;">${sb.esc(ctx.desc||'')}</textarea></div><div><label style="${lab}">深刻度</label><select id="f_sev" style="${inp}"><option value=""${sel('',ctx.severity||'')}>未設定</option><option value="low"${sel('low',ctx.severity)}>低</option><option value="medium"${sel('medium',ctx.severity)}>中</option><option value="high"${sel('high',ctx.severity)}>高</option><option value="critical"${sel('critical',ctx.severity)}>重大</option></select></div><div><label style="${lab}">対応予定日</label><input id="f_date" type="date" style="${inp}" value="${sb.esc(ctx.planned_date||'')}"></div><div style="grid-column:1/3;"><label style="${lab}">暫定処置（任意）</label><textarea id="f_temp" rows="2" style="${inp}resize:vertical;"></textarea></div>${outageBlock}</div><div style="display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap;"><button onclick="submitWO()" id="f_submit" style="background:rgb(${meta.rgb});color:#11161d;font-weight:800;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:13px;">作業票を登録</button><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:10px 16px;cursor:pointer;">キャンセル</button><span id="f_msg" style="color:#8b949e;font-size:12px;"></span></div><div style="margin-top:10px;color:#6e7681;font-size:11px;">※ 停止種別・開始/終了時刻・売電影響・保安規定報告候補・主任確認・証跡 等の詳細停止報告は Issue #7 要件2（スキーマ移行）で追加予定。</div></div>`;
-    }
-
-    function toggleOutage(){ const o=document.getElementById('f_o_occurred'); const d=document.getElementById('f_o_detail'); if(o&&d) d.style.display=o.checked?'grid':'none'; }
-    function calcDowntime(){ const s=document.getElementById('f_o_start').value, e=document.getElementById('f_o_end').value; if(s&&e){ const m=Math.round((new Date(e)-new Date(s))/60000); if(m>=0) document.getElementById('f_dt').value=m; } }
-    function calcRevenue(){ const k=parseFloat(document.getElementById('f_kwh').value), p=parseFloat(document.getElementById('f_o_price').value), r=document.getElementById('f_o_rev'); r.value=(!isNaN(k)&&!isNaN(p))?('¥'+Math.round(k*p).toLocaleString('ja-JP')):''; }
-    async function submitWO(){
-      const g=id=>document.getElementById(id);
-      const msg=g('f_msg'), btn=g('f_submit');
-      const no=g('f_no').value.trim();
-      if(!no){ msg.style.color='#f85149'; msg.textContent='作業票番号を入力してください'; return; }
-      const kind=g('f_kind').value;
-      let desc=g('f_desc').value||'';
-      let turbine_id=g('f_tid').value||null;
-      const body={
-        work_order_no:no, source_type:kind,
-        work_type:g('f_type').value, priority:({'緊急':'urgent','高':'high','中':'normal','低':'low'})[g('f_prio').value]||'normal',
-        severity:g('f_sev').value||null,
-        planned_date:g('f_date').value||null,
-        temporary_action:g('f_temp').value||null,
+    ctx.tno=await turbineNo(ctx.turbine_id);
+    box.innerHTML=createForm(ctx);
+  }catch(e){ box.innerHTML=warnBox('読み込みエラー: '+sb.esc(e.message)); }
+}
+
+function createForm(ctx){
+  const meta=SRC[ctx.kind]||SRC.manual;
+  const wono='WO-'+new Date().toISOString().replace(/[^0-9]/g,'').slice(2,14);
+  const inp='width:100%;background:#0d1117;border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;';
+  const lab='display:block;color:#8b949e;font-size:11.5px;margin:0 0 4px;font-weight:600;';
+  const sel=(v,cur)=>v===cur?' selected':'';
+  const manualBlock = ctx.kind==='manual' ? `<div><label style="${lab}">起票元（必須）</label><select id="f_origin" style="${inp}"><option>その他故障是正</option><option>予防保全</option><option>緊急対応</option><option>管理部依頼</option></select></div><div style="grid-column:1/3;"><label style="${lab}">起票理由（必須）</label><textarea id="f_reason" rows="2" style="${inp}resize:vertical;" placeholder="なぜこの作業票を起票するか"></textarea></div>` : '';
+  const turbineField = ctx.kind==='manual'
+    ? `<div><label style="${lab}">対象WTG（号機・任意）</label><input id="f_tno" style="${inp}" value="${sb.esc(ctx.tno||'')}" placeholder="例: T01"></div>`
+    : `<div><label style="${lab}">対象WTG</label><input style="${inp}opacity:.8;" value="${sb.esc(ctx.tno||'(不明)')}" readonly></div>`;
+  const oOn = ctx.kind==='defect';
+  const outageBlock = `<div style="grid-column:1/3;margin-top:4px;border:1px solid rgba(248,81,73,.35);border-radius:10px;background:rgba(248,81,73,.05);padding:12px 14px;"><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;"><span style="background:#f85149;color:#11161d;font-weight:800;font-size:10.5px;padding:2px 8px;border-radius:999px;">判断ブロック</span><b style="color:#f0f6fc;font-size:13px;">停止・発電影響</b><span style="color:#8b949e;font-size:10.5px;">work_order_outages に正本保存</span><label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:#c9d1d9;font-size:12px;cursor:pointer;"><input type="checkbox" id="f_o_occurred" onchange="toggleOutage()" ${oOn?'checked':''} style="width:15px;height:15px;">停止が発生した</label></div><div id="f_o_detail" style="display:${oOn?'grid':'none'};grid-template-columns:1fr 1fr;gap:10px;margin-top:11px;"><div><label style="${lab}">停止種別</label><select id="f_o_type" style="${inp}"><option value="forced">故障停止</option><option value="planned">計画停止</option><option value="grid_request">系統要請</option><option value="safety_measure">保安措置</option><option value="curtailment">出力抑制</option><option value="test">試験・試運転</option><option value="other">その他</option></select></div><div><label style="${lab}">停止理由</label><input id="f_o_reason" style="${inp}" placeholder="例: ピッチ系異常により停止"></div><div><label style="${lab}">停止開始</label><input id="f_o_start" type="datetime-local" style="${inp}" oninput="calcDowntime()"></div><div><label style="${lab}">停止終了</label><input id="f_o_end" type="datetime-local" style="${inp}" oninput="calcDowntime()"></div><div><label style="${lab}">停止時間（分）</label><input id="f_dt" type="number" min="0" style="${inp}" placeholder="開始/終了から自動算出"></div><div></div><div><label style="${lab}">逸失電力量（kWh）</label><input id="f_kwh" type="number" min="0" step="0.1" style="${inp}" oninput="calcRevenue()" placeholder="例: 350"></div><div><label style="${lab}">単価（円/kWh）</label><input id="f_o_price" type="number" min="0" step="0.01" style="${inp}" oninput="calcRevenue()" placeholder="例: 12.50"></div><div><label style="${lab}">逸失売電額（概算）</label><input id="f_o_rev" style="${inp}opacity:.85;" readonly placeholder="自動算出"></div><div><label style="${lab}">電気主任技術者 確認</label><select id="f_o_chief_status" style="${inp}"><option value="not_required">確認不要</option><option value="pending">主任確認待ち</option><option value="confirmed">主任確認済み</option><option value="rejected">差戻し</option></select></div><div><label style="${lab}">停止判断者（氏名）</label><input id="f_o_decby" style="${inp}" placeholder="責任の所在"></div><div><label style="${lab}">役割</label><select id="f_o_decrole" style="${inp}"><option value="">—</option><option>代表</option><option>管理部長</option><option>設備運用部長</option><option>電気主任技術者</option><option>現場責任者</option><option>その他</option></select></div><div><label style="${lab}">判断時刻</label><input id="f_o_decat" type="datetime-local" style="${inp}"></div><div style="display:flex;flex-direction:column;justify-content:center;gap:7px;padding-top:14px;"><label style="display:inline-flex;align-items:center;gap:6px;color:#c9d1d9;font-size:12px;cursor:pointer;"><input type="checkbox" id="f_o_regflag" style="width:15px;height:15px;">保安規定報告候補</label><label style="display:inline-flex;align-items:center;gap:6px;color:#c9d1d9;font-size:12px;cursor:pointer;"><input type="checkbox" id="f_o_agg" style="width:15px;height:15px;">アグリゲーター連絡要</label></div><div style="grid-column:1/3;"><label style="${lab}">備考</label><input id="f_o_note" style="${inp}"></div></div></div>`;
+  return `<div style="padding:16px 18px;border:1px solid rgba(${meta.rgb},.5);border-radius:12px;background:linear-gradient(180deg,rgba(${meta.rgb},.08),#161b22);"><div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap;"><span style="background:rgb(${meta.rgb});color:#11161d;font-weight:800;font-size:11px;padding:3px 9px;border-radius:999px;">${meta.badge}</span><h2 style="font-size:15px;margin:0;color:#fff;">作業票を作成</h2><span style="margin-left:auto;color:#8b949e;font-size:11px;">${meta.note}</span></div><input type="hidden" id="f_kind" value="${sb.esc(ctx.kind)}"><input type="hidden" id="f_did" value="${sb.esc(ctx.defect_finding_id||'')}"><input type="hidden" id="f_tid" value="${sb.esc(ctx.turbine_id||'')}"><input type="hidden" id="f_sid" value="${sb.esc(ctx.source_id||'')}"><input type="hidden" id="f_rid" value="${sb.esc(ctx.result_id||'')}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div><label style="${lab}">作業票番号</label><input id="f_no" style="${inp}" value="${sb.esc(wono)}"></div>${turbineField}<div><label style="${lab}">作業種別</label><select id="f_type" style="${inp}"><option value="corrective"${sel('corrective',ctx.work_type)}>是正</option><option value="preventive"${sel('preventive',ctx.work_type)}>予防</option><option value="inspection"${sel('inspection',ctx.work_type)}>点検</option><option value="other"${sel('other',ctx.work_type)}>その他</option></select></div><div><label style="${lab}">優先度</label><select id="f_prio" style="${inp}"><option>緊急</option><option>高</option><option selected>中</option><option>低</option></select></div>${manualBlock}<div style="grid-column:1/3;"><label style="${lab}">概要</label><textarea id="f_desc" rows="3" style="${inp}resize:vertical;">${sb.esc(ctx.desc||'')}</textarea></div><div><label style="${lab}">深刻度</label><select id="f_sev" style="${inp}"><option value=""${sel('',ctx.severity||'')}>未設定</option><option value="low"${sel('low',ctx.severity)}>低</option><option value="medium"${sel('medium',ctx.severity)}>中</option><option value="high"${sel('high',ctx.severity)}>高</option><option value="critical"${sel('critical',ctx.severity)}>重大</option></select></div><div><label style="${lab}">対応予定日</label><input id="f_date" type="date" style="${inp}" value="${sb.esc(ctx.planned_date||'')}"></div><div style="grid-column:1/3;"><label style="${lab}">暫定処置（任意）</label><textarea id="f_temp" rows="2" style="${inp}resize:vertical;"></textarea></div>${outageBlock}</div><div style="display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap;"><button onclick="submitWO()" id="f_submit" style="background:rgb(${meta.rgb});color:#11161d;font-weight:800;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:13px;">作業票を登録</button><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:10px 16px;cursor:pointer;">キャンセル</button><span id="f_msg" style="color:#8b949e;font-size:12px;"></span></div></div>`;
+}
+
+function toggleOutage(){ const o=document.getElementById('f_o_occurred'); const d=document.getElementById('f_o_detail'); if(o&&d) d.style.display=o.checked?'grid':'none'; }
+function calcDowntime(){ const s=document.getElementById('f_o_start').value, e=document.getElementById('f_o_end').value; if(s&&e){ const m=Math.round((new Date(e)-new Date(s))/60000); if(m>=0) document.getElementById('f_dt').value=m; } }
+function calcRevenue(){ const k=parseFloat(document.getElementById('f_kwh').value), p=parseFloat(document.getElementById('f_o_price').value), r=document.getElementById('f_o_rev'); r.value=(!isNaN(k)&&!isNaN(p))?('¥'+Math.round(k*p).toLocaleString('ja-JP')):''; }
+
+async function submitWO(){
+  const g=id=>document.getElementById(id);
+  const msg=g('f_msg'), btn=g('f_submit');
+  const no=g('f_no').value.trim();
+  if(!no){ msg.style.color='#f85149'; msg.textContent='作業票番号を入力してください'; return; }
+  const kind=g('f_kind').value;
+  let desc=g('f_desc').value||'';
+  let turbine_id=g('f_tid').value||null;
+  const body={
+    work_order_no:no, source_type:kind,
+    work_type:g('f_type').value, priority:({'緊急':'urgent','高':'high','中':'normal','低':'low'})[g('f_prio').value]||'normal',
+    severity:g('f_sev').value||null,
+    planned_date:g('f_date').value||null,
+    temporary_action:g('f_temp').value||null,
+    downtime_minutes:g('f_dt').value?parseInt(g('f_dt').value,10):null,
+    estimated_loss_kwh:g('f_kwh').value?parseFloat(g('f_kwh').value):null,
+    status:'open', created_at:new Date().toISOString()
+  };
+  if(kind==='defect'){
+    body.defect_finding_id=g('f_did').value||null;
+    if(!body.defect_finding_id){ msg.style.color='#f85149'; msg.textContent='defect_finding_id がありません（異常起点必須）'; return; }
+  }else if(kind==='inspection_plan'){
+    body.source_id=g('f_sid').value||null;
+  }else if(kind==='inspection_result'){
+    body.result_id=g('f_rid').value||null;
+  }else if(kind==='manual'){
+    const origin=g('f_origin').value, reason=(g('f_reason').value||'').trim();
+    if(!reason){ msg.style.color='#f85149'; msg.textContent='起票理由は必須です'; return; }
+    desc=`【起票元: ${origin}】\n【起票理由】${reason}`+(desc?`\n\n${desc}`:'');
+    const tno=(g('f_tno')&&g('f_tno').value||'').trim();
+    if(!turbine_id && tno){ try{ const t=await sb.get(`turbines?turbine_no=eq.${enc(tno)}&select=id`); if(t&&t.length) turbine_id=t[0].id; }catch(e){} }
+  }
+  body.turbine_id=turbine_id;
+  body.anomaly_description=desc||null;
+  btn.disabled=true; msg.style.color='#8b949e'; msg.textContent='登録中…';
+  try{
+    const woRows=await sb.write('POST','work_orders', body);
+    const woId=(woRows&&woRows[0]&&woRows[0].id)||null;
+    let outageFailed=false, outageErr='';
+    if(woId && g('f_o_occurred').checked){
+      const oz=v=>v?new Date(v).toISOString():null;
+      const ob={
+        work_order_id:woId, turbine_id:turbine_id, outage_occurred:true,
+        outage_type:g('f_o_type').value||null,
+        started_at:oz(g('f_o_start').value), ended_at:oz(g('f_o_end').value),
         downtime_minutes:g('f_dt').value?parseInt(g('f_dt').value,10):null,
-        estimated_loss_kwh:g('f_kwh').value?parseFloat(g('f_kwh').value):null,
-        status:'open', created_at:new Date().toISOString()
+        outage_reason:g('f_o_reason').value||null,
+        decided_by:g('f_o_decby').value||null, decided_role:g('f_o_decrole').value||null,
+        decided_at:oz(g('f_o_decat').value),
+        regulatory_report_candidate:g('f_o_regflag').checked,
+        chief_engineer_review_status:g('f_o_chief_status').value,
+        chief_engineer_confirmed:g('f_o_chief_status').value==='confirmed',
+        chief_engineer_confirmed_at:g('f_o_chief_status').value==='confirmed'?new Date().toISOString():null,
+        aggregator_contact_required:g('f_o_agg').checked,
+        lost_energy_kwh:g('f_kwh').value?parseFloat(g('f_kwh').value):null,
+        unit_price_jpy:g('f_o_price').value?parseFloat(g('f_o_price').value):null,
+        note:g('f_o_note').value||null, created_at:new Date().toISOString()
       };
-      if(kind==='defect'){
-        body.defect_finding_id=g('f_did').value||null;
-        if(!body.defect_finding_id){ msg.style.color='#f85149'; msg.textContent='defect_finding_id がありません（異常起点必須）'; return; }
-      }else if(kind==='inspection_plan'){
-        body.source_id=g('f_sid').value||null;
-      }else if(kind==='inspection_result'){
-        body.result_id=g('f_rid').value||null;
-      }else if(kind==='manual'){
-        const origin=g('f_origin').value, reason=(g('f_reason').value||'').trim();
-        if(!reason){ msg.style.color='#f85149'; msg.textContent='起票理由は必須です'; return; }
-        desc=`【起票元: ${origin}】\n【起票理由】${reason}`+(desc?`\n\n${desc}`:'');
-        const tno=(g('f_tno')&&g('f_tno').value||'').trim();
-        if(!turbine_id && tno){ try{ const t=await sb.get(`turbines?turbine_no=eq.${enc(tno)}&select=id`); if(t&&t.length) turbine_id=t[0].id; }catch(e){} }
-      }
-      body.turbine_id=turbine_id;
-      body.anomaly_description=desc||null;
-      btn.disabled=true; msg.style.color='#8b949e'; msg.textContent='登録中…';
-      try{
-        const woRows=await sb.write('POST','work_orders', body);
-        const woId=(woRows&&woRows[0]&&woRows[0].id)||null;
-        let outageFailed=false, outageErr='';
-        if(woId && g('f_o_occurred').checked){
-          const oz=v=>v?new Date(v).toISOString():null;
-          const ob={
-            work_order_id:woId, turbine_id:turbine_id, outage_occurred:true,
-            outage_type:g('f_o_type').value||null,
-            started_at:oz(g('f_o_start').value), ended_at:oz(g('f_o_end').value),
-            downtime_minutes:g('f_dt').value?parseInt(g('f_dt').value,10):null,
-            outage_reason:g('f_o_reason').value||null,
-            decided_by:g('f_o_decby').value||null, decided_role:g('f_o_decrole').value||null,
-            decided_at:oz(g('f_o_decat').value),
-            regulatory_report_candidate:g('f_o_regflag').checked,
-            chief_engineer_review_status:g('f_o_chief_status').value,
-            chief_engineer_confirmed:g('f_o_chief_status').value==='confirmed',
-            chief_engineer_confirmed_at:g('f_o_chief_status').value==='confirmed'?new Date().toISOString():null,
-            aggregator_contact_required:g('f_o_agg').checked,
-            lost_energy_kwh:g('f_kwh').value?parseFloat(g('f_kwh').value):null,
-            unit_price_jpy:g('f_o_price').value?parseFloat(g('f_o_price').value):null,
-            note:g('f_o_note').value||null, created_at:new Date().toISOString()
-          };
-          try{ await sb.write('POST','work_order_outages', ob); }catch(e){ outageFailed=true; outageErr=e.message||String(e); }
-        }
-        history.replaceState({},'',location.pathname);
-        await load();
-        if(outageFailed){
-          msg.style.color='#d29922';
-          msg.innerHTML='⚠ 作業票は登録されましたが、停止・発電影響の保存に失敗しました（'+sb.esc(outageErr)+'）。作業票詳細から再登録してください。';
-          // 二重起票防止のため送信ボタンは無効のまま（停止情報は詳細から再登録）
-        }else{
-          msg.style.color='#7ee787'; msg.textContent='✔ 登録しました（停止情報は work_order_outages に保存・v_case_pipeline が「作業票起票済」へ進みます）';
-          setTimeout(closeCreate, 1200);
-        }
-      }catch(e){ btn.disabled=false; msg.style.color='#f85149'; msg.textContent='登録失敗: '+e.message; }
+      try{ await sb.write('POST','work_order_outages', ob); }catch(e){ outageFailed=true; outageErr=e.message||String(e); }
     }
+    history.replaceState({},'',location.pathname);
+    await load();
+    if(outageFailed){
+      msg.style.color='#d29922';
+      msg.innerHTML='⚠ 作業票は登録されましたが、停止・発電影響の保存に失敗しました（'+sb.esc(outageErr)+'）。作業票詳細から再登録してください。';
+    }else{
+      msg.style.color='#7ee787'; msg.textContent='✔ 登録しました';
+      setTimeout(closeCreate, 1200);
+    }
+  }catch(e){ btn.disabled=false; msg.style.color='#f85149'; msg.textContent='登録失敗: '+e.message; }
+}
 
-    sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); } });
-
-
-
-
-  </script>
-
-
-
-
+sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); } });
+</script>
 </body>
-
-
-
-
 </html>
-
-
-
-
