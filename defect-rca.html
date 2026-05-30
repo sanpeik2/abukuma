@@ -1,279 +1,279 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿武隈OS — 故障 / 根本原因調査(RCA) 一覧（ライブ）</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
-  a{color:var(--master);text-decoration:none}
-  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
-  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
-  .topbar h1{font-size:16px;color:#fff;font-weight:700}
-  .topbar .sub{font-size:11.5px;color:var(--muted)}
-  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
-  .wrap{padding:18px 22px 50px}
-  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 16px;min-width:120px}
-  .kpi .v{font-size:22px;font-weight:800;color:#fff} .kpi .l{font-size:11px;color:var(--muted)}
-  .kpi.rca .v{color:#f0c674} .kpi.open .v{color:#ff9a92} .kpi.prog .v{color:#9cd2ff}
-  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
-  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;white-space:nowrap;vertical-align:top}
-  th{color:var(--muted);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--bg)}
-  tr.main{cursor:pointer}
-  tr.main:hover td{background:rgba(88,166,255,.05)}
-  tr.rca td{background:rgba(210,153,34,.07)}
-  tr.rca-strong td{background:rgba(248,81,73,.08)}
-  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
-  .imp-high{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
-  .imp-mid{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
-  .imp-low{color:var(--muted);border-color:var(--line)}
-  .cl-unknown{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.1)}
-  .cl-assumed{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
-  .cl-clear{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.1)}
-  .wtg{font-family:monospace;color:#fff;font-weight:600}
-  .rca-tag{font-weight:700}
-  .rca-strong-tag{color:#ff9a92} .rca-rec-tag{color:#f0c674} .rca-none{color:var(--muted)}
-  .arrow{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
-  tr.open-row .arrow{transform:rotate(90deg)}
-  .detail td{background:var(--panel2);white-space:normal}
-  .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;padding:6px 2px}
-  .dcard{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:var(--panel)}
-  .dcard .l{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:4px;text-transform:uppercase}
-  .dcard .val{font-size:13px;color:#fff}
-  .dcard .val.empty{color:var(--muted);font-weight:400}
-  .dcard.rca-step{border-color:var(--work)}
-  .dcard.cause{border-color:var(--ai)}
-  .loading,.empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
-  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
-  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
-  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
-  .kpi.over .v{color:#ff5630} .kpi.un .v{color:#ff9a92} .kpi.avg .v{color:#9cd2ff}
-  #body{overflow-x:auto}
-  .stagn{font-weight:700}
-  .st-over{color:#ff5630} .st-warn{color:#f0c674} .st-ok{color:var(--muted)} .st-done{color:#7ee787}
-  .unassigned{color:#ff9a92;font-size:11px;border:1px solid var(--defect);border-radius:6px;padding:1px 6px;background:rgba(248,81,73,.1);white-space:nowrap}
-  .next-a{color:#9cd2ff;white-space:normal;font-size:12px}
-  tr.over-row td{box-shadow:inset 3px 0 0 #ff5630}
-  .sorts{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap;align-items:center}
-  .sorts .lbl{font-size:11px;color:var(--muted)}
-  .sorts button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:4px 11px;border-radius:999px;cursor:pointer}
-  .sorts button.active{color:#fff;border-color:var(--work);background:rgba(210,153,34,.12)}
-</style>
-</head>
-<body>
-<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;margin-right:6px;padding-right:10px;border-right:1px solid #30363d;"><span style="width:3px;height:18px;border-radius:2px;background:#58a6ff;flex:0 0 auto;"></span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="color:#e6edf3;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1;">業務フロー</span><span style="color:#8b949e;font-size:9.5px;font-weight:600;">現在地</span></span></span><a href="./index.html" title="今日の管制塔（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(88,166,255,.95);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(88,166,255);color:#fff;">✓</span>今日の管制塔</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./live-board.html" title="監視（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(88,166,255,.95);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(88,166,255);color:#fff;">✓</span>監視</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./inspection-plan.html" title="点検計画（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(63,185,80,.95);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(63,185,80);color:#fff;">✓</span>点検計画</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./inspection-input.html" title="点検実施（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(63,185,80,.95);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(63,185,80);color:#fff;">✓</span>点検実施</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#fff;background:rgb(210,153,34);border:1px solid rgb(210,153,34);font-weight:700;box-shadow:0 0 0 3px rgba(210,153,34,.22);cursor:default;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:#fff;color:rgb(210,153,34);">5</span>異常判断</span><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業票へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">6</span>作業票</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./permits.html" title="PTW/KYへ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">7</span>PTW/KY</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./approvals.html" title="承認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">8</span>承認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">9</span>作業</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./defect-rca.html" title="復旧確認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">10</span>復旧確認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(219,97,162,.85);color:rgba(219,97,162,.98);">11</span>クローズ/報告</a></nav>
-  <div class="topbar">
-    <div class="mark">AW</div>
-    <div>
-      <h1>故障 / 根本原因調査(RCA) 一覧</h1>
-      <div class="sub">阿武隈OS ライブ盤 — 異常の評価・RCA対象の抽出・是正の進捗</div>
-    </div>
-    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
-  </div>
-
-  <div class="wrap">
-    <div class="note">故障・異常の評価とRCA（<code>v_defect_rca_list</code>）。行をクリックで詳細を展開。<b>滞留日数</b>＝発見から経過日数（未クローズは本日まで）。<b>期限超過</b>＝RCA対象14日／通常30日超で🟥（目安・運用に合わせ要調整）。考え方は <a href="./guide-defect-judge.html">③ 是正判断</a> ／ <a href="./guide-rca.html">⑦ RCA</a>。</div>
-    <div class="kpis" id="kpis"></div>
-    <div class="filters" id="filters">
-      <button data-f="all" class="active">すべて</button>
-      <button data-f="rca">🔍 RCA対象</button>
-      <button data-f="open">🔴 未対応</button>
-      <button data-f="prog">🔧 対応中</button>
-      <button data-f="over">🟥 期限超過</button>
-      <button data-f="unassigned">👤 未割当</button>
-      <button data-f="done">✅ 完了</button>
-    </div>
-    <div class="sorts" id="sorts">
-      <span class="lbl">並び順:</span>
-      <button data-s="date" class="active">発見日時 新しい順</button>
-      <button data-s="stagn">滞留日数 長い順</button>
-    </div>
-    <div id="body" class="loading">読み込み中…</div>
-  </div>
-
-  <script src="./lib/supabase.js"></script>
-  <script>
-    const esc = sb.esc;
-    const state = { rows: [], filter: "all", sort: "date", open: {} };
-
-    function impClass(v){ return v==="高"?"imp-high":v==="中"?"imp-mid":"imp-low"; }
-    function clClass(v){ return v==="不明"?"cl-unknown":v==="推定"?"cl-assumed":"cl-clear"; }
-    function rcaClass(v){ if(!v||v==="—")return "rca-none"; return v.indexOf("対象")>=0?"rca-strong-tag":"rca-rec-tag"; }
-
-    function isOpen(r){ const s=r["状態表示"]||""; return s.indexOf("未対応")>=0; }
-    function isProg(r){ const s=r["状態表示"]||""; return s.indexOf("対応中")>=0; }
-    function isDone(r){ const s=r["状態表示"]||""; return s.indexOf("完了")>=0; }
-
-    // 滞留・期限超過の判定（RCA対象は厳しめ：警告7日/超過14日、通常：警告14日/超過30日）
-    function overInfo(r){
-      const days = Number(r["滞留日数"]||0);
-      if(isDone(r)) return { lv:"done", days };
-      const isRca = !!r["rca対象"];
-      const warn = isRca?7:14, over = isRca?14:30;
-      if(days>=over) return { lv:"over", days };
-      if(days>=warn) return { lv:"warn", days };
-      return { lv:"ok", days };
-    }
-    function hasAssignee(r){ return !!(r["担当者"] && String(r["担当者"]).trim()); }
-    function isUnassigned(r){ return !isDone(r) && !hasAssignee(r); }
-    function nextAction(r){
-      if(r._pipe && r._pipe["次アクション"]) return r._pipe["次アクション"];
-      const s = r["状態表示"]||"";
-      if(s.indexOf("完了")>=0) return "—（クローズ済）";
-      if(s.indexOf("未対応")>=0) return hasAssignee(r) ? "一次評価を実施" : "一次評価・担当割当";
-      if(s.indexOf("評価済")>=0) return r["rca対象"] ? "RCA着手（根本原因調査）" : "作業票を起票";
-      if(s.indexOf("対応中")>=0) return "処置完了→復旧確認・クローズ";
-      return "状態を確認";
-    }
-    // 方式②：v_case_pipeline の権威ある現在地（8段階）を行ごとに表示
-    function stageBadge(r){
-      const p = r._pipe;
-      if(!p || !p["現在地"]) return '<span style="color:var(--muted)">—</span>';
-      const here = p["現在地"];
-      const no = Number(p["stage_no"]||0);
-      let bg, fg;
-      if(no>=8){ bg="rgba(63,185,80,.16)"; fg="#7ee787"; }           // クローズ＝緑
-      else if(p["is_overdue"]){ bg="rgba(248,81,73,.18)"; fg="#ff7b72"; } // 期限超過＝赤
-      else if(p["is_stuck"]){ bg="rgba(210,153,34,.18)"; fg="#e3b341"; }  // 滞留＝橙
-      else { bg="rgba(88,166,255,.14)"; fg="#9cd2ff"; }              // 進行中＝青
-      const flags = [];
-      if(p["is_rca_required"]) flags.push("RCA");
-      if(p["is_report_candidate"]) flags.push("報告候補");
-      const ft = flags.length ? ` <span style="font-size:9px;color:var(--muted)">${flags.join("・")}</span>` : "";
-      return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${bg};color:${fg};font-size:11px;white-space:nowrap">${no?no+'. ':''}${esc(here)}</span>${ft}`;
-    }
-
-    function renderKpis(){
-      const rows = state.rows;
-      const rca = rows.filter(r => r["rca対象"]).length;
-      const open = rows.filter(isOpen).length;
-      const prog = rows.filter(isProg).length;
-      const nonClosed = rows.filter(r => !isDone(r));
-      const avg = nonClosed.length ? Math.round(nonClosed.reduce((a,r)=>a+Number(r["滞留日数"]||0),0)/nonClosed.length) : 0;
-      const overdue = rows.filter(r => overInfo(r).lv==="over").length;
-      const unassignedN = rows.filter(isUnassigned).length;
-      document.getElementById("kpis").innerHTML =
-        `<div class="kpi"><div class="v">${rows.length}</div><div class="l">故障・異常 総数</div></div>
-         <div class="kpi rca"><div class="v">${rca}</div><div class="l">🔍 RCA対象</div></div>
-         <div class="kpi open"><div class="v">${open}</div><div class="l">🔴 未対応</div></div>
-         <div class="kpi prog"><div class="v">${prog}</div><div class="l">🔧 対応中</div></div>
-         <div class="kpi over"><div class="v">${overdue}</div><div class="l">🟥 期限超過</div></div>
-         <div class="kpi un"><div class="v">${unassignedN}</div><div class="l">👤 未割当</div></div>
-         <div class="kpi avg"><div class="v">${avg}<span style="font-size:12px">日</span></div><div class="l">平均滞留（未クローズ）</div></div>`;
-    }
-
-    function detailRow(r, cols){
-      const v = (x) => (x!==null && x!==undefined && x!=="") ? `<div class="val">${esc(x)}</div>` : `<div class="val empty">—（未登録）</div>`;
-      return `<tr class="detail"><td colspan="${cols}"><div class="dgrid">
-        <div class="dcard"><div class="l">異常詳細</div>${v(r["異常詳細"])}</div>
-        <div class="dcard"><div class="l">発電影響</div>${v(r["発電影響"])}</div>
-        <div class="dcard"><div class="l">関連作業票</div>${v(r["関連作業票"])}（${esc(r["作業票状態"]||"未登録")}）</div>
-        <div class="dcard cause"><div class="l">根本原因 (Root Cause)</div>${v(r["根本原因"])}</div>
-        <div class="dcard rca-step"><div class="l">暫定処置</div>${v(r["暫定処置"])}</div>
-        <div class="dcard rca-step"><div class="l">恒久処置</div>${v(r["恒久処置"])}</div>
-        <div class="dcard"><div class="l">RCA進捗</div><div class="val">${esc(r["rca進捗"]||"—")}</div></div>
-        <div class="dcard"><div class="l">停止時間 / 逸失電力</div><div class="val">${esc(r["停止時間min"]??"—")} 分 / ${esc(r["逸失電力kwh"]??"—")} kWh</div></div>
-        <div class="dcard"><div class="l">滞留日数 / 担当者 / 発見者</div><div class="val">${overInfo(r).days}日 / ${hasAssignee(r)?esc(r["担当者"]):"未割当"} / ${r["発見者"]?esc(r["発見者"]):"—"}</div></div>
-        <div class="dcard"><div class="l">現在地（パイプライン）</div><div class="val">${stageBadge(r)}</div></div>
-        <div class="dcard"><div class="l">次アクション</div><div class="val">${esc(nextAction(r))}</div></div>
-      </div></td></tr>`;
-    }
-
-    function render(){
-      const body = document.getElementById("body");
-      let rows = state.rows.slice();
-      const f = state.filter;
-      if(f === "rca") rows = rows.filter(r => r["rca対象"]);
-      else if(f === "open") rows = rows.filter(isOpen);
-      else if(f === "prog") rows = rows.filter(isProg);
-      else if(f === "done") rows = rows.filter(isDone);
-      else if(f === "over") rows = rows.filter(r => overInfo(r).lv==="over");
-      else if(f === "unassigned") rows = rows.filter(isUnassigned);
-      if(state.sort === "stagn") rows.sort((a,b)=>Number(b["滞留日数"]||0)-Number(a["滞留日数"]||0));
-      if(!rows.length){ body.innerHTML = '<div class="empty">該当する故障・異常はありません</div>'; return; }
-      const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','現在地','滞留','担当者','RCA要否','次アクション'];
-      const cols = heads.length;
-      body.innerHTML = '<table><thead><tr>' +
-        heads.map(h=>`<th>${h}</th>`).join('') +
-        '</tr></thead><tbody>' + rows.map(r => {
-          const id = r["故障id"];
-          const opened = !!state.open[id];
-          const strong = (r["rca要否"]||"").indexOf("対象")>=0;
-          const oi = overInfo(r);
-          const stCls = oi.lv==="over"?"st-over":oi.lv==="warn"?"st-warn":oi.lv==="done"?"st-done":"st-ok";
-          const cls = (r["rca対象"] ? (strong?"rca-strong":"rca") : "") + (oi.lv==="over"?" over-row":"") + (opened?" open-row":"");
-          const dt = (r["発見日時_jst"]||"").replace("T"," ").slice(0,16);
-          const assignee = hasAssignee(r) ? esc(r["担当者"]) : (isDone(r)?'<span style="color:var(--muted)">—</span>':'<span class="unassigned">未割当</span>');
-          const main = `<tr class="main ${cls}" data-id="${esc(id)}">
-            <td><span class="arrow">▸</span></td>
-            <td>${esc(dt)}</td>
-            <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
-            <td>${esc(r["発見元"]||"")}</td>
-            <td>${esc(r["異常タイトル"]||"")}</td>
-            <td><span class="pill ${impClass(r["安全影響"])}">${esc(r["安全影響"]||"—")}</span></td>
-            <td><span class="pill ${clClass(r["原因明確度"])}">${esc(r["原因明確度"]||"—")}</span></td>
-            <td>${esc(r["再発性"]||"—")}</td>
-            <td>${esc(r["一次判定"]||"—")}</td>
-            <td>${esc(r["状態表示"]||"")}</td>
-            <td>${stageBadge(r)}</td>
-            <td><span class="stagn ${stCls}">${oi.days}日${oi.lv==="over"?" 🟥":oi.lv==="warn"?" ⚠":""}</span></td>
-            <td>${assignee}</td>
-            <td><span class="rca-tag ${rcaClass(r["rca要否"])}">${esc(r["rca要否"]||"—")}</span></td>
-            <td><span class="next-a">${esc(nextAction(r))}</span></td>
-          </tr>`;
-          return main + (opened ? detailRow(r, cols) : "");
-        }).join('') + '</tbody></table>';
-
-      body.querySelectorAll("tr.main").forEach(tr =>
-        tr.addEventListener("click", () => {
-          const id = tr.dataset.id;
-          state.open[id] = !state.open[id];
-          render();
-        }));
-    }
-
-    document.querySelectorAll("#filters button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.filter = btn.dataset.f;
-        render();
-      }));
-
-    document.querySelectorAll("#sorts button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#sorts button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.sort = btn.dataset.s;
-        render();
-      }));
-
-    async function loadAll(){
-      try{
-        const [rows, pipe] = await Promise.all([
-          sb.get("v_defect_rca_list?order=発見日時_jst.desc"),
-          sb.get("v_case_pipeline?select=*").catch(()=>[])
-        ]);
-        const pm = {};
-        (pipe||[]).forEach(p => { pm[p["案件id"]] = p; });
-        rows.forEach(r => { r._pipe = pm[r["故障id"]] || null; });
-        state.rows = rows;
-        renderKpis();
-        render();
-      }catch(e){
-        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
-      }
-    }
-    sb.requireLogin({ onReady: loadAll });
-  </script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 故障 / 根本原因調査(RCA) 一覧（ライブ）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:18px 22px 50px}
+  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 16px;min-width:120px}
+  .kpi .v{font-size:22px;font-weight:800;color:#fff} .kpi .l{font-size:11px;color:var(--muted)}
+  .kpi.rca .v{color:#f0c674} .kpi.open .v{color:#ff9a92} .kpi.prog .v{color:#9cd2ff}
+  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;white-space:nowrap;vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--bg)}
+  tr.main{cursor:pointer}
+  tr.main:hover td{background:rgba(88,166,255,.05)}
+  tr.rca td{background:rgba(210,153,34,.07)}
+  tr.rca-strong td{background:rgba(248,81,73,.08)}
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+  .imp-high{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+  .imp-mid{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+  .imp-low{color:var(--muted);border-color:var(--line)}
+  .cl-unknown{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.1)}
+  .cl-assumed{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
+  .cl-clear{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.1)}
+  .wtg{font-family:monospace;color:#fff;font-weight:600}
+  .rca-tag{font-weight:700}
+  .rca-strong-tag{color:#ff9a92} .rca-rec-tag{color:#f0c674} .rca-none{color:var(--muted)}
+  .arrow{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+  tr.open-row .arrow{transform:rotate(90deg)}
+  .detail td{background:var(--panel2);white-space:normal}
+  .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;padding:6px 2px}
+  .dcard{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:var(--panel)}
+  .dcard .l{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:4px;text-transform:uppercase}
+  .dcard .val{font-size:13px;color:#fff}
+  .dcard .val.empty{color:var(--muted);font-weight:400}
+  .dcard.rca-step{border-color:var(--work)}
+  .dcard.cause{border-color:var(--ai)}
+  .loading,.empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
+  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+  .kpi.over .v{color:#ff5630} .kpi.un .v{color:#ff9a92} .kpi.avg .v{color:#9cd2ff}
+  #body{overflow-x:auto}
+  .stagn{font-weight:700}
+  .st-over{color:#ff5630} .st-warn{color:#f0c674} .st-ok{color:var(--muted)} .st-done{color:#7ee787}
+  .unassigned{color:#ff9a92;font-size:11px;border:1px solid var(--defect);border-radius:6px;padding:1px 6px;background:rgba(248,81,73,.1);white-space:nowrap}
+  .next-a{color:#9cd2ff;white-space:normal;font-size:12px}
+  tr.over-row td{box-shadow:inset 3px 0 0 #ff5630}
+  .sorts{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap;align-items:center}
+  .sorts .lbl{font-size:11px;color:var(--muted)}
+  .sorts button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:4px 11px;border-radius:999px;cursor:pointer}
+  .sorts button.active{color:#fff;border-color:var(--work);background:rgba(210,153,34,.12)}
+</style>
+</head>
+<body>
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;margin-right:6px;padding-right:10px;border-right:1px solid #30363d;"><span style="width:3px;height:18px;border-radius:2px;background:#58a6ff;flex:0 0 auto;"></span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="color:#e6edf3;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1;">業務フロー</span><span style="color:#8b949e;font-size:9.5px;font-weight:600;">現在地</span></span></span><a href="./index.html" title="今日の管制塔（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(88,166,255,.95);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(88,166,255);color:#fff;">✓</span>今日の管制塔</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./live-board.html" title="監視（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(88,166,255,.95);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(88,166,255);color:#fff;">✓</span>監視</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./inspection-plan.html" title="点検計画（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(63,185,80,.95);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(63,185,80);color:#fff;">✓</span>点検計画</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./inspection-input.html" title="点検実施（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(63,185,80,.95);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(63,185,80);color:#fff;">✓</span>点検実施</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#fff;background:rgb(210,153,34);border:1px solid rgb(210,153,34);font-weight:700;box-shadow:0 0 0 3px rgba(210,153,34,.22);cursor:default;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:#fff;color:rgb(210,153,34);">5</span>異常判断</span><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業票へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">6</span>作業票</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./permits.html" title="PTW/KYへ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">7</span>PTW/KY</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./approvals.html" title="承認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">8</span>承認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業実施へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">9</span>作業実施</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./defect-rca.html" title="復旧確認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">10</span>復旧確認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./report-candidates.html" title="クローズ・報告確認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(219,97,162,.85);color:rgba(219,97,162,.98);">11</span>クローズ・報告確認</a></nav>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div>
+      <h1>故障 / 根本原因調査(RCA) 一覧</h1>
+      <div class="sub">阿武隈OS ライブ盤 — 異常の評価・RCA対象の抽出・是正の進捗</div>
+    </div>
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  </div>
+
+  <div class="wrap">
+    <div class="note">故障・異常の評価とRCA（<code>v_defect_rca_list</code>）。行をクリックで詳細を展開。<b>滞留日数</b>＝発見から経過日数（未クローズは本日まで）。<b>期限超過</b>＝RCA対象14日／通常30日超で🟥（目安・運用に合わせ要調整）。考え方は <a href="./guide-defect-judge.html">③ 是正判断</a> ／ <a href="./guide-rca.html">⑦ RCA</a>。</div>
+    <div class="kpis" id="kpis"></div>
+    <div class="filters" id="filters">
+      <button data-f="all" class="active">すべて</button>
+      <button data-f="rca">🔍 RCA対象</button>
+      <button data-f="open">🔴 未対応</button>
+      <button data-f="prog">🔧 対応中</button>
+      <button data-f="over">🟥 期限超過</button>
+      <button data-f="unassigned">👤 未割当</button>
+      <button data-f="done">✅ 完了</button>
+    </div>
+    <div class="sorts" id="sorts">
+      <span class="lbl">並び順:</span>
+      <button data-s="date" class="active">発見日時 新しい順</button>
+      <button data-s="stagn">滞留日数 長い順</button>
+    </div>
+    <div id="body" class="loading">読み込み中…</div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+  <script>
+    const esc = sb.esc;
+    const state = { rows: [], filter: "all", sort: "date", open: {} };
+
+    function impClass(v){ return v==="高"?"imp-high":v==="中"?"imp-mid":"imp-low"; }
+    function clClass(v){ return v==="不明"?"cl-unknown":v==="推定"?"cl-assumed":"cl-clear"; }
+    function rcaClass(v){ if(!v||v==="—")return "rca-none"; return v.indexOf("対象")>=0?"rca-strong-tag":"rca-rec-tag"; }
+
+    function isOpen(r){ const s=r["状態表示"]||""; return s.indexOf("未対応")>=0; }
+    function isProg(r){ const s=r["状態表示"]||""; return s.indexOf("対応中")>=0; }
+    function isDone(r){ const s=r["状態表示"]||""; return s.indexOf("完了")>=0; }
+
+    // 滞留・期限超過の判定（RCA対象は厳しめ：警告7日/超過14日、通常：警告14日/超過30日）
+    function overInfo(r){
+      const days = Number(r["滞留日数"]||0);
+      if(isDone(r)) return { lv:"done", days };
+      const isRca = !!r["rca対象"];
+      const warn = isRca?7:14, over = isRca?14:30;
+      if(days>=over) return { lv:"over", days };
+      if(days>=warn) return { lv:"warn", days };
+      return { lv:"ok", days };
+    }
+    function hasAssignee(r){ return !!(r["担当者"] && String(r["担当者"]).trim()); }
+    function isUnassigned(r){ return !isDone(r) && !hasAssignee(r); }
+    function nextAction(r){
+      if(r._pipe && r._pipe["次アクション"]) return r._pipe["次アクション"];
+      const s = r["状態表示"]||"";
+      if(s.indexOf("完了")>=0) return "—（クローズ済）";
+      if(s.indexOf("未対応")>=0) return hasAssignee(r) ? "一次評価を実施" : "一次評価・担当割当";
+      if(s.indexOf("評価済")>=0) return r["rca対象"] ? "RCA着手（根本原因調査）" : "作業票を起票";
+      if(s.indexOf("対応中")>=0) return "処置完了→復旧確認・クローズ";
+      return "状態を確認";
+    }
+    // 方式②：v_case_pipeline の権威ある現在地（8段階）を行ごとに表示
+    function stageBadge(r){
+      const p = r._pipe;
+      if(!p || !p["現在地"]) return '<span style="color:var(--muted)">—</span>';
+      const here = p["現在地"];
+      const no = Number(p["stage_no"]||0);
+      let bg, fg;
+      if(no>=8){ bg="rgba(63,185,80,.16)"; fg="#7ee787"; }           // クローズ＝緑
+      else if(p["is_overdue"]){ bg="rgba(248,81,73,.18)"; fg="#ff7b72"; } // 期限超過＝赤
+      else if(p["is_stuck"]){ bg="rgba(210,153,34,.18)"; fg="#e3b341"; }  // 滞留＝橙
+      else { bg="rgba(88,166,255,.14)"; fg="#9cd2ff"; }              // 進行中＝青
+      const flags = [];
+      if(p["is_rca_required"]) flags.push("RCA");
+      if(p["is_report_candidate"]) flags.push("報告候補");
+      const ft = flags.length ? ` <span style="font-size:9px;color:var(--muted)">${flags.join("・")}</span>` : "";
+      return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${bg};color:${fg};font-size:11px;white-space:nowrap">${no?no+'. ':''}${esc(here)}</span>${ft}`;
+    }
+
+    function renderKpis(){
+      const rows = state.rows;
+      const rca = rows.filter(r => r["rca対象"]).length;
+      const open = rows.filter(isOpen).length;
+      const prog = rows.filter(isProg).length;
+      const nonClosed = rows.filter(r => !isDone(r));
+      const avg = nonClosed.length ? Math.round(nonClosed.reduce((a,r)=>a+Number(r["滞留日数"]||0),0)/nonClosed.length) : 0;
+      const overdue = rows.filter(r => overInfo(r).lv==="over").length;
+      const unassignedN = rows.filter(isUnassigned).length;
+      document.getElementById("kpis").innerHTML =
+        `<div class="kpi"><div class="v">${rows.length}</div><div class="l">故障・異常 総数</div></div>
+         <div class="kpi rca"><div class="v">${rca}</div><div class="l">🔍 RCA対象</div></div>
+         <div class="kpi open"><div class="v">${open}</div><div class="l">🔴 未対応</div></div>
+         <div class="kpi prog"><div class="v">${prog}</div><div class="l">🔧 対応中</div></div>
+         <div class="kpi over"><div class="v">${overdue}</div><div class="l">🟥 期限超過</div></div>
+         <div class="kpi un"><div class="v">${unassignedN}</div><div class="l">👤 未割当</div></div>
+         <div class="kpi avg"><div class="v">${avg}<span style="font-size:12px">日</span></div><div class="l">平均滞留（未クローズ）</div></div>`;
+    }
+
+    function detailRow(r, cols){
+      const v = (x) => (x!==null && x!==undefined && x!=="") ? `<div class="val">${esc(x)}</div>` : `<div class="val empty">—（未登録）</div>`;
+      return `<tr class="detail"><td colspan="${cols}"><div class="dgrid">
+        <div class="dcard"><div class="l">異常詳細</div>${v(r["異常詳細"])}</div>
+        <div class="dcard"><div class="l">発電影響</div>${v(r["発電影響"])}</div>
+        <div class="dcard"><div class="l">関連作業票</div>${v(r["関連作業票"])}（${esc(r["作業票状態"]||"未登録")}）</div>
+        <div class="dcard cause"><div class="l">根本原因 (Root Cause)</div>${v(r["根本原因"])}</div>
+        <div class="dcard rca-step"><div class="l">暫定処置</div>${v(r["暫定処置"])}</div>
+        <div class="dcard rca-step"><div class="l">恒久処置</div>${v(r["恒久処置"])}</div>
+        <div class="dcard"><div class="l">RCA進捗</div><div class="val">${esc(r["rca進捗"]||"—")}</div></div>
+        <div class="dcard"><div class="l">停止時間 / 逸失電力</div><div class="val">${esc(r["停止時間min"]??"—")} 分 / ${esc(r["逸失電力kwh"]??"—")} kWh</div></div>
+        <div class="dcard"><div class="l">滞留日数 / 担当者 / 発見者</div><div class="val">${overInfo(r).days}日 / ${hasAssignee(r)?esc(r["担当者"]):"未割当"} / ${r["発見者"]?esc(r["発見者"]):"—"}</div></div>
+        <div class="dcard"><div class="l">現在地（パイプライン）</div><div class="val">${stageBadge(r)}</div></div>
+        <div class="dcard"><div class="l">次アクション</div><div class="val">${esc(nextAction(r))}</div></div>
+      </div></td></tr>`;
+    }
+
+    function render(){
+      const body = document.getElementById("body");
+      let rows = state.rows.slice();
+      const f = state.filter;
+      if(f === "rca") rows = rows.filter(r => r["rca対象"]);
+      else if(f === "open") rows = rows.filter(isOpen);
+      else if(f === "prog") rows = rows.filter(isProg);
+      else if(f === "done") rows = rows.filter(isDone);
+      else if(f === "over") rows = rows.filter(r => overInfo(r).lv==="over");
+      else if(f === "unassigned") rows = rows.filter(isUnassigned);
+      if(state.sort === "stagn") rows.sort((a,b)=>Number(b["滞留日数"]||0)-Number(a["滞留日数"]||0));
+      if(!rows.length){ body.innerHTML = '<div class="empty">該当する故障・異常はありません</div>'; return; }
+      const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','現在地','滞留','担当者','RCA要否','次アクション'];
+      const cols = heads.length;
+      body.innerHTML = '<table><thead><tr>' +
+        heads.map(h=>`<th>${h}</th>`).join('') +
+        '</tr></thead><tbody>' + rows.map(r => {
+          const id = r["故障id"];
+          const opened = !!state.open[id];
+          const strong = (r["rca要否"]||"").indexOf("対象")>=0;
+          const oi = overInfo(r);
+          const stCls = oi.lv==="over"?"st-over":oi.lv==="warn"?"st-warn":oi.lv==="done"?"st-done":"st-ok";
+          const cls = (r["rca対象"] ? (strong?"rca-strong":"rca") : "") + (oi.lv==="over"?" over-row":"") + (opened?" open-row":"");
+          const dt = (r["発見日時_jst"]||"").replace("T"," ").slice(0,16);
+          const assignee = hasAssignee(r) ? esc(r["担当者"]) : (isDone(r)?'<span style="color:var(--muted)">—</span>':'<span class="unassigned">未割当</span>');
+          const main = `<tr class="main ${cls}" data-id="${esc(id)}">
+            <td><span class="arrow">▸</span></td>
+            <td>${esc(dt)}</td>
+            <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
+            <td>${esc(r["発見元"]||"")}</td>
+            <td>${esc(r["異常タイトル"]||"")}</td>
+            <td><span class="pill ${impClass(r["安全影響"])}">${esc(r["安全影響"]||"—")}</span></td>
+            <td><span class="pill ${clClass(r["原因明確度"])}">${esc(r["原因明確度"]||"—")}</span></td>
+            <td>${esc(r["再発性"]||"—")}</td>
+            <td>${esc(r["一次判定"]||"—")}</td>
+            <td>${esc(r["状態表示"]||"")}</td>
+            <td>${stageBadge(r)}</td>
+            <td><span class="stagn ${stCls}">${oi.days}日${oi.lv==="over"?" 🟥":oi.lv==="warn"?" ⚠":""}</span></td>
+            <td>${assignee}</td>
+            <td><span class="rca-tag ${rcaClass(r["rca要否"])}">${esc(r["rca要否"]||"—")}</span></td>
+            <td><span class="next-a">${esc(nextAction(r))}</span></td>
+          </tr>`;
+          return main + (opened ? detailRow(r, cols) : "");
+        }).join('') + '</tbody></table>';
+
+      body.querySelectorAll("tr.main").forEach(tr =>
+        tr.addEventListener("click", () => {
+          const id = tr.dataset.id;
+          state.open[id] = !state.open[id];
+          render();
+        }));
+    }
+
+    document.querySelectorAll("#filters button").forEach(btn =>
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filter = btn.dataset.f;
+        render();
+      }));
+
+    document.querySelectorAll("#sorts button").forEach(btn =>
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#sorts button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.sort = btn.dataset.s;
+        render();
+      }));
+
+    async function loadAll(){
+      try{
+        const [rows, pipe] = await Promise.all([
+          sb.get("v_defect_rca_list?order=発見日時_jst.desc"),
+          sb.get("v_case_pipeline?select=*").catch(()=>[])
+        ]);
+        const pm = {};
+        (pipe||[]).forEach(p => { pm[p["案件id"]] = p; });
+        rows.forEach(r => { r._pipe = pm[r["故障id"]] || null; });
+        state.rows = rows;
+        renderKpis();
+        render();
+      }catch(e){
+        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+      }
+    }
+    sb.requireLogin({ onReady: loadAll });
+  </script>
+</body>
+</html>
