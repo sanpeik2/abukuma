@@ -1,208 +1,208 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿武隈風力 O&M / 朝会コックピット — メニュー</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:36px 28px;line-height:1.6;max-width:1040px;margin:0 auto}
-  header{margin-bottom:6px}
-  h1{font-size:25px}
-  .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
-
-  .lead{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--master);border-radius:10px;padding:13px 16px;font-size:12.5px;color:var(--muted);margin-bottom:26px}
-  .lead b{color:#fff}
-
-  h2.sec{font-size:14px;color:#fff;margin:30px 0 12px;display:flex;align-items:center;gap:9px}
-  .dot{display:inline-block;width:9px;height:9px;border-radius:50%}
-  .sec .num{font-size:12px;color:var(--muted);font-weight:normal}
-  .sec .tag{font-size:11px;color:var(--muted);font-weight:normal;border:1px solid var(--line);border-radius:10px;padding:2px 9px}
-
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-  a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;text-decoration:none;color:var(--txt);transition:border-color .15s,transform .15s}
-  a.card:hover{border-color:var(--master);transform:translateY(-2px)}
-  a.card .t{font-size:15px;color:#fff;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
-  a.card .d{font-size:12px;color:var(--muted)}
-  a.card .badge{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);white-space:nowrap;margin-left:auto}
-  .badge.live{background:rgba(63,185,80,.14);border-color:var(--insp);color:#7ee787}
-  .badge.doc{background:rgba(88,166,255,.12);border-color:var(--master);color:#9cd2ff}
-  .badge.soon{background:rgba(139,148,158,.12);color:var(--muted)}
-  a.card.disabled{pointer-events:none;opacity:.5}
-
-  footer{margin-top:38px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:16px}
-  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
-</style>
-</head>
-<body>
-<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:#0d1117;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:7px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:5px;color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;letter-spacing:.02em;"><span style="font-size:12px;">🔄</span>業務フロー（各画面へ移動）</span><a href="./index.html" title="今日の管制塔へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.95);background:transparent;border:1px solid rgba(88,166,255,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(88,166,255,.75);flex:0 0 auto;"></span>今日の管制塔</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./live-board.html" title="監視へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.95);background:transparent;border:1px solid rgba(88,166,255,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(88,166,255,.75);flex:0 0 auto;"></span>監視</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-plan.html" title="点検計画へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.95);background:transparent;border:1px solid rgba(63,185,80,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(63,185,80,.75);flex:0 0 auto;"></span>点検計画</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-input.html" title="点検実施へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.95);background:transparent;border:1px solid rgba(63,185,80,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(63,185,80,.75);flex:0 0 auto;"></span>点検実施</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>異常判断</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業票へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業票</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>PTW/KY</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./approvals.html" title="承認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>承認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>復旧確認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(219,97,162,.95);background:transparent;border:1px solid rgba(219,97,162,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(219,97,162,.75);flex:0 0 auto;"></span>クローズ/報告</a></nav>
-  <header>
-    <h1>阿武隈風力 O&M / 朝会コックピット</h1>
-  </header>
-  <div class="sub">業務OS ハブ / GitHub Pages: sanpeik2.github.io/abukuma / <span class="badge live" style="margin:0">LIVE</span>＝Supabase連携（要ログイン）・<span class="badge doc" style="margin:0">DOC</span>＝静的資料</div>
-
-  <div class="lead">
-    画面を<b>業務の流れ順</b>に並べています。朝は <b>① 今日見る画面</b> から。流れ全体を見たいときは <b>② O&M業務の流れ</b>。
-    迷ったら各業務欄の <span class="badge doc" style="margin:0">DOC</span>（考え方ガイド）を横に開いてください。
-    流れ：<b>点検計画 → 点検実施 → 異常判断 → 作業票 → PTW/KY → 主任承認 → 実施 → 復旧確認 → クローズ・報告</b>
-  </div>
-
-  <!-- ① 今日見る画面 -->
-  <h2 class="sec"><span class="dot" style="background:var(--master)"></span>① 今日見る画面<span class="num">— 朝いちで開く</span><span class="tag">LIVE</span></h2>
-  <div class="grid">
-    <a class="card" href="./index.html">
-      <div class="t">🌅 朝会コックピット<span class="badge live">LIVE</span></div>
-      <div class="d">本日停止・KPI・重大アラーム・AIコメント・気象を5秒で把握する司令塔TOP</div>
-    </a>
-    <a class="card" href="./live-board.html">
-      <div class="t">🌀 タービン（風車カルテ）/ アラーム / 点検盤<span class="badge live">LIVE</span></div>
-      <div class="d">号機を選ぶと右側に<b>風車カルテ</b>：🩺AI診断・故障予知（ルールベース簡易）＋健全度・アラーム履歴・点検実績・整備/部品交換履歴・今後の点検予定。アラーム一覧・点検カレンダーもタブで切替（<code>component_risk_dashboard</code> / <code>maintenance_results</code> / <code>v_wtg_detail_*</code>）</div>
-    </a>
-    <a class="card" href="./work-orders.html">
-      <div class="t">📝 作業票一覧<span class="badge live">LIVE</span></div>
-      <div class="d">作業票の一覧・絞り込み（<code>v_work_orders_full</code>）。JST・絵文字ステータス付き</div>
-    </a>
-    <a class="card" href="./approvals.html">
-      <div class="t">✅ 承認待ち一覧<span class="badge live">LIVE</span></div>
-      <div class="d">作業票・作業許可(PTW)・点検実績の承認待ちを一覧表示。その場で承認／差戻し（<code>v_approvals_pending_all</code>）</div>
-    </a>
-  </div>
-
-  <!-- ② O&M業務の流れ -->
-  <h2 class="sec"><span class="dot" style="background:var(--work)"></span>② O&M業務の流れ<span class="num">— 全体像を見る入口</span><span class="tag">DOC</span></h2>
-  <div class="grid">
-    <a class="card" href="./om-os-flow-map.html">
-      <div class="t">🔗 業務フロー ⇔ OS画面マッピング<span class="badge doc">DOC</span></div>
-      <div class="d">実際の業務（点検計画→実行→是正→作業票→許可LOTO→主任承認→報告＋アラーム/故障対応）と各固定画面の対応・実装状況。浮いている画面・足りない画面の棚卸し</div>
-    </a>
-    <a class="card" href="./om-workflow-map.html">
-      <div class="t">🗺 点検・作業・法令の関係図<span class="badge doc">DOC</span></div>
-      <div class="d">点検票/作業票/作業許可証/主任承認/法令の関係。点検の種類（年次/随時/故障）・作業票の起票契機・RCA・誰が何を承認するか（叩き台。要・保安規定確認）</div>
-    </a>
-  </div>
-
-  <!-- ③ 点検 -->
-  <h2 class="sec"><span class="dot" style="background:var(--insp)"></span>③ 点検<span class="num">— 計画して実施・記録する</span></h2>
-  <div class="grid">
-    <a class="card" href="./inspection-plan.html">
-      <div class="t">📅 点検計画一覧<span class="badge live">LIVE</span></div>
-      <div class="d">年次/定期/随時の点検計画。期限超過・本日をハイライト、区分・状態で絞り込み（<code>v_inspection_plan_list</code>）</div>
-    </a>
-    <a class="card" href="./inspection-input.html">
-      <div class="t">🛠 点検実績入力<span class="badge live">LIVE</span></div>
-      <div class="d">点検結果・異常・BOXリンクを登録し、最近の実績を一覧表示（<code>inspection_results</code> / <code>v_inspection_results_list</code>）</div>
-    </a>
-    <a class="card" href="./guide-inspection-plan.html">
-      <div class="t">① 点検計画の基本<span class="badge doc">DOC</span></div>
-      <div class="d">いつ・何を・誰が点検するか。年次/定期/随時の3区分と期限管理</div>
-    </a>
-    <a class="card" href="./guide-inspection-do.html">
-      <div class="t">② 点検実行の基本<span class="badge doc">DOC</span></div>
-      <div class="d">現地で見る・記録する。見るポイントと「異常なしも記録」の考え方</div>
-    </a>
-  </div>
-
-  <!-- ④ 異常・故障対応 -->
-  <h2 class="sec"><span class="dot" style="background:var(--defect)"></span>④ 異常・故障対応<span class="num">— アラーム/故障が出たとき</span></h2>
-  <div class="grid">
-    <a class="card" href="./defect-rca.html">
-      <div class="t">🔧 故障 / 根本原因調査(RCA)<span class="badge live">LIVE</span></div>
-      <div class="d">異常の評価・RCA対象の抽出・是正の進捗。行クリックで根本原因/暫定・恒久処置を展開（<code>v_defect_rca_list</code>）</div>
-    </a>
-    <a class="card" href="./decision-flow.html">
-      <div class="t">🧭 考え方フロー図<span class="badge doc">DOC</span></div>
-      <div class="d">異常発見→一次評価→A〜F判定→是正→クローズの判断ロジック</div>
-    </a>
-    <a class="card" href="./defect-flow.html">
-      <div class="t">🔧 異常是正フロー<span class="badge doc">DOC</span></div>
-      <div class="d">defect_findings から closeout までのデータの流れ</div>
-    </a>
-    <a class="card" href="./guide-defect-judge.html">
-      <div class="t">③ 異常評価・是正判断の基本<span class="badge doc">DOC</span></div>
-      <div class="d">直すか・様子見か・報告か。安全/発電/法令の3軸で判断</div>
-    </a>
-    <a class="card" href="./guide-rca.html">
-      <div class="t">⑦ 故障対応・RCAの基本<span class="badge doc">DOC</span></div>
-      <div class="d">止血（暫定）で終わらせず真因を断つ。RCA対象の見分け方と恒久処置の考え方（並行）</div>
-    </a>
-  </div>
-
-  <!-- ⑤ 作業・安全 -->
-  <h2 class="sec"><span class="dot" style="background:#e3a008"></span>⑤ 作業・安全・承認<span class="num">— 作業票→PTW/KY→承認→実施</span></h2>
-  <div class="grid">
-    <a class="card" href="./work-orders.html">
-      <div class="t">📝 作業票一覧<span class="badge live">LIVE</span></div>
-      <div class="d">作業票の一覧・絞り込み（<code>v_work_orders_full</code>）。JST・絵文字ステータス付き</div>
-    </a>
-    <a class="card" href="./permits.html">
-      <div class="t">🔒 作業許可 (PTW) 一覧<span class="badge live">LIVE</span></div>
-      <div class="d">高所・電気・LOTO・火気などの許可管理。状態・リスク・安全要件で絞り込み（<code>v_permits_full</code>）</div>
-    </a>
-    <a class="card" href="./approvals.html">
-      <div class="t">✅ 承認待ち一覧<span class="badge live">LIVE</span></div>
-      <div class="d">作業票・作業許可(PTW)・点検実績の承認待ちを一覧表示。その場で承認／差戻し（<code>v_approvals_pending_all</code>）</div>
-    </a>
-    <a class="card" href="./guide-work-order.html">
-      <div class="t">④ 作業票の基本<span class="badge doc">DOC</span></div>
-      <div class="d">直す作業を指示書にする。起票の契機と恒久処置まで追う考え方</div>
-    </a>
-    <a class="card" href="./guide-permit-loto.html">
-      <div class="t">⑤ 作業許可(PTW/LOTO)の基本<span class="badge doc">DOC</span></div>
-      <div class="d">安全に止めてから作業する。LOTO（止める→施錠→確認）の考え方</div>
-    </a>
-    <a class="card" href="./guide-approval.html">
-      <div class="t">⑥ 主任承認の基本<span class="badge doc">DOC</span></div>
-      <div class="d">何を確認して承認するか。証跡と差戻し理由の考え方</div>
-    </a>
-  </div>
-
-  <!-- ⑥ 法令・報告 -->
-  <h2 class="sec"><span class="dot" style="background:var(--legal)"></span>⑥ 法令・報告<span class="num">— 保安規定・事故報告</span></h2>
-  <div class="grid">
-    <a class="card" href="./report-candidates.html">
-      <div class="t">⚖ 保安規定 報告候補<span class="badge live">LIVE</span></div>
-      <div class="d">事故報告対象の一次スクリーニング（<code>v_report_candidates</code>）。最終判断は電気主任技術者</div>
-    </a>
-    <a class="card" href="./accident-report-flow.html">
-      <div class="t">📋 事故報告フロー<span class="badge doc">DOC</span></div>
-      <div class="d">保安規定にもとづく事故報告の流れ（覚知→速報→詳報→記録）＋🚨緊急時チェックリスト</div>
-    </a>
-  </div>
-
-  <!-- ⑦ データ・設計資料 -->
-  <h2 class="sec"><span class="dot" style="background:var(--ai)"></span>⑦ データ・設計資料<span class="num">— 設計者向け</span><span class="tag">DOC</span></h2>
-  <div class="grid">
-    <a class="card" href="./er-diagram.html">
-      <div class="t">🗂 テーブル関係図（ER）<span class="badge doc">DOC</span></div>
-      <div class="d">26テーブル＋ビューの関係。業務別ビュー＋グループ別カラー表示</div>
-    </a>
-    <a class="card" href="./data-source-map.html">
-      <div class="t">🔌 データソースマップ<span class="badge doc">DOC</span></div>
-      <div class="d">各画面がどのテーブル/ビューを読むか＋信頼性・欠損時ルール・重要フィールドの意思決定影響</div>
-    </a>
-    <a class="card" href="./ai-data-boundary.html">
-      <div class="t">🔐 AIに何を読ませるか（データ境界）<span class="badge doc">DOC</span></div>
-      <div class="d">AI読取専用View・キー分離の設計。学習しない設定でも残るリスク／渡してよい・渡さない／<code>service_role</code>を渡さない（後でSupabaseに実装予定の設計メモ）</div>
-    </a>
-    <a class="card" href="./box-upload-flow.html">
-      <div class="t">📷 証拠写真アップロード設計<span class="badge doc">DOC</span></div>
-      <div class="d">案B：Edge Functionはアップロード先URL発行のみ・写真はBOX直アップロード。Supabaseは<code>box_file_id</code>等の参照のみ保持（未実装の設計メモ）</div>
-    </a>
-  </div>
-
-  <!-- 今後追加予定（プレースホルダ） -->
-  <h2 class="sec"><span class="dot" style="background:var(--muted)"></span>今後追加予定<span class="tag">v_ビューをsb.get()で表示</span></h2>
-  <div class="grid">
-    <a class="card disabled"><div class="t">📦 在庫<span class="badge soon">予定</span></div><div class="d"><code>v_parts_stock_full</code></div></a>
-    <a class="card disabled"><div class="t">🎓 資格期限<span class="badge soon">予定</span></div><div class="d"><code>v_qualifications_expiry</code></div></a>
-  </div>
-
-  <footer>
-    新しいライブ画面は、HTMLに <code>&lt;script src="./lib/supabase.js"&gt;</code> を読み込み <code>sb.get('v_ビュー名?select=*')</code> を呼ぶだけで追加できます（接続情報は lib に一元管理）。
-  </footer>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈風力 O&M / 朝会コックピット — メニュー</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:36px 28px;line-height:1.6;max-width:1040px;margin:0 auto}
+  header{margin-bottom:6px}
+  h1{font-size:25px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+
+  .lead{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--master);border-radius:10px;padding:13px 16px;font-size:12.5px;color:var(--muted);margin-bottom:26px}
+  .lead b{color:#fff}
+
+  h2.sec{font-size:14px;color:#fff;margin:30px 0 12px;display:flex;align-items:center;gap:9px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+  .sec .num{font-size:12px;color:var(--muted);font-weight:normal}
+  .sec .tag{font-size:11px;color:var(--muted);font-weight:normal;border:1px solid var(--line);border-radius:10px;padding:2px 9px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;text-decoration:none;color:var(--txt);transition:border-color .15s,transform .15s}
+  a.card:hover{border-color:var(--master);transform:translateY(-2px)}
+  a.card .t{font-size:15px;color:#fff;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  a.card .d{font-size:12px;color:var(--muted)}
+  a.card .badge{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);white-space:nowrap;margin-left:auto}
+  .badge.live{background:rgba(63,185,80,.14);border-color:var(--insp);color:#7ee787}
+  .badge.doc{background:rgba(88,166,255,.12);border-color:var(--master);color:#9cd2ff}
+  .badge.soon{background:rgba(139,148,158,.12);color:var(--muted)}
+  a.card.disabled{pointer-events:none;opacity:.5}
+
+  footer{margin-top:38px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:16px}
+  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;margin-right:6px;padding-right:10px;border-right:1px solid #30363d;"><span style="width:3px;height:18px;border-radius:2px;background:#58a6ff;flex:0 0 auto;"></span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="color:#e6edf3;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1;">業務フロー</span><span style="color:#8b949e;font-size:9.5px;font-weight:600;">各画面へ移動</span></span></span><a href="./index.html" title="今日の管制塔へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(88,166,255,.85);color:rgba(88,166,255,.98);">1</span>今日の管制塔</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./live-board.html" title="監視へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(88,166,255,.85);color:rgba(88,166,255,.98);">2</span>監視</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./inspection-plan.html" title="点検計画へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(63,185,80,.85);color:rgba(63,185,80,.98);">3</span>点検計画</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./inspection-input.html" title="点検実施へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(63,185,80,.85);color:rgba(63,185,80,.98);">4</span>点検実施</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./defect-rca.html" title="異常判断へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">5</span>異常判断</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業票へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">6</span>作業票</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./permits.html" title="PTW/KYへ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">7</span>PTW/KY</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./approvals.html" title="承認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">8</span>承認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">9</span>作業</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./defect-rca.html" title="復旧確認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">10</span>復旧確認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(219,97,162,.85);color:rgba(219,97,162,.98);">11</span>クローズ/報告</a></nav>
+  <header>
+    <h1>阿武隈風力 O&M / 朝会コックピット</h1>
+  </header>
+  <div class="sub">業務OS ハブ / GitHub Pages: sanpeik2.github.io/abukuma / <span class="badge live" style="margin:0">LIVE</span>＝Supabase連携（要ログイン）・<span class="badge doc" style="margin:0">DOC</span>＝静的資料</div>
+
+  <div class="lead">
+    画面を<b>業務の流れ順</b>に並べています。朝は <b>① 今日見る画面</b> から。流れ全体を見たいときは <b>② O&M業務の流れ</b>。
+    迷ったら各業務欄の <span class="badge doc" style="margin:0">DOC</span>（考え方ガイド）を横に開いてください。
+    流れ：<b>点検計画 → 点検実施 → 異常判断 → 作業票 → PTW/KY → 主任承認 → 実施 → 復旧確認 → クローズ・報告</b>
+  </div>
+
+  <!-- ① 今日見る画面 -->
+  <h2 class="sec"><span class="dot" style="background:var(--master)"></span>① 今日見る画面<span class="num">— 朝いちで開く</span><span class="tag">LIVE</span></h2>
+  <div class="grid">
+    <a class="card" href="./index.html">
+      <div class="t">🌅 朝会コックピット<span class="badge live">LIVE</span></div>
+      <div class="d">本日停止・KPI・重大アラーム・AIコメント・気象を5秒で把握する司令塔TOP</div>
+    </a>
+    <a class="card" href="./live-board.html">
+      <div class="t">🌀 タービン（風車カルテ）/ アラーム / 点検盤<span class="badge live">LIVE</span></div>
+      <div class="d">号機を選ぶと右側に<b>風車カルテ</b>：🩺AI診断・故障予知（ルールベース簡易）＋健全度・アラーム履歴・点検実績・整備/部品交換履歴・今後の点検予定。アラーム一覧・点検カレンダーもタブで切替（<code>component_risk_dashboard</code> / <code>maintenance_results</code> / <code>v_wtg_detail_*</code>）</div>
+    </a>
+    <a class="card" href="./work-orders.html">
+      <div class="t">📝 作業票一覧<span class="badge live">LIVE</span></div>
+      <div class="d">作業票の一覧・絞り込み（<code>v_work_orders_full</code>）。JST・絵文字ステータス付き</div>
+    </a>
+    <a class="card" href="./approvals.html">
+      <div class="t">✅ 承認待ち一覧<span class="badge live">LIVE</span></div>
+      <div class="d">作業票・作業許可(PTW)・点検実績の承認待ちを一覧表示。その場で承認／差戻し（<code>v_approvals_pending_all</code>）</div>
+    </a>
+  </div>
+
+  <!-- ② O&M業務の流れ -->
+  <h2 class="sec"><span class="dot" style="background:var(--work)"></span>② O&M業務の流れ<span class="num">— 全体像を見る入口</span><span class="tag">DOC</span></h2>
+  <div class="grid">
+    <a class="card" href="./om-os-flow-map.html">
+      <div class="t">🔗 業務フロー ⇔ OS画面マッピング<span class="badge doc">DOC</span></div>
+      <div class="d">実際の業務（点検計画→実行→是正→作業票→許可LOTO→主任承認→報告＋アラーム/故障対応）と各固定画面の対応・実装状況。浮いている画面・足りない画面の棚卸し</div>
+    </a>
+    <a class="card" href="./om-workflow-map.html">
+      <div class="t">🗺 点検・作業・法令の関係図<span class="badge doc">DOC</span></div>
+      <div class="d">点検票/作業票/作業許可証/主任承認/法令の関係。点検の種類（年次/随時/故障）・作業票の起票契機・RCA・誰が何を承認するか（叩き台。要・保安規定確認）</div>
+    </a>
+  </div>
+
+  <!-- ③ 点検 -->
+  <h2 class="sec"><span class="dot" style="background:var(--insp)"></span>③ 点検<span class="num">— 計画して実施・記録する</span></h2>
+  <div class="grid">
+    <a class="card" href="./inspection-plan.html">
+      <div class="t">📅 点検計画一覧<span class="badge live">LIVE</span></div>
+      <div class="d">年次/定期/随時の点検計画。期限超過・本日をハイライト、区分・状態で絞り込み（<code>v_inspection_plan_list</code>）</div>
+    </a>
+    <a class="card" href="./inspection-input.html">
+      <div class="t">🛠 点検実績入力<span class="badge live">LIVE</span></div>
+      <div class="d">点検結果・異常・BOXリンクを登録し、最近の実績を一覧表示（<code>inspection_results</code> / <code>v_inspection_results_list</code>）</div>
+    </a>
+    <a class="card" href="./guide-inspection-plan.html">
+      <div class="t">① 点検計画の基本<span class="badge doc">DOC</span></div>
+      <div class="d">いつ・何を・誰が点検するか。年次/定期/随時の3区分と期限管理</div>
+    </a>
+    <a class="card" href="./guide-inspection-do.html">
+      <div class="t">② 点検実行の基本<span class="badge doc">DOC</span></div>
+      <div class="d">現地で見る・記録する。見るポイントと「異常なしも記録」の考え方</div>
+    </a>
+  </div>
+
+  <!-- ④ 異常・故障対応 -->
+  <h2 class="sec"><span class="dot" style="background:var(--defect)"></span>④ 異常・故障対応<span class="num">— アラーム/故障が出たとき</span></h2>
+  <div class="grid">
+    <a class="card" href="./defect-rca.html">
+      <div class="t">🔧 故障 / 根本原因調査(RCA)<span class="badge live">LIVE</span></div>
+      <div class="d">異常の評価・RCA対象の抽出・是正の進捗。行クリックで根本原因/暫定・恒久処置を展開（<code>v_defect_rca_list</code>）</div>
+    </a>
+    <a class="card" href="./decision-flow.html">
+      <div class="t">🧭 考え方フロー図<span class="badge doc">DOC</span></div>
+      <div class="d">異常発見→一次評価→A〜F判定→是正→クローズの判断ロジック</div>
+    </a>
+    <a class="card" href="./defect-flow.html">
+      <div class="t">🔧 異常是正フロー<span class="badge doc">DOC</span></div>
+      <div class="d">defect_findings から closeout までのデータの流れ</div>
+    </a>
+    <a class="card" href="./guide-defect-judge.html">
+      <div class="t">③ 異常評価・是正判断の基本<span class="badge doc">DOC</span></div>
+      <div class="d">直すか・様子見か・報告か。安全/発電/法令の3軸で判断</div>
+    </a>
+    <a class="card" href="./guide-rca.html">
+      <div class="t">⑦ 故障対応・RCAの基本<span class="badge doc">DOC</span></div>
+      <div class="d">止血（暫定）で終わらせず真因を断つ。RCA対象の見分け方と恒久処置の考え方（並行）</div>
+    </a>
+  </div>
+
+  <!-- ⑤ 作業・安全 -->
+  <h2 class="sec"><span class="dot" style="background:#e3a008"></span>⑤ 作業・安全・承認<span class="num">— 作業票→PTW/KY→承認→実施</span></h2>
+  <div class="grid">
+    <a class="card" href="./work-orders.html">
+      <div class="t">📝 作業票一覧<span class="badge live">LIVE</span></div>
+      <div class="d">作業票の一覧・絞り込み（<code>v_work_orders_full</code>）。JST・絵文字ステータス付き</div>
+    </a>
+    <a class="card" href="./permits.html">
+      <div class="t">🔒 作業許可 (PTW) 一覧<span class="badge live">LIVE</span></div>
+      <div class="d">高所・電気・LOTO・火気などの許可管理。状態・リスク・安全要件で絞り込み（<code>v_permits_full</code>）</div>
+    </a>
+    <a class="card" href="./approvals.html">
+      <div class="t">✅ 承認待ち一覧<span class="badge live">LIVE</span></div>
+      <div class="d">作業票・作業許可(PTW)・点検実績の承認待ちを一覧表示。その場で承認／差戻し（<code>v_approvals_pending_all</code>）</div>
+    </a>
+    <a class="card" href="./guide-work-order.html">
+      <div class="t">④ 作業票の基本<span class="badge doc">DOC</span></div>
+      <div class="d">直す作業を指示書にする。起票の契機と恒久処置まで追う考え方</div>
+    </a>
+    <a class="card" href="./guide-permit-loto.html">
+      <div class="t">⑤ 作業許可(PTW/LOTO)の基本<span class="badge doc">DOC</span></div>
+      <div class="d">安全に止めてから作業する。LOTO（止める→施錠→確認）の考え方</div>
+    </a>
+    <a class="card" href="./guide-approval.html">
+      <div class="t">⑥ 主任承認の基本<span class="badge doc">DOC</span></div>
+      <div class="d">何を確認して承認するか。証跡と差戻し理由の考え方</div>
+    </a>
+  </div>
+
+  <!-- ⑥ 法令・報告 -->
+  <h2 class="sec"><span class="dot" style="background:var(--legal)"></span>⑥ 法令・報告<span class="num">— 保安規定・事故報告</span></h2>
+  <div class="grid">
+    <a class="card" href="./report-candidates.html">
+      <div class="t">⚖ 保安規定 報告候補<span class="badge live">LIVE</span></div>
+      <div class="d">事故報告対象の一次スクリーニング（<code>v_report_candidates</code>）。最終判断は電気主任技術者</div>
+    </a>
+    <a class="card" href="./accident-report-flow.html">
+      <div class="t">📋 事故報告フロー<span class="badge doc">DOC</span></div>
+      <div class="d">保安規定にもとづく事故報告の流れ（覚知→速報→詳報→記録）＋🚨緊急時チェックリスト</div>
+    </a>
+  </div>
+
+  <!-- ⑦ データ・設計資料 -->
+  <h2 class="sec"><span class="dot" style="background:var(--ai)"></span>⑦ データ・設計資料<span class="num">— 設計者向け</span><span class="tag">DOC</span></h2>
+  <div class="grid">
+    <a class="card" href="./er-diagram.html">
+      <div class="t">🗂 テーブル関係図（ER）<span class="badge doc">DOC</span></div>
+      <div class="d">26テーブル＋ビューの関係。業務別ビュー＋グループ別カラー表示</div>
+    </a>
+    <a class="card" href="./data-source-map.html">
+      <div class="t">🔌 データソースマップ<span class="badge doc">DOC</span></div>
+      <div class="d">各画面がどのテーブル/ビューを読むか＋信頼性・欠損時ルール・重要フィールドの意思決定影響</div>
+    </a>
+    <a class="card" href="./ai-data-boundary.html">
+      <div class="t">🔐 AIに何を読ませるか（データ境界）<span class="badge doc">DOC</span></div>
+      <div class="d">AI読取専用View・キー分離の設計。学習しない設定でも残るリスク／渡してよい・渡さない／<code>service_role</code>を渡さない（後でSupabaseに実装予定の設計メモ）</div>
+    </a>
+    <a class="card" href="./box-upload-flow.html">
+      <div class="t">📷 証拠写真アップロード設計<span class="badge doc">DOC</span></div>
+      <div class="d">案B：Edge Functionはアップロード先URL発行のみ・写真はBOX直アップロード。Supabaseは<code>box_file_id</code>等の参照のみ保持（未実装の設計メモ）</div>
+    </a>
+  </div>
+
+  <!-- 今後追加予定（プレースホルダ） -->
+  <h2 class="sec"><span class="dot" style="background:var(--muted)"></span>今後追加予定<span class="tag">v_ビューをsb.get()で表示</span></h2>
+  <div class="grid">
+    <a class="card disabled"><div class="t">📦 在庫<span class="badge soon">予定</span></div><div class="d"><code>v_parts_stock_full</code></div></a>
+    <a class="card disabled"><div class="t">🎓 資格期限<span class="badge soon">予定</span></div><div class="d"><code>v_qualifications_expiry</code></div></a>
+  </div>
+
+  <footer>
+    新しいライブ画面は、HTMLに <code>&lt;script src="./lib/supabase.js"&gt;</code> を読み込み <code>sb.get('v_ビュー名?select=*')</code> を呼ぶだけで追加できます（接続情報は lib に一元管理）。
+  </footer>
+</body>
+</html>
