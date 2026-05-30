@@ -1100,6 +1100,93 @@
   </div><!-- /grid -->
 </div>
 
+<!-- ===== 重要フィールド別 欠損時の意思決定影響（Phase 3.5 / 系統ルールの例外） ===== -->
+<div style="margin-top:32px;border-top:2px solid rgba(159,176,189,0.25);padding-top:20px">
+  <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:4px">▶ 重要フィールド別 欠損時の意思決定影響</h2>
+  <div style="color:#8b949e;font-size:12.5px;margin-bottom:14px">上の「6系統ルール」は系統単位の原則。ここは<b style="color:#e3c98b">意思決定に直結する個別フィールドの例外</b>だけを抜き出した早見。全フィールドではなく、判断を誤ると影響が大きいものに絞る。</div>
+<div style="overflow-x:auto;margin-bottom:8px">
+<table style="width:100%;border-collapse:collapse;background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden;font-size:12px;min-width:860px">
+  <thead>
+    <tr style="background:#1c2128;color:#fff">
+      <th style="padding:8px 11px;text-align:left;min-width:200px">重要フィールド</th>
+      <th style="padding:8px 11px;text-align:left;min-width:90px">更新頻度</th>
+      <th style="padding:8px 11px;text-align:left;min-width:80px">信頼度</th>
+      <th style="padding:8px 11px;text-align:left;min-width:230px">欠損・古い時の扱い</th>
+      <th style="padding:8px 11px;text-align:left">意思決定への影響</th>
+    </tr>
+  </thead>
+  <tbody style="color:#c9d1d9">
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">wtg_status.status</code></td>
+      <td style="padding:8px 11px">リアルタイム</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px">直近値を保持し鮮度表示。通信途絶は<b>「通信断」明示</b>→現地確認（不明をOK扱いしない）</td>
+      <td style="padding:8px 11px">WTG停止・警告判断の根拠。誤れば<b>誤停止／異常見逃し</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">wtg_status.output_kw</code></td>
+      <td style="padding:8px 11px">リアルタイム〜数分</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px"><b>0と欠損を区別</b>（欠損は「—」、0は実値）。直近値＋鮮度</td>
+      <td style="padding:8px 11px">出力低下・停止判断。0埋めすると<b>誤検知</b>の恐れ</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">scada_30min.power_output_mwh</code></td>
+      <td style="padding:8px 11px">30分</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px">未確定枠は「暫定」表示。<b>欠測は補間・0計上せず「—」</b></td>
+      <td style="padding:8px 11px">発電量・売電額。欠損を0計上すると<b>過小評価</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">scada_30min.availability</code></td>
+      <td style="padding:8px 11px">30分〜日次</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（算出値）</td>
+      <td style="padding:8px 11px">元データ欠損なら算出不可→「—」。前日値で埋めない</td>
+      <td style="padding:8px 11px">稼働率・停止時間KPI。欠損由来の歪みを区別して読む</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">alarm_events.alarm_code</code></td>
+      <td style="padding:8px 11px">イベント駆動</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px">取りこぼしはSCADA再同期で補完。重複はdedup</td>
+      <td style="padding:8px 11px">異常検知・再発/頻発判定。欠落で<b>再発を見逃す</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">weather_cache.wind_speed_ms</code></td>
+      <td style="padding:8px 11px">1時間</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（予報）</td>
+      <td style="padding:8px 11px">前回キャッシュ＋鮮度。<b>気象庁の警報・注意報を予報より優先</b></td>
+      <td style="padding:8px 11px">高所作業・点検可否。迷えば<b>安全側（中止寄り）</b>に倒す</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">inspection_plan.status</code></td>
+      <td style="padding:8px 11px">都度／CSV</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（人手）</td>
+      <td style="padding:8px 11px"><b>未入力は「未実施」扱いで警告</b>（「対象外」と区別）。期限超過はハイライト</td>
+      <td style="padding:8px 11px">点検繰越・期限超過。漏れは<b>保安義務に直結</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">meeting_minutes.decisions</code></td>
+      <td style="padding:8px 11px">朝会中（手入力）</td>
+      <td style="padding:8px 11px"><span style="color:#f0a6a6;font-weight:700">人依存</span></td>
+      <td style="padding:8px 11px">空欄可。ただし<b>理由＋承認者＋時刻を証跡として必須化</b>推奨</td>
+      <td style="padding:8px 11px">判断証跡。無いと<b>後から検証不能</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">ai_insights.top_decisions</code></td>
+      <td style="padding:8px 11px">日次バッチ（早朝）</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（AI生成・要人確認）</td>
+      <td style="padding:8px 11px">未生成は前日分＋「前日」表示。確信度が低い項目は要確認マーク</td>
+      <td style="padding:8px 11px">最重要判断バー。<b>鵜呑み禁止</b>・電気主任技術者の確認が前提</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #e8b64f;border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:12px;line-height:1.7;color:#e3c98b">
+  <b style="color:#ffd479">⚖️ 共通原則：</b>欠損を0で埋めない（NULLは「—」）／古い値は鮮度を表示／「対象外」と「未実施」を区別する。低信頼・欠損データに基づく最終判断は電気主任技術者が行う。
+</div>
+</div>
+
 <!-- ===== フィールド逆引き表 ===== -->
 <div style="margin-top:32px;border-top:2px solid rgba(159,176,189,0.25);padding-top:20px">
   <h2 style="color:var(--text);font-size:16px;font-weight:700;margin-bottom:4px">▶ フィールド逆引き表 — このフィールドはコックピットのどこに使われるか</h2>
