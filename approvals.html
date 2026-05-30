@@ -1,186 +1,186 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿武隈OS — 承認待ち一覧（ライブ）</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
-  a{color:var(--master);text-decoration:none}
-  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
-  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
-  .topbar h1{font-size:16px;color:#fff;font-weight:700}
-  .topbar .sub{font-size:11.5px;color:var(--muted)}
-  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
-  .wrap{padding:18px 22px 50px}
-  .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
-  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
-  .acard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
-  .acard.wo{border-left:4px solid var(--work)} .acard.ptw{border-left:4px solid var(--legal)} .acard.insp{border-left:4px solid var(--insp)}
-  .acard .lbl{font-size:11px;color:var(--muted);margin-bottom:4px}
-  .acard h3{font-size:15px;color:#fff;margin-bottom:6px}
-  .acard .meta{font-size:12px;color:var(--muted);margin-bottom:4px}
-  .acard .no{font-family:monospace;font-size:11.5px;color:var(--master)}
-  .badges{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
-  .b{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
-  .b-critical,.b-urgent{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
-  .b-high{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
-  .b-medium,.b-normal{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
-  .b-low{color:var(--muted);border-color:var(--line)}
-  .cmt{width:100%;margin-top:10px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:8px;font-size:12.5px;font-family:inherit;min-height:46px;resize:vertical}
-  .cmt:focus{outline:none;border-color:var(--master)}
-  .actions{display:flex;gap:8px;margin-top:10px}
-  .actions button{flex:1;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer}
-  .btn-ok{background:var(--insp);color:#04210d}
-  .btn-rev{background:transparent;border:1px solid var(--work)!important;color:#f0c674}
-  .actions button:disabled{opacity:.5;cursor:default}
-  .done{font-size:13px;font-weight:700;padding:8px 0;text-align:center}
-  .done.ok{color:#7ee787} .done.rev{color:#f0c674}
-  .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
-  .empty{color:var(--muted);font-size:14px;padding:40px 0;text-align:center}
-  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
-  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
-</style>
-</head>
-<body>
-<nav id="omFlowBar" aria-label="業務フロー現在地" style="background:#0d1117;border-bottom:1px solid #30363d;padding:7px 14px;display:flex;align-items:center;gap:5px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;">業務フロー現在地</span><a href="./index.html" title="今日の管制塔へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">今日の管制塔</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./live-board.html" title="監視へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">監視</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./inspection-plan.html" title="点検計画へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">点検計画</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./inspection-input.html" title="点検実施へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">点検実施</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">異常判断</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./work-orders.html" title="作業票へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">作業票</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">PTW/KY</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><span style="flex:0 0 auto;font-size:11px;padding:3px 10px;border-radius:999px;background:#1f6feb;color:#fff;font-weight:700;cursor:default;">承認</span><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./work-orders.html" title="作業へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">作業</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">復旧確認</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">クローズ/報告</a></nav>
-  <div class="topbar">
-    <div class="mark">AW</div>
-    <div>
-      <h1>承認待ち一覧</h1>
-      <div class="sub">阿武隈OS ライブ盤 — 主任の承認・差戻し</div>
-    </div>
-    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
-  </div>
-
-  <div class="wrap">
-    <div class="note">作業票・作業許可(PTW)・点検実績の承認待ちを一覧表示します。承認/差戻しは <code>approvals</code> に記録され、元レコードの状態を更新します。</div>
-    <div class="filters" id="filters">
-      <button data-f="all" class="active">すべて</button>
-      <button data-f="work_order">作業票</button>
-      <button data-f="work_permit">作業許可</button>
-      <button data-f="inspection_result">点検実績</button>
-    </div>
-    <div id="body" class="loading">読み込み中…</div>
-  </div>
-
-  <script src="./lib/supabase.js"></script>
-  <script>
-    const esc = sb.esc;
-    const state = { rows: [], wtgMap: {}, userId: null, filter: "all", processed: {} };
-
-    const typeClass = { work_order:"wo", work_permit:"ptw", inspection_result:"insp" };
-    const patchTarget = {
-      work_order:   { table:"work_orders",  approve:{status:"in_progress"},      revise:{status:"open"} },
-      work_permit:  { table:"work_permits", approve:{permit_status:"approved"},  revise:{permit_status:"rejected"} },
-      inspection_result:{ table:"inspection_results", approve:{result_status:"ok"}, revise:{} }
-    };
-
-    async function getUserId(){
-      const res = await fetch(`${sb.URL}/auth/v1/user`, { headers: sb.headers() });
-      if(!res.ok) return null;
-      const u = await res.json();
-      return u.id || null;
-    }
-
-    function render(){
-      const body = document.getElementById("body");
-      let rows = state.rows.slice();
-      if(state.filter !== "all") rows = rows.filter(r => r["種別"] === state.filter);
-      if(!rows.length){ body.innerHTML = '<div class="empty">承認待ちの項目はありません 🎉</div>'; return; }
-      body.innerHTML = '<div class="cards">' + rows.map(r => {
-        const id = r["レコードid"], t = r["種別"];
-        const wtg = state.wtgMap[r["風車id"]] || "—";
-        const sev = (r["重要度"]||"").toLowerCase(), pri = (r["優先度"]||"").toLowerCase();
-        const pr = state.processed[id];
-        let foot;
-        if(pr === "approved") foot = '<div class="done ok">✓ 承認しました</div>';
-        else if(pr === "revised") foot = '<div class="done rev">↩ 差戻ししました</div>';
-        else foot = `<textarea class="cmt" data-id="${esc(id)}" placeholder="コメント（任意・証跡に記録されます）"></textarea>
-          <div class="actions">
-            <button class="btn-ok" data-id="${esc(id)}" data-act="approve">承認</button>
-            <button class="btn-rev" data-id="${esc(id)}" data-act="revise">差戻し</button>
-          </div>`;
-        return `<div class="acard ${typeClass[t]||''}" data-card="${esc(id)}">
-          <div class="lbl">${esc(r["表示ラベル"]||t)}</div>
-          <h3>${esc(r["内容"]||"(内容なし)")}</h3>
-          <div class="meta">号機 <b style="color:#fff">${esc(wtg)}</b></div>
-          <div class="meta no">${esc(r["番号"]||"")}</div>
-          <div class="badges">
-            ${sev?`<span class="b b-${esc(sev)}">重要度 ${esc(r["重要度"])}</span>`:""}
-            ${pri?`<span class="b b-${esc(pri)}">優先度 ${esc(r["優先度"])}</span>`:""}
-            ${r["必要ロール"]?`<span class="b b-medium">承認権限 ${esc(r["必要ロール"])}</span>`:""}
-          </div>
-          <div class="meta">申請 ${esc(r["申請日時_jst"]||"")}</div>
-          ${foot}
-        </div>`;
-      }).join("") + '</div>';
-      body.querySelectorAll(".actions button").forEach(btn =>
-        btn.addEventListener("click", () => doAction(btn.dataset.id, btn.dataset.act, btn)));
-    }
-
-    async function doAction(recId, act, btn){
-      const row = state.rows.find(r => r["レコードid"] === recId);
-      if(!row) return;
-      const t = row["種別"];
-      const card = btn.closest(".acard");
-      const cmtEl = card.querySelector(".cmt");
-      const userComment = cmtEl ? cmtEl.value.trim() : "";
-      if(act === "revise" && !userComment){
-        alert("差戻しの場合はコメント（修正理由）を入力してください。");
-        return;
-      }
-      card.querySelectorAll("button,textarea").forEach(b => b.disabled = true);
-      try{
-        if(!state.userId) state.userId = await getUserId();
-        await sb.write("POST", "approvals", {
-          target_type: t, target_id: recId,
-          action: act === "approve" ? "approved" : "requested_revision",
-          reviewed_by: state.userId,
-          comment: userComment || (act === "approve" ? "承認" : "差戻し（要修正）")
-        });
-        const cfg = patchTarget[t];
-        const patch = act === "approve" ? cfg.approve : cfg.revise;
-        if(cfg && patch && Object.keys(patch).length){
-          await sb.write("PATCH", `${cfg.table}?id=eq.${encodeURIComponent(recId)}`, patch);
-        }
-        state.processed[recId] = act === "approve" ? "approved" : "revised";
-        render();
-      }catch(e){
-        card.querySelectorAll("button,textarea").forEach(b => b.disabled = false);
-        alert("処理に失敗しました: " + e.message);
-      }
-    }
-
-    document.querySelectorAll("#filters button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.filter = btn.dataset.f;
-        render();
-      }));
-
-    async function loadAll(){
-      try{
-        const [rows, turbines] = await Promise.all([
-          sb.get("v_approvals_pending_all?order=申請日時_jst.desc"),
-          sb.get("turbines?select=id,turbine_no")
-        ]);
-        state.rows = rows;
-        turbines.forEach(t => state.wtgMap[t.id] = t.turbine_no);
-        render();
-      }catch(e){
-        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
-      }
-    }
-    sb.requireLogin({ onReady: loadAll });
-  </script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 承認待ち一覧（ライブ）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:18px 22px 50px}
+  .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+  .acard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+  .acard.wo{border-left:4px solid var(--work)} .acard.ptw{border-left:4px solid var(--legal)} .acard.insp{border-left:4px solid var(--insp)}
+  .acard .lbl{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .acard h3{font-size:15px;color:#fff;margin-bottom:6px}
+  .acard .meta{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .acard .no{font-family:monospace;font-size:11.5px;color:var(--master)}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+  .b{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+  .b-critical,.b-urgent{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+  .b-high{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+  .b-medium,.b-normal{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+  .b-low{color:var(--muted);border-color:var(--line)}
+  .cmt{width:100%;margin-top:10px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:8px;font-size:12.5px;font-family:inherit;min-height:46px;resize:vertical}
+  .cmt:focus{outline:none;border-color:var(--master)}
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .actions button{flex:1;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-ok{background:var(--insp);color:#04210d}
+  .btn-rev{background:transparent;border:1px solid var(--work)!important;color:#f0c674}
+  .actions button:disabled{opacity:.5;cursor:default}
+  .done{font-size:13px;font-weight:700;padding:8px 0;text-align:center}
+  .done.ok{color:#7ee787} .done.rev{color:#f0c674}
+  .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+  .empty{color:var(--muted);font-size:14px;padding:40px 0;text-align:center}
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
+</style>
+</head>
+<body>
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:#0d1117;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:7px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:5px;color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;letter-spacing:.02em;"><span style="font-size:12px;">🔄</span>業務フロー現在地</span><a href="./index.html" title="今日の管制塔へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>今日の管制塔</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./live-board.html" title="監視へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>監視</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-plan.html" title="点検計画へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.85);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.40);"><span style="font-size:10px;color:rgb(63,185,80);flex:0 0 auto;">✓</span>点検計画</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-input.html" title="点検実施へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.85);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.40);"><span style="font-size:10px;color:rgb(63,185,80);flex:0 0 auto;">✓</span>点検実施</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.85);background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.40);"><span style="font-size:10px;color:rgb(210,153,34);flex:0 0 auto;">✓</span>異常判断</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業票へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.85);background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.40);"><span style="font-size:10px;color:rgb(210,153,34);flex:0 0 auto;">✓</span>作業票</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.85);background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.40);"><span style="font-size:10px;color:rgb(210,153,34);flex:0 0 auto;">✓</span>PTW/KY</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:#fff;background:rgb(210,153,34);border:1px solid rgb(210,153,34);font-weight:700;box-shadow:0 0 0 3px rgba(210,153,34,.25);cursor:default;"><span style="width:7px;height:7px;border-radius:50%;background:#fff;flex:0 0 auto;"></span>承認</span><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>復旧確認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(219,97,162,.95);background:transparent;border:1px solid rgba(219,97,162,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(219,97,162,.75);flex:0 0 auto;"></span>クローズ/報告</a></nav>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div>
+      <h1>承認待ち一覧</h1>
+      <div class="sub">阿武隈OS ライブ盤 — 主任の承認・差戻し</div>
+    </div>
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  </div>
+
+  <div class="wrap">
+    <div class="note">作業票・作業許可(PTW)・点検実績の承認待ちを一覧表示します。承認/差戻しは <code>approvals</code> に記録され、元レコードの状態を更新します。</div>
+    <div class="filters" id="filters">
+      <button data-f="all" class="active">すべて</button>
+      <button data-f="work_order">作業票</button>
+      <button data-f="work_permit">作業許可</button>
+      <button data-f="inspection_result">点検実績</button>
+    </div>
+    <div id="body" class="loading">読み込み中…</div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+  <script>
+    const esc = sb.esc;
+    const state = { rows: [], wtgMap: {}, userId: null, filter: "all", processed: {} };
+
+    const typeClass = { work_order:"wo", work_permit:"ptw", inspection_result:"insp" };
+    const patchTarget = {
+      work_order:   { table:"work_orders",  approve:{status:"in_progress"},      revise:{status:"open"} },
+      work_permit:  { table:"work_permits", approve:{permit_status:"approved"},  revise:{permit_status:"rejected"} },
+      inspection_result:{ table:"inspection_results", approve:{result_status:"ok"}, revise:{} }
+    };
+
+    async function getUserId(){
+      const res = await fetch(`${sb.URL}/auth/v1/user`, { headers: sb.headers() });
+      if(!res.ok) return null;
+      const u = await res.json();
+      return u.id || null;
+    }
+
+    function render(){
+      const body = document.getElementById("body");
+      let rows = state.rows.slice();
+      if(state.filter !== "all") rows = rows.filter(r => r["種別"] === state.filter);
+      if(!rows.length){ body.innerHTML = '<div class="empty">承認待ちの項目はありません 🎉</div>'; return; }
+      body.innerHTML = '<div class="cards">' + rows.map(r => {
+        const id = r["レコードid"], t = r["種別"];
+        const wtg = state.wtgMap[r["風車id"]] || "—";
+        const sev = (r["重要度"]||"").toLowerCase(), pri = (r["優先度"]||"").toLowerCase();
+        const pr = state.processed[id];
+        let foot;
+        if(pr === "approved") foot = '<div class="done ok">✓ 承認しました</div>';
+        else if(pr === "revised") foot = '<div class="done rev">↩ 差戻ししました</div>';
+        else foot = `<textarea class="cmt" data-id="${esc(id)}" placeholder="コメント（任意・証跡に記録されます）"></textarea>
+          <div class="actions">
+            <button class="btn-ok" data-id="${esc(id)}" data-act="approve">承認</button>
+            <button class="btn-rev" data-id="${esc(id)}" data-act="revise">差戻し</button>
+          </div>`;
+        return `<div class="acard ${typeClass[t]||''}" data-card="${esc(id)}">
+          <div class="lbl">${esc(r["表示ラベル"]||t)}</div>
+          <h3>${esc(r["内容"]||"(内容なし)")}</h3>
+          <div class="meta">号機 <b style="color:#fff">${esc(wtg)}</b></div>
+          <div class="meta no">${esc(r["番号"]||"")}</div>
+          <div class="badges">
+            ${sev?`<span class="b b-${esc(sev)}">重要度 ${esc(r["重要度"])}</span>`:""}
+            ${pri?`<span class="b b-${esc(pri)}">優先度 ${esc(r["優先度"])}</span>`:""}
+            ${r["必要ロール"]?`<span class="b b-medium">承認権限 ${esc(r["必要ロール"])}</span>`:""}
+          </div>
+          <div class="meta">申請 ${esc(r["申請日時_jst"]||"")}</div>
+          ${foot}
+        </div>`;
+      }).join("") + '</div>';
+      body.querySelectorAll(".actions button").forEach(btn =>
+        btn.addEventListener("click", () => doAction(btn.dataset.id, btn.dataset.act, btn)));
+    }
+
+    async function doAction(recId, act, btn){
+      const row = state.rows.find(r => r["レコードid"] === recId);
+      if(!row) return;
+      const t = row["種別"];
+      const card = btn.closest(".acard");
+      const cmtEl = card.querySelector(".cmt");
+      const userComment = cmtEl ? cmtEl.value.trim() : "";
+      if(act === "revise" && !userComment){
+        alert("差戻しの場合はコメント（修正理由）を入力してください。");
+        return;
+      }
+      card.querySelectorAll("button,textarea").forEach(b => b.disabled = true);
+      try{
+        if(!state.userId) state.userId = await getUserId();
+        await sb.write("POST", "approvals", {
+          target_type: t, target_id: recId,
+          action: act === "approve" ? "approved" : "requested_revision",
+          reviewed_by: state.userId,
+          comment: userComment || (act === "approve" ? "承認" : "差戻し（要修正）")
+        });
+        const cfg = patchTarget[t];
+        const patch = act === "approve" ? cfg.approve : cfg.revise;
+        if(cfg && patch && Object.keys(patch).length){
+          await sb.write("PATCH", `${cfg.table}?id=eq.${encodeURIComponent(recId)}`, patch);
+        }
+        state.processed[recId] = act === "approve" ? "approved" : "revised";
+        render();
+      }catch(e){
+        card.querySelectorAll("button,textarea").forEach(b => b.disabled = false);
+        alert("処理に失敗しました: " + e.message);
+      }
+    }
+
+    document.querySelectorAll("#filters button").forEach(btn =>
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filter = btn.dataset.f;
+        render();
+      }));
+
+    async function loadAll(){
+      try{
+        const [rows, turbines] = await Promise.all([
+          sb.get("v_approvals_pending_all?order=申請日時_jst.desc"),
+          sb.get("turbines?select=id,turbine_no")
+        ]);
+        state.rows = rows;
+        turbines.forEach(t => state.wtgMap[t.id] = t.turbine_no);
+        render();
+      }catch(e){
+        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+      }
+    }
+    sb.requireLogin({ onReady: loadAll });
+  </script>
+</body>
+</html>
