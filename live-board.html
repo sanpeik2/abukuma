@@ -27,34 +27,66 @@
   .view{display:none;padding:18px 22px 40px}
   .view.active{display:block}
 
-  /* ---- turbine master-detail ---- */
-  .turb-wrap{display:grid;grid-template-columns:minmax(320px,1fr) minmax(320px,420px);gap:18px;align-items:start}
-  .turb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:9px;max-height:72vh;overflow:auto;padding-right:4px}
-  .tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 11px;cursor:pointer;transition:border-color .12s,transform .12s}
+  /* ---- turbine master-detail（カルテ）---- */
+  .turb-wrap{display:grid;grid-template-columns:minmax(180px,220px) 1fr;gap:18px;align-items:start}
+  .turb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-height:80vh;overflow:auto;padding-right:4px}
+  .tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer;transition:border-color .12s,transform .12s}
   .tcard:hover{transform:translateY(-2px)}
   .tcard.sel{border-color:var(--master);box-shadow:0 0 0 1px var(--master)}
-  .tcard .id{font-size:13px;color:#fff;font-weight:700;display:flex;align-items:center;gap:6px}
-  .tcard .kw{font-size:11px;color:var(--muted);margin-top:3px}
+  .tcard .id{font-size:12.5px;color:#fff;font-weight:700;display:flex;align-items:center;gap:6px}
+  .tcard .kw{font-size:10.5px;color:var(--muted);margin-top:3px}
   .sdot{width:9px;height:9px;border-radius:50%;flex:none}
   .s-normal{background:var(--insp)} .s-warn{background:var(--work)} .s-stop{background:var(--defect)} .s-inspect{background:var(--master)}
 
-  .detail{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;position:sticky;top:16px}
+  .detail{background:transparent;border:none;padding:0}
   .detail .dhead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-  .detail .dhead h2{font-size:20px;color:#fff}
+  .detail .dhead h2{font-size:22px;color:#fff}
   .pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;border:1px solid}
   .p-normal{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
   .p-warn{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
   .p-stop{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
   .p-inspect{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
-  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0}
   .metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
   .metric .l{font-size:11px;color:var(--muted)}
   .metric .v{font-size:19px;color:#fff;font-weight:700;margin-top:2px}
   .metric .v small{font-size:12px;color:var(--muted);font-weight:400}
-  .dsec{font-size:12px;color:var(--muted);font-weight:700;margin:16px 0 7px;text-transform:uppercase;letter-spacing:.04em}
+
+  /* karte grid of section cards */
+  .karte{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-top:8px}
+  .kcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kcard.span2{grid-column:1/-1}
+  .dsec{font-size:12px;color:#fff;font-weight:700;margin:0 0 9px;display:flex;align-items:center;gap:7px}
+  .dsec .badge{font-size:10.5px;color:var(--muted);font-weight:600;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
   .drow{font-size:12.5px;padding:7px 0;border-top:1px solid var(--line);display:flex;gap:8px;align-items:flex-start}
   .drow:first-of-type{border-top:none}
   .dempty{font-size:12px;color:var(--muted);padding:6px 0}
+  .kscroll{max-height:280px;overflow:auto}
+
+  /* AI診断カード */
+  .diag{border:1px solid var(--ai);background:linear-gradient(180deg,rgba(255,123,114,.07),rgba(255,123,114,.02))}
+  .diag .dsec{color:#ffb0a8}
+  .verdict{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+  .vscore{font-size:34px;font-weight:900;line-height:1}
+  .vlabel{font-size:14px;font-weight:800;padding:3px 12px;border-radius:999px;border:1px solid}
+  .v-good{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
+  .v-watch{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+  .v-caution{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+  .v-act{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.14)}
+  .hbar{height:8px;border-radius:6px;background:#0d1117;border:1px solid var(--line);overflow:hidden;flex:1;min-width:120px}
+  .hbar > i{display:block;height:100%}
+  .acts{list-style:none;margin:6px 0 0}
+  .acts li{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;padding:7px 0;border-top:1px solid var(--line)}
+  .acts li:first-child{border-top:none}
+  .prio{font-size:10px;font-weight:800;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap;flex:none;margin-top:1px}
+  .prio.p1{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+  .prio.p2{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+  .prio.p3{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+  .predict{font-size:12px;color:#ffb0a8;background:rgba(255,123,114,.06);border:1px dashed rgba(255,123,114,.4);border-radius:8px;padding:9px 11px;margin-top:10px}
+  .diag .foot{font-size:10.5px;color:var(--muted);margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+  /* health pill for components */
+  .hp{font-size:11px;font-weight:800;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+  .hp-ok{color:#7ee787;border-color:var(--insp)} .hp-warn{color:#f0c674;border-color:var(--work)} .hp-bad{color:#ff9a92;border-color:var(--defect)}
 
   /* ---- alarms table ---- */
   table{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -88,7 +120,7 @@
 
   .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
   .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
-  @media(max-width:780px){.turb-wrap{grid-template-columns:1fr}.detail{position:static}}
+  @media(max-width:780px){.turb-wrap{grid-template-columns:1fr}.turb-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));max-height:40vh}}
 </style>
 </head>
 <body>
@@ -166,15 +198,71 @@
     async function loadDetail(wtgId){
       if(state.detail[wtgId]) return state.detail[wtgId];
       const q = "?wtg_id=eq." + encodeURIComponent(wtgId);
-      const [base, alarms, comps, hist] = await Promise.all([
+      const [base, alarms, comps, hist, risk, maint] = await Promise.all([
         sb.get("v_wtg_detail_base" + q),
         sb.get("v_wtg_detail_alarms" + q + "&order=発生日時_jst.desc"),
         sb.get("v_wtg_detail_components" + q + "&order=current_health_score.asc"),
-        sb.get("v_wtg_detail_work_history" + q + "&order=実施日.desc")
+        sb.get("v_wtg_detail_work_history" + q + "&order=実施日.desc"),
+        sb.get("component_risk_dashboard" + q + "&order=current_health_score.asc"),
+        sb.get("maintenance_results" + q + "&order=work_date.desc").catch(()=>[])
       ]);
-      const d = { base: base[0] || null, alarms, comps, hist };
+      const d = { base: base[0] || null, alarms, comps, hist, risk, maint };
       state.detail[wtgId] = d;
       return d;
+    }
+
+    /* ---------- カルテ診断（ルールベース簡易・将来AI/Supabaseで高度化）---------- */
+    function diagnose(c){
+      const b = c.base || {};
+      const risk = c.risk || [];
+      const comps = c.comps || [];
+      const insp = (state.inspResults||[]).filter(r => (r["風車"]||"")===c.wtgId);
+      // 健康スコア = 最低健全度（律速）。なければコンポ平均
+      const scores = risk.map(r=>r.current_health_score).filter(v=>v!=null);
+      const compScores = comps.map(x=>x.current_health_score).filter(v=>v!=null);
+      const pool = scores.length?scores:compScores;
+      const worst = pool.length? Math.min(...pool) : null;
+      const openAlm = b["未解決アラーム数"]||0, openDef = b["未対応異常数"]||0;
+      const hasCritRisk = risk.some(r=>r.risk_level==="critical") || b.status==="stop";
+      const hasWarnRisk = risk.some(r=>r.risk_level==="warning");
+      const predAlerts = risk.reduce((s,r)=>s+(r.open_predictive_alerts||0),0);
+      const ngInsp = insp.filter(r=>r["異常あり"]).length;
+
+      // 区分
+      let label="良好", cls="v-good", color="#7ee787";
+      if(hasCritRisk || (worst!=null&&worst<50) || b.status==="stop"){ label="要対応"; cls="v-act"; color="#ff9a92"; }
+      else if(hasWarnRisk || (worst!=null&&worst<65) || openDef>0){ label="要注意"; cls="v-caution"; color="#f0c674"; }
+      else if((worst!=null&&worst<80) || openAlm>0 || predAlerts>0 || ngInsp>0){ label="要観察"; cls="v-watch"; color="#9cd2ff"; }
+
+      // 予防アクション
+      const acts=[];
+      risk.forEach(r=>{
+        const hs=r.current_health_score;
+        if(r.risk_level==="critical" || (hs!=null&&hs<50))
+          acts.push({p:1,t:`${r.component_name_ja}（健全度${hs??"?"}点）：劣化進行。整備計画を前倒し・作業票化を検討`});
+        else if(r.risk_level==="warning" || (hs!=null&&hs<65))
+          acts.push({p:2,t:`${r.component_name_ja}（健全度${hs??"?"}点）：傾向監視を強化し、次回点検で重点確認`});
+        if(r.expected_replace_date){
+          const days=Math.round((new Date(r.expected_replace_date)-new Date(TODAY))/86400000);
+          if(days<=180) acts.push({p:days<=60?1:2,t:`${r.component_name_ja}：交換目安まで約${days}日（${r.expected_replace_date}）。部品手配・交換計画を`});
+        }
+        if(r.open_predictive_alerts>0) acts.push({p:1,t:`${r.component_name_ja}：予知アラート${r.open_predictive_alerts}件。詳細確認`});
+      });
+      if(openDef>0) acts.push({p:1,t:`未対応の異常 ${openDef}件：是正判断（→ 故障/RCA 一覧へ）`});
+      if(openAlm>0) acts.push({p:2,t:`未解決アラーム ${openAlm}件：一次対応・原因確認`});
+      if(ngInsp>0)  acts.push({p:2,t:`直近点検でNG ${ngInsp}件：再点検／作業票化を検討`});
+      if(!acts.length) acts.push({p:3,t:`現時点で予防対応の必要なし。定期点検を継続し傾向を監視`});
+      acts.sort((a,b)=>a.p-b.p);
+
+      // 故障予知メモ
+      let predict="";
+      const wr = risk.slice().sort((a,b)=>(a.current_health_score??999)-(b.current_health_score??999))[0];
+      if(wr && wr.current_health_score!=null && wr.current_health_score<65){
+        predict = `最も劣化が進む <b>${esc(wr.component_name_ja)}</b>（健全度${wr.current_health_score}点・${wr.risk_level}）。`
+          + (wr.alarms_90d?`直近90日で関連アラーム${wr.alarms_90d}件。`:"")
+          + `このまま推移すると機能低下・停止リスク。早めの傾向監視と整備計画が有効です。`;
+      }
+      return { worst, label, cls, color, acts, predict, ngInsp, predAlerts };
     }
 
     function renderTurbineDetail(){
@@ -191,42 +279,103 @@
       }
       const b = cached.base;
       if(!b){ box.innerHTML = '<div class="dempty">該当データなし。</div>'; return; }
+      cached.wtgId = wtgId;
       const st = b.status || "normal";
+      const hpCls = v => v==null?"" : (v<65?"hp-bad":v<80?"hp-warn":"hp-ok");
 
-      const compRows = cached.comps.length ? cached.comps.map(c =>
-        `<div class="drow"><span style="white-space:nowrap">${esc(c["健全度表示"]||"")}</span>
-         <div><b>${esc(c.component_name_ja||c.component)}</b> <span style="color:var(--muted)">${c.current_health_score!=null?c.current_health_score+"点":""}</span><br>
-         <span style="color:var(--muted)">${esc(c.manufacturer||"")} ${esc(c.model_number||"")} / 設置${c["設置経過年"]!=null?c["設置経過年"]+"年":"–"}</span></div></div>`
-        ).join("") : '<div class="dempty">コンポーネント登録なし</div>';
+      // 健全度（risk_dashboard 優先、なければ detail_components）
+      const compSrc = (cached.risk && cached.risk.length) ? cached.risk : cached.comps;
+      const compRows = compSrc.length ? compSrc.map(c =>{
+        const hs=c.current_health_score;
+        const rep = c.expected_replace_date ? ` ・ 交換目安 ${esc(c.expected_replace_date)}`
+                  : (c["交換まで日数"]!=null? ` ・ 交換まで${c["交換まで日数"]}日`:"");
+        const extra = (c.alarms_90d!=null)?`90日アラーム ${c.alarms_90d}件`:`${esc(c.manufacturer||"")} ${esc(c.model_number||"")}`;
+        return `<div class="drow"><span class="hp ${hpCls(hs)}" style="white-space:nowrap">${hs!=null?hs+"点":"–"}</span>
+         <div><b>${esc(c.component_name_ja||c.component)}</b> ${c.risk_level?`<span style="color:var(--muted)">[${esc(c.risk_level)}]</span>`:""}<br>
+         <span style="color:var(--muted)">${extra}${rep}</span></div></div>`;
+      }).join("") : '<div class="dempty">コンポーネント登録なし</div>';
 
-      const alarmRows = cached.alarms.length ? cached.alarms.slice(0,6).map(a =>
+      const alarmRows = cached.alarms.length ? cached.alarms.slice(0,8).map(a =>
         `<div class="drow"><span class="sev sev-${esc(a.severity)}">${esc(a["深刻度表示"]||a.severity)}</span>
          <div><b>${esc(a.alarm_type)}</b> ${a["解決日時_jst"]?'<span class="tag-done">解決済</span>':'<span class="tag-open">未解決</span>'}${a.recurrence_count>1?` <span style="color:var(--muted)">×${a.recurrence_count}</span>`:""}<br>
          <span style="color:var(--muted)">${esc(a.detail||"")} <small>${esc(a["発生日時_jst"]||"")}</small></span></div></div>`
         ).join("") : '<div class="dempty">アラームなし</div>';
 
-      const histRows = cached.hist.length ? cached.hist.slice(0,8).map(h =>
+      const histRows = cached.hist.length ? cached.hist.slice(0,10).map(h =>
         `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(h["実施日"]||"")}</span>
          <div><b>${esc(h["作業種別"]||"")}</b> <span style="color:var(--muted)">[${inspStatusLabel[h["状態"]]||esc(h["状態"]||"")}]</span>${h["ptw番号"]?` <span style="color:var(--muted)">${esc(h["ptw番号"])}</span>`:""}<br>
          <span style="color:var(--muted)">${esc(h["種別"]==="work_order"?"作業票":"点検計画")} / ${h["作業員数"]||"?"}名</span></div></div>`
         ).join("") : '<div class="dempty">作業履歴なし</div>';
 
+      // 点検実績（この号機）
+      const insp = (state.inspResults||[]).filter(r => (r["風車"]||"")===wtgId).slice(0,10);
+      const inspRows = insp.length ? insp.map(r =>
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(r["実施日"]||"")}</span>
+         <div><b>${esc(r["結果表示"]||r["結果"]||"")}</b> <span style="color:var(--muted)">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</span>${r["深刻度"]?` <span style="color:#ff9a92">深刻度:${esc(r["深刻度"])}</span>`:""}<br>
+         <span style="color:var(--muted)">${esc(r["異常内容"]||r["コメント"]||"")}</span></div></div>`
+        ).join("") : '<div class="dempty">点検実績なし</div>';
+
+      // 整備・部品交換履歴（maintenance_results）
+      const maint = cached.maint || [];
+      const partsHist = maint.filter(m => Array.isArray(m.parts_replaced) && m.parts_replaced.length);
+      const maintRows = maint.length ? maint.slice(0,10).map(m =>
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(m.work_date||"")}</span>
+         <div><b>${esc(m.component_name_ja||m.component||m.work_type||"")}</b> ${m.result?`<span style="color:var(--muted)">[${esc(m.result)}]</span>`:""}<br>
+         <span style="color:var(--muted)">${esc(m.finding||"")}${m.action_taken?` → ${esc(m.action_taken)}`:""}</span>
+         ${(Array.isArray(m.parts_replaced)&&m.parts_replaced.length)?`<br><span style="color:#9cd2ff">交換: ${esc(m.parts_replaced.join("、"))}${m.parts_cost_yen?`（¥${Number(m.parts_cost_yen).toLocaleString()}）`:""}</span>`:""}
+         ${m.root_cause?`<br><span style="color:#ffb0a8">根本原因: ${esc(m.root_cause)}</span>`:""}</div></div>`
+        ).join("") : '<div class="dempty">整備・部品交換の記録なし（点検実績/作業票から蓄積されます）</div>';
+
+      // 今後の点検予定
+      const upcoming = (state.insp||[]).filter(i => i.wtg_id===wtgId && i.date>=TODAY && i.status!=="cancelled" && i.status!=="done")
+        .sort((a,b)=> a.date<b.date?-1:1).slice(0,8);
+      const upRows = upcoming.length ? upcoming.map(i =>
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(i.date||"")}</span>
+         <div><b>${esc(i.work_type||"")}</b> <span style="color:var(--muted)">[${inspStatusLabel[i.status]||esc(i.status||"")}]</span>${i.required_qualification?`<br><span style="color:var(--muted)">資格:${esc(i.required_qualification)}</span>`:""}</div></div>`
+        ).join("") : '<div class="dempty">今後の点検予定なし</div>';
+
+      // 診断
+      const dg = diagnose(cached);
+      const actsHtml = dg.acts.map(a=>`<li><span class="prio p${a.p}">${a.p===1?"優先":a.p===2?"注意":"通常"}</span><span>${a.t}</span></li>`).join("");
+
       box.innerHTML = `
         <div class="dhead"><span class="sdot s-${esc(st)}"></span><h2>${esc(b.wtg_id)}</h2>
-          <span class="pill p-${esc(st)}">${esc(b["状態表示"]||statusLabel[st]||st)}</span></div>
-        <div style="font-size:11.5px;color:var(--muted)">${esc(b.maker||"")} ${esc(b.model_name||"")} ・ ${esc(b.area||"")} ・ 設置 ${esc(b.installed_at||"–")}</div>
-        <div style="font-size:11.5px;color:var(--muted)">最終更新 ${esc(b["更新日時_jst"]||"")}</div>
+          <span class="pill p-${esc(st)}">${esc(b["状態表示"]||statusLabel[st]||st)}</span>
+          <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">最終更新 ${esc(b["更新日時_jst"]||"")}</span></div>
+        <div style="font-size:11.5px;color:var(--muted)">${esc(b.maker||"")} ${esc(b.model_name||"")} ・ ${esc(b.area||"")} ・ 設置 ${esc(b.installed_at||"–")} ・ 定格 ${b.rated_power_kw!=null?b.rated_power_kw+"kW":"–"}</div>
         <div class="metrics">
           <div class="metric"><div class="l">出力</div><div class="v">${b.output_kw!=null?Math.round(b.output_kw):"–"} <small>kW (${b["出力率pct"]!=null?b["出力率pct"]+"%":"–"})</small></div></div>
           <div class="metric"><div class="l">風速</div><div class="v">${b.wind_speed_ms!=null?b.wind_speed_ms:"–"} <small>m/s</small></div></div>
           <div class="metric"><div class="l">未解決アラーム</div><div class="v">${b["未解決アラーム数"]||0}<small> 件</small></div></div>
           <div class="metric"><div class="l">未対応異常</div><div class="v">${b["未対応異常数"]||0}<small> 件</small></div></div>
+          <div class="metric"><div class="l">健全度低下</div><div class="v">${b["健全度低下コンポーネント数"]||0}<small> 件</small></div></div>
         </div>
-        ${b.alarm_code?`<div style="font-size:12px;color:#f0c674">アラームコード: ${esc(b.alarm_code)}</div>`:""}
-        <div class="dsec">コンポーネント健全度</div>${compRows}
-        <div class="dsec">関連アラーム</div>${alarmRows}
-        <div class="dsec">作業履歴・予定</div>${histRows}
-        <div style="margin-top:16px;display:flex;gap:14px;font-size:12px">
+        ${b.alarm_code?`<div style="font-size:12px;color:#f0c674;margin-bottom:6px">アラームコード: ${esc(b.alarm_code)}</div>`:""}
+
+        <div class="karte">
+          <div class="kcard diag span2">
+            <div class="dsec">🩺 カルテ診断・故障予知 <span class="badge">ルールベース簡易</span></div>
+            <div class="verdict">
+              <div class="vscore" style="color:${dg.color}">${dg.worst!=null?dg.worst:"–"}<small style="font-size:13px;color:var(--muted);font-weight:600"> /100</small></div>
+              <div class="vlabel ${dg.cls}">${dg.label}</div>
+              <div class="hbar"><i style="width:${dg.worst!=null?dg.worst:0}%;background:${dg.color}"></i></div>
+            </div>
+            <ul class="acts">${actsHtml}</ul>
+            ${dg.predict?`<div class="predict">🔮 故障予知メモ：${dg.predict}</div>`:""}
+            <div class="foot">※ 本診断は現データ（健全度・アラーム・点検・予知アラート）からのルールベース簡易診断です。将来、Supabase上のAI読取専用ビュー経由で高度化予定（<a href="./ai-data-boundary.html">データ境界</a>）。最終判断は電気主任技術者・保安規定が優先。</div>
+          </div>
+
+          <div class="kcard"><div class="dsec">🔧 コンポーネント健全度</div><div class="kscroll">${compRows}</div></div>
+          <div class="kcard"><div class="dsec">🚨 アラーム履歴</div><div class="kscroll">${alarmRows}</div></div>
+          <div class="kcard"><div class="dsec">📋 点検実績</div><div class="kscroll">${inspRows}</div></div>
+          <div class="kcard"><div class="dsec">🧰 整備・部品交換履歴</div><div class="kscroll">${maintRows}</div></div>
+          <div class="kcard"><div class="dsec">🗂 作業履歴</div><div class="kscroll">${histRows}</div></div>
+          <div class="kcard"><div class="dsec">📅 今後の点検予定</div><div class="kscroll">${upRows}</div></div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;gap:16px;font-size:12px;flex-wrap:wrap">
+          <a href="./inspection-input.html">🛠 点検実績を入力</a>
+          <a href="./defect-rca.html">🔧 故障/RCAへ</a>
           <a href="./work-orders.html">📝 作業票一覧へ</a>
           <a href="./report-candidates.html">⚖ 報告候補へ</a>
         </div>`;
@@ -309,12 +458,13 @@
     /* ---------- LOAD ---------- */
     async function loadAll(){
       try{
-        const [wtg, alarms, insp] = await Promise.all([
+        const [wtg, alarms, insp, inspRes] = await Promise.all([
           sb.get("v_top_wtg_list?order=風車id.asc"),
           sb.get("alarm_events?select=*&order=started_at.desc"),
-          sb.get("inspection_plan?select=*&order=date.asc,time_start.asc")
+          sb.get("inspection_plan?select=*&order=date.asc,time_start.asc"),
+          sb.get("v_inspection_results_list?order=実施日.desc").catch(()=>[])
         ]);
-        state.wtg = wtg; state.alarms = alarms; state.insp = insp;
+        state.wtg = wtg; state.alarms = alarms; state.insp = insp; state.inspResults = inspRes;
         state.sel = wtg.length ? wtg[0]["風車id"] : null;
         document.getElementById("cTurb").textContent = wtg.length;
         document.getElementById("cAlarm").textContent = alarms.filter(a=>!a.resolved_at).length + "/" + alarms.length;
