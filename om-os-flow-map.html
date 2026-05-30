@@ -182,7 +182,8 @@
       <div class="ev fault">
         <div class="eh">🔧 故障対応</div>
         <div class="ed">故障点検 → 原因調査(RCA) → 是正作業 → 再発防止。</div>
-        <a class="scr" href="./om-workflow-map.html"><span class="nm">点検・作業・法令の関係図<span class="badge b-doc">DOC</span></span><span class="sub">RCA(根本原因調査)の位置づけ</span></a>
+        <a class="scr" href="./defect-rca.html"><span class="nm">故障 / RCA 一覧<span class="badge b-live">LIVE</span></span><span class="sub">v_defect_rca_list：RCA対象の抽出・根本原因/暫定・恒久処置の進捗</span></a>
+        <a class="scr" href="./guide-rca.html"><span class="nm">⑦ 故障対応・RCAの基本<span class="badge b-doc">DOC</span></span><span class="sub">止血で終わらせず真因を断つ考え方</span></a>
         <a class="scr" href="./work-orders.html"><span class="nm">作業票（恒久処置）<span class="badge b-live">LIVE</span></span><span class="sub">根本原因・恒久処置を記録 → 段階4〜6へ合流</span></a>
       </div>
     </div>
@@ -201,7 +202,7 @@
     <h2 class="sec">足りない画面・次に整理する候補</h2>
     <div class="gap">
       <div class="row" style="opacity:.55"><span class="ic" style="color:var(--insp)">✓</span><div class="gt"><b>点検計画 専用画面</b>（段階1）<span class="sm">実装済 → <a href="./inspection-plan.html">点検計画一覧（LIVE）</a>。v_inspection_plan_list で区分・状態・期限超過を管理。</span></div></div>
-      <div class="row"><span class="ic">②</span><div class="gt"><b>故障/RCA 専用ビュー</b>（並行・故障対応）<span class="sm">いまは作業票詳細に内包。故障の根本原因調査を独立で追える画面があると整理しやすい。</span></div></div>
+      <div class="row" style="opacity:.55"><span class="ic" style="color:var(--insp)">✓</span><div class="gt"><b>故障/RCA 専用ビュー</b>（並行・故障対応）<span class="sm">実装済 → <a href="./defect-rca.html">故障/RCA 一覧（LIVE）</a>。v_defect_rca_list でRCA対象を抽出し根本原因/暫定・恒久処置を追える。考え方は <a href="./guide-rca.html">⑦RCAの基本</a>。</span></div></div>
       <div class="row"><span class="ic">③</span><div class="gt"><b>点検実施報告書の出力</b>（段階7）<span class="sm">記録の帳票/PDF出力・エクスポートが未実装。</span></div></div>
       <div class="row"><span class="ic">④</span><div class="gt"><b>証拠写真アップロード</b>（段階2）<span class="sm">案Bの設計のみ。Edge Function＋BOX連携の実装が残っている。</span></div></div>
       <div class="row"><span class="ic">⑤</span><div class="gt"><b>在庫・資格期限</b>（補助）<span class="sm">メニューに「予定」として置いてあるが未着手（v_parts_stock_full / v_qualifications_expiry）。</span></div></div>
