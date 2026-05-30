@@ -790,7 +790,7 @@
 
 
 
-      if(s.indexOf("評価済")>=0) return r["rca対象"] ? "RCA着手（根本原因調査）" : "作業票を起票";
+      if(s.indexOf("評価済")>=0) return r["rca対象"] ? "RCA着手（根本原因調査）" : "作業票を作成";
 
 
 
@@ -1145,7 +1145,7 @@
       }
       if(isDone(r)) return `<div style="margin-top:12px;color:var(--muted);font-size:12px;">クローズ済（作業票なし）</div>`;
       const did = encodeURIComponent(r["故障id"]);
-      return `<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);"><span style="color:#e3b341;font-weight:700;font-size:12.5px;">この異常から是正作業へ</span><span style="color:#8b949e;font-size:11.5px;">作業票を起票すると WTG・異常内容・判定が引き継がれます</span><a href="./work-orders.html?defect_finding_id=${did}" style="margin-left:auto;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">📝 作業票を起票</a></div>`;
+      return `<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);"><span style="color:#e3b341;font-weight:700;font-size:12.5px;">この異常から是正作業へ</span><span style="color:#8b949e;font-size:11.5px;">作業票を作成すると WTG・異常内容・判定が引き継がれます</span><a href="./work-orders.html?defect_finding_id=${did}" style="margin-left:auto;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">📝 作業票を作成</a></div>`;
     }
     function render(){
 
