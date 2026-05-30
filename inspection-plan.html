@@ -1,136 +1,136 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿武隈OS — 点検計画一覧（ライブ）</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
-  a{color:var(--master);text-decoration:none}
-  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
-  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
-  .topbar h1{font-size:16px;color:#fff;font-weight:700}
-  .topbar .sub{font-size:11.5px;color:var(--muted)}
-  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
-  .wrap{padding:18px 22px 50px}
-  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 16px;min-width:120px}
-  .kpi .v{font-size:22px;font-weight:800;color:#fff} .kpi .l{font-size:11px;color:var(--muted)}
-  .kpi.warn .v{color:#ff9a92} .kpi.today .v{color:#9cd2ff}
-  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
-  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;white-space:nowrap}
-  th{color:var(--muted);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--bg)}
-  tr.overdue td{background:rgba(248,81,73,.06)}
-  tr.today td{background:rgba(88,166,255,.06)}
-  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
-  .p-nen{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.1)}
-  .p-teiki{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.1)}
-  .p-zuiji{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
-  .p-other{color:var(--muted);border-color:var(--line)}
-  .wtg{font-family:monospace;color:#fff;font-weight:600}
-  .loading,.empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
-  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
-  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
-</style>
-</head>
-<body>
-<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:#0d1117;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:7px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:5px;color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;letter-spacing:.02em;"><span style="font-size:12px;">🔄</span>業務フロー現在地</span><a href="./index.html" title="今日の管制塔へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>今日の管制塔</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./live-board.html" title="監視へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>監視</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:#fff;background:rgb(63,185,80);border:1px solid rgb(63,185,80);font-weight:700;box-shadow:0 0 0 3px rgba(63,185,80,.25);cursor:default;"><span style="width:7px;height:7px;border-radius:50%;background:#fff;flex:0 0 auto;"></span>点検計画</span><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-input.html" title="点検実施へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.95);background:transparent;border:1px solid rgba(63,185,80,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(63,185,80,.75);flex:0 0 auto;"></span>点検実施</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>異常判断</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業票へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業票</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>PTW/KY</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./approvals.html" title="承認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>承認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>復旧確認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(219,97,162,.95);background:transparent;border:1px solid rgba(219,97,162,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(219,97,162,.75);flex:0 0 auto;"></span>クローズ/報告</a></nav>
-  <div class="topbar">
-    <div class="mark">AW</div>
-    <div>
-      <h1>点検計画一覧</h1>
-      <div class="sub">阿武隈OS ライブ盤 — 年次/定期/随時の計画・期限管理</div>
-    </div>
-    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
-  </div>
-
-  <div class="wrap">
-    <div class="note">点検計画（<code>v_inspection_plan_list</code>）。期限超過・本日の計画をハイライト。実施したら <a href="./inspection-input.html">点検実績入力</a> へ。</div>
-    <div class="kpis" id="kpis"></div>
-    <div class="filters" id="filters">
-      <button data-f="all" class="active">すべて</button>
-      <button data-f="overdue">⚠️ 期限超過</button>
-      <button data-f="today">🔵 本日</button>
-      <button data-f="planned">📅 計画</button>
-      <button data-f="in_progress">🔧 実施中</button>
-      <button data-f="done">✅ 完了</button>
-    </div>
-    <div id="body" class="loading">読み込み中…</div>
-  </div>
-
-  <script src="./lib/supabase.js"></script>
-  <script>
-    const esc = sb.esc;
-    const state = { rows: [], filter: "all" };
-    const pillClass = { "年次":"p-nen", "定期":"p-teiki", "随時/緊急":"p-zuiji", "その他":"p-other" };
-
-    function renderKpis(){
-      const rows = state.rows;
-      const overdue = rows.filter(r => r["期限超過"]).length;
-      const today = rows.filter(r => r["期限表示"] === "🔵 本日").length;
-      const open = rows.filter(r => r["状態"] === "planned" || r["状態"] === "in_progress").length;
-      document.getElementById("kpis").innerHTML =
-        `<div class="kpi"><div class="v">${rows.length}</div><div class="l">計画 総数</div></div>
-         <div class="kpi today"><div class="v">${today}</div><div class="l">本日の計画</div></div>
-         <div class="kpi warn"><div class="v">${overdue}</div><div class="l">期限超過</div></div>
-         <div class="kpi"><div class="v">${open}</div><div class="l">未完了</div></div>`;
-    }
-
-    function render(){
-      const body = document.getElementById("body");
-      let rows = state.rows.slice();
-      const f = state.filter;
-      if(f === "overdue") rows = rows.filter(r => r["期限超過"]);
-      else if(f === "today") rows = rows.filter(r => r["期限表示"] === "🔵 本日");
-      else if(f !== "all") rows = rows.filter(r => r["状態"] === f);
-      if(!rows.length){ body.innerHTML = '<div class="empty">該当する計画はありません</div>'; return; }
-      body.innerHTML = '<table><thead><tr>' +
-        ['計画日','号機','作業種別','区分','状態','期限','時間','必要資格','人数','PTW'].map(h=>`<th>${h}</th>`).join('') +
-        '</tr></thead><tbody>' + rows.map(r => {
-          const ku = r["点検区分"]||"";
-          const cls = r["期限超過"] ? "overdue" : (r["期限表示"]==="🔵 本日" ? "today" : "");
-          const time = (r["開始"]||"")+(r["終了"]?("〜"+r["終了"]):"");
-          return `<tr class="${cls}">
-            <td>${esc(r["計画日"]||"")}</td>
-            <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
-            <td>${esc(r["作業種別"]||"")}</td>
-            <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
-            <td>${esc(r["状態表示"]||"")}</td>
-            <td>${esc(r["期限表示"]||"")}</td>
-            <td>${esc(time)}</td>
-            <td>${esc(r["必要資格"]||"—")}</td>
-            <td>${esc(r["作業人数"]??"—")}</td>
-            <td>${esc(r["ptw番号"]||"—")}</td>
-          </tr>`;
-        }).join('') + '</tbody></table>';
-    }
-
-    document.querySelectorAll("#filters button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.filter = btn.dataset.f;
-        render();
-      }));
-
-    async function loadAll(){
-      try{
-        state.rows = await sb.get("v_inspection_plan_list?order=計画日.asc");
-        renderKpis();
-        render();
-      }catch(e){
-        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
-      }
-    }
-    sb.requireLogin({ onReady: loadAll });
-  </script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 点検計画一覧（ライブ）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:18px 22px 50px}
+  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 16px;min-width:120px}
+  .kpi .v{font-size:22px;font-weight:800;color:#fff} .kpi .l{font-size:11px;color:var(--muted)}
+  .kpi.warn .v{color:#ff9a92} .kpi.today .v{color:#9cd2ff}
+  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;white-space:nowrap}
+  th{color:var(--muted);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--bg)}
+  tr.overdue td{background:rgba(248,81,73,.06)}
+  tr.today td{background:rgba(88,166,255,.06)}
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+  .p-nen{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.1)}
+  .p-teiki{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.1)}
+  .p-zuiji{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
+  .p-other{color:var(--muted);border-color:var(--line)}
+  .wtg{font-family:monospace;color:#fff;font-weight:600}
+  .loading,.empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
+</style>
+</head>
+<body>
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;margin-right:6px;padding-right:10px;border-right:1px solid #30363d;"><span style="width:3px;height:18px;border-radius:2px;background:#58a6ff;flex:0 0 auto;"></span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="color:#e6edf3;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1;">業務フロー</span><span style="color:#8b949e;font-size:9.5px;font-weight:600;">現在地</span></span></span><a href="./index.html" title="今日の管制塔（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(88,166,255,.95);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(88,166,255);color:#fff;">✓</span>今日の管制塔</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./live-board.html" title="監視（完了・戻る）" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:rgba(88,166,255,.95);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.45);"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:rgb(88,166,255);color:#fff;">✓</span>監視</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#fff;background:rgb(63,185,80);border:1px solid rgb(63,185,80);font-weight:700;box-shadow:0 0 0 3px rgba(63,185,80,.22);cursor:default;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:#fff;color:rgb(63,185,80);">3</span>点検計画</span><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./inspection-input.html" title="点検実施へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(63,185,80,.85);color:rgba(63,185,80,.98);">4</span>点検実施</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./defect-rca.html" title="異常判断へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">5</span>異常判断</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業票へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">6</span>作業票</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./permits.html" title="PTW/KYへ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">7</span>PTW/KY</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./approvals.html" title="承認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">8</span>承認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./work-orders.html" title="作業へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">9</span>作業</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./defect-rca.html" title="復旧確認へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(210,153,34,.85);color:rgba(210,153,34,.98);">10</span>復旧確認</a><span style="width:13px;height:2px;border-radius:2px;background:#30363d;flex:0 0 auto;"></span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 11px;border-radius:8px;font-weight:600;white-space:nowrap;text-decoration:none;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;font-size:9.5px;font-weight:800;flex:0 0 auto;background:transparent;border:1.5px solid rgba(219,97,162,.85);color:rgba(219,97,162,.98);">11</span>クローズ/報告</a></nav>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div>
+      <h1>点検計画一覧</h1>
+      <div class="sub">阿武隈OS ライブ盤 — 年次/定期/随時の計画・期限管理</div>
+    </div>
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  </div>
+
+  <div class="wrap">
+    <div class="note">点検計画（<code>v_inspection_plan_list</code>）。期限超過・本日の計画をハイライト。実施したら <a href="./inspection-input.html">点検実績入力</a> へ。</div>
+    <div class="kpis" id="kpis"></div>
+    <div class="filters" id="filters">
+      <button data-f="all" class="active">すべて</button>
+      <button data-f="overdue">⚠️ 期限超過</button>
+      <button data-f="today">🔵 本日</button>
+      <button data-f="planned">📅 計画</button>
+      <button data-f="in_progress">🔧 実施中</button>
+      <button data-f="done">✅ 完了</button>
+    </div>
+    <div id="body" class="loading">読み込み中…</div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+  <script>
+    const esc = sb.esc;
+    const state = { rows: [], filter: "all" };
+    const pillClass = { "年次":"p-nen", "定期":"p-teiki", "随時/緊急":"p-zuiji", "その他":"p-other" };
+
+    function renderKpis(){
+      const rows = state.rows;
+      const overdue = rows.filter(r => r["期限超過"]).length;
+      const today = rows.filter(r => r["期限表示"] === "🔵 本日").length;
+      const open = rows.filter(r => r["状態"] === "planned" || r["状態"] === "in_progress").length;
+      document.getElementById("kpis").innerHTML =
+        `<div class="kpi"><div class="v">${rows.length}</div><div class="l">計画 総数</div></div>
+         <div class="kpi today"><div class="v">${today}</div><div class="l">本日の計画</div></div>
+         <div class="kpi warn"><div class="v">${overdue}</div><div class="l">期限超過</div></div>
+         <div class="kpi"><div class="v">${open}</div><div class="l">未完了</div></div>`;
+    }
+
+    function render(){
+      const body = document.getElementById("body");
+      let rows = state.rows.slice();
+      const f = state.filter;
+      if(f === "overdue") rows = rows.filter(r => r["期限超過"]);
+      else if(f === "today") rows = rows.filter(r => r["期限表示"] === "🔵 本日");
+      else if(f !== "all") rows = rows.filter(r => r["状態"] === f);
+      if(!rows.length){ body.innerHTML = '<div class="empty">該当する計画はありません</div>'; return; }
+      body.innerHTML = '<table><thead><tr>' +
+        ['計画日','号機','作業種別','区分','状態','期限','時間','必要資格','人数','PTW'].map(h=>`<th>${h}</th>`).join('') +
+        '</tr></thead><tbody>' + rows.map(r => {
+          const ku = r["点検区分"]||"";
+          const cls = r["期限超過"] ? "overdue" : (r["期限表示"]==="🔵 本日" ? "today" : "");
+          const time = (r["開始"]||"")+(r["終了"]?("〜"+r["終了"]):"");
+          return `<tr class="${cls}">
+            <td>${esc(r["計画日"]||"")}</td>
+            <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
+            <td>${esc(r["作業種別"]||"")}</td>
+            <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
+            <td>${esc(r["状態表示"]||"")}</td>
+            <td>${esc(r["期限表示"]||"")}</td>
+            <td>${esc(time)}</td>
+            <td>${esc(r["必要資格"]||"—")}</td>
+            <td>${esc(r["作業人数"]??"—")}</td>
+            <td>${esc(r["ptw番号"]||"—")}</td>
+          </tr>`;
+        }).join('') + '</tbody></table>';
+    }
+
+    document.querySelectorAll("#filters button").forEach(btn =>
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filter = btn.dataset.f;
+        render();
+      }));
+
+    async function loadAll(){
+      try{
+        state.rows = await sb.get("v_inspection_plan_list?order=計画日.asc");
+        renderKpis();
+        render();
+      }catch(e){
+        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+      }
+    }
+    sb.requireLogin({ onReady: loadAll });
+  </script>
+</body>
+</html>
