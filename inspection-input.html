@@ -2183,7 +2183,7 @@
 
 
 
-          turbine_id:d.wtg, executed_date:d.date, executed_by:state.userId,
+          turbine_id:d.wtg, executed_date:d.date, executed_by:state.userId, plan_id:state.planId||null,
 
 
 
@@ -2279,6 +2279,7 @@
 
 
 
+        if(state.planId){ try{ await sb.write("PATCH",`inspection_plans?id=eq.${encodeURIComponent(state.planId)}`,{status:"completed"}); }catch(e){} state.planId=null; history.replaceState({},"",location.pathname); }
         // reset
 
 
@@ -2479,6 +2480,23 @@
 
 
 
+    async function applyPlanParam(){
+      const pid=new URLSearchParams(location.search).get('plan_id');
+      if(!pid) return;
+      try{
+        const ps=await sb.get(`inspection_plans?id=eq.${encodeURIComponent(pid)}&select=turbine_id,planned_date,work_type,status`);
+        if(!ps||!ps.length) return;
+        const p=ps[0]; state.planId=pid;
+        if(p.turbine_id){ $("f_wtg").value=p.turbine_id; }
+        const tn=(state.turbines.find(t=>t.id===p.turbine_id)||{}).turbine_no||"";
+        const b=document.createElement("div");
+        b.style.cssText="margin:0 0 12px;padding:10px 12px;border:1px solid rgba(63,185,80,.5);border-radius:9px;background:rgba(63,185,80,.10);color:#7ee787;font-size:12.5px;";
+        b.innerHTML="📋 点検計画から開始: <b>"+esc(tn)+"</b>"+(p.planned_date?(" ／ 予定日 "+esc(p.planned_date)):"")+(p.work_type?(" ／ "+esc(p.work_type)):"");
+        $("f_wtg").insertAdjacentElement("beforebegin", b);
+        validate();
+        if(p.status==="planned"){ try{ await sb.write("PATCH",`inspection_plans?id=eq.${encodeURIComponent(pid)}`,{status:"in_progress"}); }catch(e){} }
+      }catch(e){}
+    }
     async function loadAll(){
 
 
@@ -2510,6 +2528,7 @@
 
 
         $("f_date").value=today; $("f_date").max=today;
+        await applyPlanParam();
 
 
 
