@@ -56,6 +56,17 @@
   .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
   .note{font-size:12px;color:var(--muted);margin-bottom:14px}
   code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+  .kpi.over .v{color:#ff5630} .kpi.un .v{color:#ff9a92} .kpi.avg .v{color:#9cd2ff}
+  #body{overflow-x:auto}
+  .stagn{font-weight:700}
+  .st-over{color:#ff5630} .st-warn{color:#f0c674} .st-ok{color:var(--muted)} .st-done{color:#7ee787}
+  .unassigned{color:#ff9a92;font-size:11px;border:1px solid var(--defect);border-radius:6px;padding:1px 6px;background:rgba(248,81,73,.1);white-space:nowrap}
+  .next-a{color:#9cd2ff;white-space:normal;font-size:12px}
+  tr.over-row td{box-shadow:inset 3px 0 0 #ff5630}
+  .sorts{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap;align-items:center}
+  .sorts .lbl{font-size:11px;color:var(--muted)}
+  .sorts button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:4px 11px;border-radius:999px;cursor:pointer}
+  .sorts button.active{color:#fff;border-color:var(--work);background:rgba(210,153,34,.12)}
 </style>
 </head>
 <body>
@@ -69,14 +80,21 @@
   </div>
 
   <div class="wrap">
-    <div class="note">故障・異常の評価とRCA（<code>v_defect_rca_list</code>）。行をクリックで詳細（根本原因・暫定/恒久処置・進捗）を展開。考え方は <a href="./guide-defect-judge.html">③ 異常評価・是正判断の基本</a> ／ <a href="./guide-rca.html">⑦ 故障対応・RCAの基本</a>。</div>
+    <div class="note">故障・異常の評価とRCA（<code>v_defect_rca_list</code>）。行をクリックで詳細を展開。<b>滞留日数</b>＝発見から経過日数（未クローズは本日まで）。<b>期限超過</b>＝RCA対象14日／通常30日超で🟥（目安・運用に合わせ要調整）。考え方は <a href="./guide-defect-judge.html">③ 是正判断</a> ／ <a href="./guide-rca.html">⑦ RCA</a>。</div>
     <div class="kpis" id="kpis"></div>
     <div class="filters" id="filters">
       <button data-f="all" class="active">すべて</button>
       <button data-f="rca">🔍 RCA対象</button>
       <button data-f="open">🔴 未対応</button>
       <button data-f="prog">🔧 対応中</button>
+      <button data-f="over">🟥 期限超過</button>
+      <button data-f="unassigned">👤 未割当</button>
       <button data-f="done">✅ 完了</button>
+    </div>
+    <div class="sorts" id="sorts">
+      <span class="lbl">並び順:</span>
+      <button data-s="date" class="active">発見日時 新しい順</button>
+      <button data-s="stagn">滞留日数 長い順</button>
     </div>
     <div id="body" class="loading">読み込み中…</div>
   </div>
@@ -84,7 +102,7 @@
   <script src="./lib/supabase.js"></script>
   <script>
     const esc = sb.esc;
-    const state = { rows: [], filter: "all", open: {} };
+    const state = { rows: [], filter: "all", sort: "date", open: {} };
 
     function impClass(v){ return v==="高"?"imp-high":v==="中"?"imp-mid":"imp-low"; }
     function clClass(v){ return v==="不明"?"cl-unknown":v==="推定"?"cl-assumed":"cl-clear"; }
@@ -94,16 +112,44 @@
     function isProg(r){ const s=r["状態表示"]||""; return s.indexOf("対応中")>=0; }
     function isDone(r){ const s=r["状態表示"]||""; return s.indexOf("完了")>=0; }
 
+    // 滞留・期限超過の判定（RCA対象は厳しめ：警告7日/超過14日、通常：警告14日/超過30日）
+    function overInfo(r){
+      const days = Number(r["滞留日数"]||0);
+      if(isDone(r)) return { lv:"done", days };
+      const isRca = !!r["rca対象"];
+      const warn = isRca?7:14, over = isRca?14:30;
+      if(days>=over) return { lv:"over", days };
+      if(days>=warn) return { lv:"warn", days };
+      return { lv:"ok", days };
+    }
+    function hasAssignee(r){ return !!(r["担当者"] && String(r["担当者"]).trim()); }
+    function isUnassigned(r){ return !isDone(r) && !hasAssignee(r); }
+    function nextAction(r){
+      const s = r["状態表示"]||"";
+      if(s.indexOf("完了")>=0) return "—（クローズ済）";
+      if(s.indexOf("未対応")>=0) return hasAssignee(r) ? "一次評価を実施" : "一次評価・担当割当";
+      if(s.indexOf("評価済")>=0) return r["rca対象"] ? "RCA着手（根本原因調査）" : "作業票を起票";
+      if(s.indexOf("対応中")>=0) return "処置完了→復旧確認・クローズ";
+      return "状態を確認";
+    }
+
     function renderKpis(){
       const rows = state.rows;
       const rca = rows.filter(r => r["rca対象"]).length;
       const open = rows.filter(isOpen).length;
       const prog = rows.filter(isProg).length;
+      const nonClosed = rows.filter(r => !isDone(r));
+      const avg = nonClosed.length ? Math.round(nonClosed.reduce((a,r)=>a+Number(r["滞留日数"]||0),0)/nonClosed.length) : 0;
+      const overdue = rows.filter(r => overInfo(r).lv==="over").length;
+      const unassignedN = rows.filter(isUnassigned).length;
       document.getElementById("kpis").innerHTML =
         `<div class="kpi"><div class="v">${rows.length}</div><div class="l">故障・異常 総数</div></div>
          <div class="kpi rca"><div class="v">${rca}</div><div class="l">🔍 RCA対象</div></div>
          <div class="kpi open"><div class="v">${open}</div><div class="l">🔴 未対応</div></div>
-         <div class="kpi prog"><div class="v">${prog}</div><div class="l">🔧 対応中</div></div>`;
+         <div class="kpi prog"><div class="v">${prog}</div><div class="l">🔧 対応中</div></div>
+         <div class="kpi over"><div class="v">${overdue}</div><div class="l">🟥 期限超過</div></div>
+         <div class="kpi un"><div class="v">${unassignedN}</div><div class="l">👤 未割当</div></div>
+         <div class="kpi avg"><div class="v">${avg}<span style="font-size:12px">日</span></div><div class="l">平均滞留（未クローズ）</div></div>`;
     }
 
     function detailRow(r, cols){
@@ -117,6 +163,8 @@
         <div class="dcard rca-step"><div class="l">恒久処置</div>${v(r["恒久処置"])}</div>
         <div class="dcard"><div class="l">RCA進捗</div><div class="val">${esc(r["rca進捗"]||"—")}</div></div>
         <div class="dcard"><div class="l">停止時間 / 逸失電力</div><div class="val">${esc(r["停止時間min"]??"—")} 分 / ${esc(r["逸失電力kwh"]??"—")} kWh</div></div>
+        <div class="dcard"><div class="l">滞留日数 / 担当者 / 発見者</div><div class="val">${overInfo(r).days}日 / ${hasAssignee(r)?esc(r["担当者"]):"未割当"} / ${r["発見者"]?esc(r["発見者"]):"—"}</div></div>
+        <div class="dcard"><div class="l">次アクション</div><div class="val">${esc(nextAction(r))}</div></div>
       </div></td></tr>`;
     }
 
@@ -128,8 +176,11 @@
       else if(f === "open") rows = rows.filter(isOpen);
       else if(f === "prog") rows = rows.filter(isProg);
       else if(f === "done") rows = rows.filter(isDone);
+      else if(f === "over") rows = rows.filter(r => overInfo(r).lv==="over");
+      else if(f === "unassigned") rows = rows.filter(isUnassigned);
+      if(state.sort === "stagn") rows.sort((a,b)=>Number(b["滞留日数"]||0)-Number(a["滞留日数"]||0));
       if(!rows.length){ body.innerHTML = '<div class="empty">該当する故障・異常はありません</div>'; return; }
-      const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','RCA要否'];
+      const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','滞留','担当者','RCA要否','次アクション'];
       const cols = heads.length;
       body.innerHTML = '<table><thead><tr>' +
         heads.map(h=>`<th>${h}</th>`).join('') +
@@ -137,8 +188,11 @@
           const id = r["故障id"];
           const opened = !!state.open[id];
           const strong = (r["rca要否"]||"").indexOf("対象")>=0;
-          const cls = (r["rca対象"] ? (strong?"rca-strong":"rca") : "") + (opened?" open-row":"");
+          const oi = overInfo(r);
+          const stCls = oi.lv==="over"?"st-over":oi.lv==="warn"?"st-warn":oi.lv==="done"?"st-done":"st-ok";
+          const cls = (r["rca対象"] ? (strong?"rca-strong":"rca") : "") + (oi.lv==="over"?" over-row":"") + (opened?" open-row":"");
           const dt = (r["発見日時_jst"]||"").replace("T"," ").slice(0,16);
+          const assignee = hasAssignee(r) ? esc(r["担当者"]) : (isDone(r)?'<span style="color:var(--muted)">—</span>':'<span class="unassigned">未割当</span>');
           const main = `<tr class="main ${cls}" data-id="${esc(id)}">
             <td><span class="arrow">▸</span></td>
             <td>${esc(dt)}</td>
@@ -150,7 +204,10 @@
             <td>${esc(r["再発性"]||"—")}</td>
             <td>${esc(r["一次判定"]||"—")}</td>
             <td>${esc(r["状態表示"]||"")}</td>
+            <td><span class="stagn ${stCls}">${oi.days}日${oi.lv==="over"?" 🟥":oi.lv==="warn"?" ⚠":""}</span></td>
+            <td>${assignee}</td>
             <td><span class="rca-tag ${rcaClass(r["rca要否"])}">${esc(r["rca要否"]||"—")}</span></td>
+            <td><span class="next-a">${esc(nextAction(r))}</span></td>
           </tr>`;
           return main + (opened ? detailRow(r, cols) : "");
         }).join('') + '</tbody></table>';
@@ -168,6 +225,14 @@
         document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         state.filter = btn.dataset.f;
+        render();
+      }));
+
+    document.querySelectorAll("#sorts button").forEach(btn =>
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#sorts button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.sort = btn.dataset.s;
         render();
       }));
 
