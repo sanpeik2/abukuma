@@ -257,6 +257,73 @@
   <span class="legend-item"><span class="legend-dot" style="background:#e45d5d"></span>⑥ 手入力（朝会中）</span>
 </div>
 
+<!-- ===== データ信頼性・欠損時ルール（Phase 3 / 監査・判断に耐える） ===== -->
+<h2 style="color:#fff;font-size:17px;font-weight:700;margin:8px 0 4px">▶ データ信頼性・欠損時ルール</h2>
+<div style="color:#8b949e;font-size:12.5px;margin-bottom:14px">「その数字は新しいか・信じてよいか・無いときどうするか」。業務OSとして判断・監査に耐えるための取り扱い基準。<b style="color:#e3c98b">原則：欠損を勝手に0にしない（NULLは「—」表示）／古い値は鮮度を必ず表示する。</b></div>
+
+<div style="overflow-x:auto;margin-bottom:18px">
+<table style="width:100%;border-collapse:collapse;background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden;font-size:12.5px;min-width:760px">
+  <thead>
+    <tr style="background:#1c2128;color:#fff">
+      <th style="padding:9px 12px;text-align:left;min-width:120px">データ系統</th>
+      <th style="padding:9px 12px;text-align:left;min-width:90px">更新頻度</th>
+      <th style="padding:9px 12px;text-align:left;min-width:90px">信頼度</th>
+      <th style="padding:9px 12px;text-align:left">欠損・古い時の扱い</th>
+      <th style="padding:9px 12px;text-align:left">意思決定への影響</th>
+    </tr>
+  </thead>
+  <tbody style="color:#c9d1d9">
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#9cd2ff;font-weight:600">① SCADA</td>
+      <td style="padding:9px 12px">リアルタイム〜30分</td>
+      <td style="padding:9px 12px"><span style="color:#7ee787;font-weight:700">高</span>（機器直結）</td>
+      <td style="padding:9px 12px">直近値を保持し<b>「○分前」と鮮度表示</b>。通信途絶は「データなし」明示し現地確認へ。0埋め禁止</td>
+      <td style="padding:9px 12px">発電量・アラームが見えない＝<b>停止判断の根拠が消える</b>。最優先で復旧/現地確認</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#7fe3b0;font-weight:600">② 気象API</td>
+      <td style="padding:9px 12px">1時間毎</td>
+      <td style="padding:9px 12px"><span style="color:#e3c98b;font-weight:700">中</span>（予報は外れる）</td>
+      <td style="padding:9px 12px">前回キャッシュを表示＋鮮度。<b>気象庁の注意報・警報を予報より優先</b></td>
+      <td style="padding:9px 12px">高所作業可否・出力予測がぶれる。安全側（作業中止寄り）に倒す</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#e3c98b;font-weight:600">③ JEPX</td>
+      <td style="padding:9px 12px">日次（前日確定）</td>
+      <td style="padding:9px 12px"><span style="color:#7ee787;font-weight:700">高</span>（公式値）</td>
+      <td style="padding:9px 12px">未取得は前日価格で代用し<b>「暫定」表示</b></td>
+      <td style="padding:9px 12px">売電額予測のみに影響。<b>運用・安全判断には波及しない</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#e3c98b;font-weight:600">④ 点検・作業管理</td>
+      <td style="padding:9px 12px">都度／CSV取込</td>
+      <td style="padding:9px 12px"><span style="color:#e3c98b;font-weight:700">中</span>（人手入力）</td>
+      <td style="padding:9px 12px"><b>未入力は「対象外」と区別し「未実施」として警告</b>。期限超過はハイライト</td>
+      <td style="padding:9px 12px">点検漏れ・期限超過を見逃す＝<b>保安義務に直結</b>。未入力ゼロを担保</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#b8c4cf;font-weight:600">⑤ 計算（導出）</td>
+      <td style="padding:9px 12px">日次バッチ 06:00</td>
+      <td style="padding:9px 12px"><span style="color:#b8c4cf;font-weight:700">元データ依存</span></td>
+      <td style="padding:9px 12px">元データ欠損なら計算結果もNULL→<b>「—」表示（0や前日値で埋めない）</b></td>
+      <td style="padding:9px 12px">KPI・稼働率が歪む。欠損由来かを必ず区別して読む</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#f0a6a6;font-weight:600">⑥ 手入力（朝会）</td>
+      <td style="padding:9px 12px">朝会中</td>
+      <td style="padding:9px 12px"><span style="color:#f0a6a6;font-weight:700">人依存</span>（主観）</td>
+      <td style="padding:9px 12px">空欄可。ただし<b>判断・承認は「理由＋承認者＋時刻」を証跡として残す</b></td>
+      <td style="padding:9px 12px">証跡が無いと後から検証不能。重要判断ほど記録を必須化</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #e8b64f;border-radius:10px;padding:13px 16px;margin-bottom:28px;font-size:12.5px;line-height:1.7;color:#e3c98b">
+  <b style="color:#ffd479">⚖️ 欠損・低信頼データに基づく最終判断は電気主任技術者が行う。</b>
+  画面はデータの鮮度（○分前）・信頼度・暫定/未実施の別を必ず示し、利用者が「この数字をどこまで信じるか」を判断できるようにする。データに基づく業務操作・承認は各ライブ画面で行い、本書はあくまで出所と取り扱いの地図。
+</div>
+
 <!-- ===== メインテーブル ===== -->
 <div class="table-wrap">
 <table>
