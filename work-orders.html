@@ -1,204 +1,204 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>作業票一覧 — 阿武隈風力発電</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --stop:#ff5630;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px;line-height:1.6;max-width:1280px;margin:0 auto}
-  h1{font-size:23px;margin-bottom:4px}
-  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
-  .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .bar input,.bar select{background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 10px;border-radius:8px;font-size:12.5px}
-  button.r{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12.5px}
-  button.r:hover{border-color:var(--master)}
-
-  .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-  .kpi{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
-  .kpi .v{font-size:26px;font-weight:700;color:#fff}
-  .kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px}
-  .kpi.alert .v{color:var(--stop)}
-
-  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px}
-  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-  th{background:var(--panel2);color:#fff;font-size:11.5px;white-space:nowrap}
-  tr:last-child td{border-bottom:none}
-  td.no{color:#fff;font-weight:600;white-space:nowrap}
-  td.desc{max-width:280px}
-  .empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
-  footer{margin-top:28px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
-  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
-  a.menu{color:#58a6ff;text-decoration:none;font-size:12.5px}
-  tbody tr{cursor:pointer}
-  tbody tr:hover{background:var(--panel2)}
-  #ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50}
-  #ov.show{display:block}
-  #drawer{position:fixed;top:0;right:0;width:min(560px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
-  #ov.show #drawer{transform:none}
-  .dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:10px}
-  .dhd .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
-  .dhd h2{font-size:17px;color:#fff}
-  .dbody{padding:18px 20px 40px}
-  .dno{font-family:monospace;font-size:12px;color:var(--master);margin-bottom:10px}
-  .dpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
-  .dpill{font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
-  .dsec{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
-  .dval{font-size:13px;color:var(--txt);white-space:pre-wrap}
-  .dval.empty{color:var(--muted)}
-  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0}
-  .dgrid .l{font-size:11px;color:var(--muted)}
-  .dgrid .v{font-size:14px;color:#fff;font-weight:600}
-</style>
-</head>
-<body>
-<nav id="omFlowBar" aria-label="業務フロー現在地" style="background:#0d1117;border-bottom:1px solid #30363d;padding:7px 14px;display:flex;align-items:center;gap:5px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;">業務フロー現在地</span><a href="./index.html" title="今日の管制塔へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">今日の管制塔</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./live-board.html" title="監視へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">監視</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./inspection-plan.html" title="点検計画へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">点検計画</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./inspection-input.html" title="点検実施へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">点検実施</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">異常判断</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><span style="flex:0 0 auto;font-size:11px;padding:3px 10px;border-radius:999px;background:#1f6feb;color:#fff;font-weight:700;cursor:default;">作業票</span><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">PTW/KY</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./approvals.html" title="承認へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">承認</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./work-orders.html" title="作業へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">作業</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">復旧確認</a><span style="color:#30363d;flex:0 0 auto;font-size:11px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="flex:0 0 auto;font-size:11px;padding:3px 7px;color:#8b949e;text-decoration:none;border-radius:999px;">クローズ/報告</a></nav>
-  <div style="margin-bottom:10px"><a class="menu" href="./menu.html">≡ メニューへ戻る</a></div>
-  <h1>作業票一覧</h1>
-  <div class="sub">阿武隈風力発電所 / ビュー <code>v_work_orders_full</code> をライブ取得（JST・絵文字ステータス付与済み）</div>
-
-  <div class="cards">
-    <div class="kpi"><div class="v" id="kTotal">–</div><div class="l">作業票（合計）</div></div>
-    <div class="kpi alert"><div class="v" id="kOpen">–</div><div class="l">未完了</div></div>
-    <div class="kpi"><div class="v" id="kStop">–</div><div class="l">停止影響あり</div></div>
-    <div class="kpi"><div class="v" id="kAtt">–</div><div class="l">添付あり</div></div>
-  </div>
-
-  <div class="bar">
-    <input id="q" type="text" placeholder="🔍 風車・番号・概要で絞り込み" oninput="apply()">
-    <select id="fOpen" onchange="apply()">
-      <option value="all">すべて</option>
-      <option value="open">未完了のみ</option>
-      <option value="done">完了のみ</option>
-    </select>
-    <button class="r" onclick="load()">↻ 再読み込み</button>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>作業票番号</th><th>風車</th><th>種別</th><th>概要</th>
-        <th>優先度</th><th>状態</th><th>対応予定</th><th>停止(分)</th>
-        <th>逸失kWh</th><th>添付</th><th>起票日時</th>
-      </tr>
-    </thead>
-    <tbody id="rows">
-      <tr><td colspan="11" class="empty">ログインするとデータを取得します…</td></tr>
-    </tbody>
-  </table>
-
-  <footer>
-    データ元: <code>v_work_orders_full</code>（work_orders ＋ 関連異常・添付数・JST変換）。行をクリックすると詳細を表示します。
-  </footer>
-
-  <div id="ov" onclick="if(event.target.id==='ov')closeDetail()">
-    <div id="drawer">
-      <div class="dhd"><h2 id="dTitle">作業票詳細</h2><button class="x" onclick="closeDetail()">×</button></div>
-      <div class="dbody" id="dBody"></div>
-    </div>
-  </div>
-
-  <script src="./lib/supabase.js"></script>
-  <script>
-    let ALL = [];
-
-    async function load(){
-      const rows = document.getElementById('rows');
-      rows.innerHTML = '<tr><td colspan="11" class="empty">取得中…</td></tr>';
-      try{
-        const order = encodeURIComponent('起票日時_jst');
-        ALL = await sb.get(`v_work_orders_full?select=*&order=${order}.desc`);
-        renderKpi(ALL);
-        apply();
-      }catch(e){
-        rows.innerHTML = `<tr><td colspan="11" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
-      }
-    }
-
-    function renderKpi(d){
-      document.getElementById('kTotal').textContent = d.length;
-      document.getElementById('kOpen').textContent  = d.filter(r=>!r['完了日時_jst']).length;
-      document.getElementById('kStop').textContent  = d.filter(r=>(r['停止時間min']||0)>0).length;
-      document.getElementById('kAtt').textContent   = d.filter(r=>(r['添付数']||0)>0).length;
-    }
-
-    function apply(){
-      const q = document.getElementById('q').value.trim().toLowerCase();
-      const f = document.getElementById('fOpen').value;
-      let d = ALL;
-      if(f==='open') d = d.filter(r=>!r['完了日時_jst']);
-      if(f==='done') d = d.filter(r=> r['完了日時_jst']);
-      if(q){
-        d = d.filter(r => [r['作業票番号'],r['風車'],r['異常概要'],r['関連異常タイトル'],r['作業種別']]
-          .some(v => (v||'').toLowerCase().includes(q)));
-      }
-      render(d);
-    }
-
-    function render(d){
-      const rows = document.getElementById('rows');
-      if(!d.length){ rows.innerHTML = '<tr><td colspan="11" class="empty">該当する作業票はありません</td></tr>'; return; }
-      rows.innerHTML = d.map(r=>`<tr onclick="openDetail('${sb.esc(r['id'])}')">
-        <td class="no">${sb.esc(r['作業票番号'])}</td>
-        <td>${sb.esc(r['風車'])||'–'}</td>
-        <td>${sb.esc(r['作業種別'])||'–'}</td>
-        <td class="desc">${sb.esc(r['異常概要']||r['関連異常タイトル'])||'–'}</td>
-        <td>${sb.esc(r['優先度表示']||r['優先度'])||'–'}</td>
-        <td>${sb.esc(r['状態表示']||r['状態'])||'–'}</td>
-        <td>${sb.esc(r['対応予定日'])||'–'}</td>
-        <td>${r['停止時間min']??'–'}</td>
-        <td>${r['逸失電力kwh']??'–'}</td>
-        <td>${(r['添付数']||0)>0?('📎'+r['添付数']):'–'}</td>
-        <td>${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
-      </tr>`).join('');
-    }
-
-    function fld(label, val){
-      const empty = val==null || val==='';
-      return `<div class="dsec">${label}</div><div class="dval${empty?' empty':''}">${empty?'（記載なし）':sb.esc(val)}</div>`;
-    }
-    function openDetail(id){
-      const r = ALL.find(x => String(x['id'])===String(id));
-      if(!r) return;
-      document.getElementById('dTitle').textContent = (r['風車']||'') + ' 作業票';
-      document.getElementById('dBody').innerHTML = `
-        <div class="dno">${sb.esc(r['作業票番号']||'')}</div>
-        <div class="dpills">
-          <span class="dpill">${sb.esc(r['状態表示']||r['状態']||'')}</span>
-          <span class="dpill">${sb.esc(r['優先度表示']||r['優先度']||'')}</span>
-          ${r['深刻度']?`<span class="dpill">深刻度 ${sb.esc(r['深刻度'])}</span>`:''}
-          ${r['作業種別']?`<span class="dpill">${sb.esc(r['作業種別'])}</span>`:''}
-        </div>
-        <div class="dgrid">
-          <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
-          <div><div class="l">対応予定日</div><div class="v">${sb.esc(r['対応予定日']||'–')}</div></div>
-          <div><div class="l">停止時間</div><div class="v">${r['停止時間min']??'–'} <small>分</small></div></div>
-          <div><div class="l">逸失電力</div><div class="v">${r['逸失電力kwh']??'–'} <small>kWh</small></div></div>
-        </div>
-        ${fld('異常概要', r['異常概要'])}
-        ${fld('関連異常', r['関連異常タイトル'])}
-        ${fld('根本原因', r['根本原因'])}
-        ${fld('暫定処置', r['暫定処置'])}
-        ${fld('恒久処置', r['恒久処置'])}
-        <div class="dgrid" style="margin-top:14px">
-          <div><div class="l">起票日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['起票日時_jst']||'–')}</div></div>
-          <div><div class="l">完了日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['完了日時_jst']||'–')}</div></div>
-        </div>
-        <div class="dsec">添付</div><div class="dval${(r['添付数']||0)>0?'':' empty'}">${(r['添付数']||0)>0?('📎 '+r['添付数']+' 件'):'なし'}</div>
-        <div style="margin-top:20px;display:flex;gap:14px;font-size:12.5px">
-          <a class="menu" href="./permits.html">🔒 関連する作業許可(PTW)</a>
-          <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
-        </div>`;
-      document.getElementById('ov').classList.add('show');
-    }
-    function closeDetail(){ document.getElementById('ov').classList.remove('show'); }
-    document.addEventListener('keydown', e => { if(e.key==='Escape') closeDetail(); });
-
-    sb.requireLogin({ onReady: load });
-  </script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作業票一覧 — 阿武隈風力発電</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --stop:#ff5630;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px;line-height:1.6;max-width:1280px;margin:0 auto}
+  h1{font-size:23px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .bar input,.bar select{background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 10px;border-radius:8px;font-size:12.5px}
+  button.r{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12.5px}
+  button.r:hover{border-color:var(--master)}
+
+  .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .kpi{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
+  .kpi .v{font-size:26px;font-weight:700;color:#fff}
+  .kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .kpi.alert .v{color:var(--stop)}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:#fff;font-size:11.5px;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  td.no{color:#fff;font-weight:600;white-space:nowrap}
+  td.desc{max-width:280px}
+  .empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
+  footer{margin-top:28px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
+  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+  a.menu{color:#58a6ff;text-decoration:none;font-size:12.5px}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--panel2)}
+  #ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50}
+  #ov.show{display:block}
+  #drawer{position:fixed;top:0;right:0;width:min(560px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
+  #ov.show #drawer{transform:none}
+  .dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:10px}
+  .dhd .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+  .dhd h2{font-size:17px;color:#fff}
+  .dbody{padding:18px 20px 40px}
+  .dno{font-family:monospace;font-size:12px;color:var(--master);margin-bottom:10px}
+  .dpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .dpill{font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
+  .dsec{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
+  .dval{font-size:13px;color:var(--txt);white-space:pre-wrap}
+  .dval.empty{color:var(--muted)}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0}
+  .dgrid .l{font-size:11px;color:var(--muted)}
+  .dgrid .v{font-size:14px;color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:#0d1117;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:7px;overflow-x:auto;white-space:nowrap;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><span style="display:inline-flex;align-items:center;gap:5px;color:#8b949e;font-size:10.5px;font-weight:700;margin-right:4px;flex:0 0 auto;letter-spacing:.02em;"><span style="font-size:12px;">🔄</span>業務フロー現在地</span><a href="./index.html" title="今日の管制塔へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>今日の管制塔</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./live-board.html" title="監視へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(88,166,255,.85);background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.40);"><span style="font-size:10px;color:rgb(88,166,255);flex:0 0 auto;">✓</span>監視</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-plan.html" title="点検計画へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.85);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.40);"><span style="font-size:10px;color:rgb(63,185,80);flex:0 0 auto;">✓</span>点検計画</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./inspection-input.html" title="点検実施へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(63,185,80,.85);background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.40);"><span style="font-size:10px;color:rgb(63,185,80);flex:0 0 auto;">✓</span>点検実施</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="異常判断へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.85);background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.40);"><span style="font-size:10px;color:rgb(210,153,34);flex:0 0 auto;">✓</span>異常判断</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:#fff;background:rgb(210,153,34);border:1px solid rgb(210,153,34);font-weight:700;box-shadow:0 0 0 3px rgba(210,153,34,.25);cursor:default;"><span style="width:7px;height:7px;border-radius:50%;background:#fff;flex:0 0 auto;"></span>作業票</span><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./permits.html" title="PTW/KYへ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>PTW/KY</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./approvals.html" title="承認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>承認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./work-orders.html" title="作業へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>作業</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./defect-rca.html" title="復旧確認へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(210,153,34,.95);background:transparent;border:1px solid rgba(210,153,34,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(210,153,34,.75);flex:0 0 auto;"></span>復旧確認</a><span style="color:#484f58;flex:0 0 auto;font-size:12px;">›</span><a href="./report-candidates.html" title="クローズ/報告へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11.5px;line-height:1;padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;color:rgba(219,97,162,.95);background:transparent;border:1px solid rgba(219,97,162,.45);"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(219,97,162,.75);flex:0 0 auto;"></span>クローズ/報告</a></nav>
+  <div style="margin-bottom:10px"><a class="menu" href="./menu.html">≡ メニューへ戻る</a></div>
+  <h1>作業票一覧</h1>
+  <div class="sub">阿武隈風力発電所 / ビュー <code>v_work_orders_full</code> をライブ取得（JST・絵文字ステータス付与済み）</div>
+
+  <div class="cards">
+    <div class="kpi"><div class="v" id="kTotal">–</div><div class="l">作業票（合計）</div></div>
+    <div class="kpi alert"><div class="v" id="kOpen">–</div><div class="l">未完了</div></div>
+    <div class="kpi"><div class="v" id="kStop">–</div><div class="l">停止影響あり</div></div>
+    <div class="kpi"><div class="v" id="kAtt">–</div><div class="l">添付あり</div></div>
+  </div>
+
+  <div class="bar">
+    <input id="q" type="text" placeholder="🔍 風車・番号・概要で絞り込み" oninput="apply()">
+    <select id="fOpen" onchange="apply()">
+      <option value="all">すべて</option>
+      <option value="open">未完了のみ</option>
+      <option value="done">完了のみ</option>
+    </select>
+    <button class="r" onclick="load()">↻ 再読み込み</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>作業票番号</th><th>風車</th><th>種別</th><th>概要</th>
+        <th>優先度</th><th>状態</th><th>対応予定</th><th>停止(分)</th>
+        <th>逸失kWh</th><th>添付</th><th>起票日時</th>
+      </tr>
+    </thead>
+    <tbody id="rows">
+      <tr><td colspan="11" class="empty">ログインするとデータを取得します…</td></tr>
+    </tbody>
+  </table>
+
+  <footer>
+    データ元: <code>v_work_orders_full</code>（work_orders ＋ 関連異常・添付数・JST変換）。行をクリックすると詳細を表示します。
+  </footer>
+
+  <div id="ov" onclick="if(event.target.id==='ov')closeDetail()">
+    <div id="drawer">
+      <div class="dhd"><h2 id="dTitle">作業票詳細</h2><button class="x" onclick="closeDetail()">×</button></div>
+      <div class="dbody" id="dBody"></div>
+    </div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+  <script>
+    let ALL = [];
+
+    async function load(){
+      const rows = document.getElementById('rows');
+      rows.innerHTML = '<tr><td colspan="11" class="empty">取得中…</td></tr>';
+      try{
+        const order = encodeURIComponent('起票日時_jst');
+        ALL = await sb.get(`v_work_orders_full?select=*&order=${order}.desc`);
+        renderKpi(ALL);
+        apply();
+      }catch(e){
+        rows.innerHTML = `<tr><td colspan="11" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
+      }
+    }
+
+    function renderKpi(d){
+      document.getElementById('kTotal').textContent = d.length;
+      document.getElementById('kOpen').textContent  = d.filter(r=>!r['完了日時_jst']).length;
+      document.getElementById('kStop').textContent  = d.filter(r=>(r['停止時間min']||0)>0).length;
+      document.getElementById('kAtt').textContent   = d.filter(r=>(r['添付数']||0)>0).length;
+    }
+
+    function apply(){
+      const q = document.getElementById('q').value.trim().toLowerCase();
+      const f = document.getElementById('fOpen').value;
+      let d = ALL;
+      if(f==='open') d = d.filter(r=>!r['完了日時_jst']);
+      if(f==='done') d = d.filter(r=> r['完了日時_jst']);
+      if(q){
+        d = d.filter(r => [r['作業票番号'],r['風車'],r['異常概要'],r['関連異常タイトル'],r['作業種別']]
+          .some(v => (v||'').toLowerCase().includes(q)));
+      }
+      render(d);
+    }
+
+    function render(d){
+      const rows = document.getElementById('rows');
+      if(!d.length){ rows.innerHTML = '<tr><td colspan="11" class="empty">該当する作業票はありません</td></tr>'; return; }
+      rows.innerHTML = d.map(r=>`<tr onclick="openDetail('${sb.esc(r['id'])}')">
+        <td class="no">${sb.esc(r['作業票番号'])}</td>
+        <td>${sb.esc(r['風車'])||'–'}</td>
+        <td>${sb.esc(r['作業種別'])||'–'}</td>
+        <td class="desc">${sb.esc(r['異常概要']||r['関連異常タイトル'])||'–'}</td>
+        <td>${sb.esc(r['優先度表示']||r['優先度'])||'–'}</td>
+        <td>${sb.esc(r['状態表示']||r['状態'])||'–'}</td>
+        <td>${sb.esc(r['対応予定日'])||'–'}</td>
+        <td>${r['停止時間min']??'–'}</td>
+        <td>${r['逸失電力kwh']??'–'}</td>
+        <td>${(r['添付数']||0)>0?('📎'+r['添付数']):'–'}</td>
+        <td>${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
+      </tr>`).join('');
+    }
+
+    function fld(label, val){
+      const empty = val==null || val==='';
+      return `<div class="dsec">${label}</div><div class="dval${empty?' empty':''}">${empty?'（記載なし）':sb.esc(val)}</div>`;
+    }
+    function openDetail(id){
+      const r = ALL.find(x => String(x['id'])===String(id));
+      if(!r) return;
+      document.getElementById('dTitle').textContent = (r['風車']||'') + ' 作業票';
+      document.getElementById('dBody').innerHTML = `
+        <div class="dno">${sb.esc(r['作業票番号']||'')}</div>
+        <div class="dpills">
+          <span class="dpill">${sb.esc(r['状態表示']||r['状態']||'')}</span>
+          <span class="dpill">${sb.esc(r['優先度表示']||r['優先度']||'')}</span>
+          ${r['深刻度']?`<span class="dpill">深刻度 ${sb.esc(r['深刻度'])}</span>`:''}
+          ${r['作業種別']?`<span class="dpill">${sb.esc(r['作業種別'])}</span>`:''}
+        </div>
+        <div class="dgrid">
+          <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
+          <div><div class="l">対応予定日</div><div class="v">${sb.esc(r['対応予定日']||'–')}</div></div>
+          <div><div class="l">停止時間</div><div class="v">${r['停止時間min']??'–'} <small>分</small></div></div>
+          <div><div class="l">逸失電力</div><div class="v">${r['逸失電力kwh']??'–'} <small>kWh</small></div></div>
+        </div>
+        ${fld('異常概要', r['異常概要'])}
+        ${fld('関連異常', r['関連異常タイトル'])}
+        ${fld('根本原因', r['根本原因'])}
+        ${fld('暫定処置', r['暫定処置'])}
+        ${fld('恒久処置', r['恒久処置'])}
+        <div class="dgrid" style="margin-top:14px">
+          <div><div class="l">起票日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['起票日時_jst']||'–')}</div></div>
+          <div><div class="l">完了日時</div><div class="v" style="font-size:12.5px">${sb.esc(r['完了日時_jst']||'–')}</div></div>
+        </div>
+        <div class="dsec">添付</div><div class="dval${(r['添付数']||0)>0?'':' empty'}">${(r['添付数']||0)>0?('📎 '+r['添付数']+' 件'):'なし'}</div>
+        <div style="margin-top:20px;display:flex;gap:14px;font-size:12.5px">
+          <a class="menu" href="./permits.html">🔒 関連する作業許可(PTW)</a>
+          <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
+        </div>`;
+      document.getElementById('ov').classList.add('show');
+    }
+    function closeDetail(){ document.getElementById('ov').classList.remove('show'); }
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeDetail(); });
+
+    sb.requireLogin({ onReady: load });
+  </script>
+</body>
+</html>
