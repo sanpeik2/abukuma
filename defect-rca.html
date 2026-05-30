@@ -126,12 +126,30 @@
     function hasAssignee(r){ return !!(r["担当者"] && String(r["担当者"]).trim()); }
     function isUnassigned(r){ return !isDone(r) && !hasAssignee(r); }
     function nextAction(r){
+      if(r._pipe && r._pipe["次アクション"]) return r._pipe["次アクション"];
       const s = r["状態表示"]||"";
       if(s.indexOf("完了")>=0) return "—（クローズ済）";
       if(s.indexOf("未対応")>=0) return hasAssignee(r) ? "一次評価を実施" : "一次評価・担当割当";
       if(s.indexOf("評価済")>=0) return r["rca対象"] ? "RCA着手（根本原因調査）" : "作業票を起票";
       if(s.indexOf("対応中")>=0) return "処置完了→復旧確認・クローズ";
       return "状態を確認";
+    }
+    // 方式②：v_case_pipeline の権威ある現在地（8段階）を行ごとに表示
+    function stageBadge(r){
+      const p = r._pipe;
+      if(!p || !p["現在地"]) return '<span style="color:var(--muted)">—</span>';
+      const here = p["現在地"];
+      const no = Number(p["stage_no"]||0);
+      let bg, fg;
+      if(no>=8){ bg="rgba(63,185,80,.16)"; fg="#7ee787"; }           // クローズ＝緑
+      else if(p["is_overdue"]){ bg="rgba(248,81,73,.18)"; fg="#ff7b72"; } // 期限超過＝赤
+      else if(p["is_stuck"]){ bg="rgba(210,153,34,.18)"; fg="#e3b341"; }  // 滞留＝橙
+      else { bg="rgba(88,166,255,.14)"; fg="#9cd2ff"; }              // 進行中＝青
+      const flags = [];
+      if(p["is_rca_required"]) flags.push("RCA");
+      if(p["is_report_candidate"]) flags.push("報告候補");
+      const ft = flags.length ? ` <span style="font-size:9px;color:var(--muted)">${flags.join("・")}</span>` : "";
+      return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${bg};color:${fg};font-size:11px;white-space:nowrap">${no?no+'. ':''}${esc(here)}</span>${ft}`;
     }
 
     function renderKpis(){
@@ -165,6 +183,7 @@
         <div class="dcard"><div class="l">RCA進捗</div><div class="val">${esc(r["rca進捗"]||"—")}</div></div>
         <div class="dcard"><div class="l">停止時間 / 逸失電力</div><div class="val">${esc(r["停止時間min"]??"—")} 分 / ${esc(r["逸失電力kwh"]??"—")} kWh</div></div>
         <div class="dcard"><div class="l">滞留日数 / 担当者 / 発見者</div><div class="val">${overInfo(r).days}日 / ${hasAssignee(r)?esc(r["担当者"]):"未割当"} / ${r["発見者"]?esc(r["発見者"]):"—"}</div></div>
+        <div class="dcard"><div class="l">現在地（パイプライン）</div><div class="val">${stageBadge(r)}</div></div>
         <div class="dcard"><div class="l">次アクション</div><div class="val">${esc(nextAction(r))}</div></div>
       </div></td></tr>`;
     }
@@ -181,7 +200,7 @@
       else if(f === "unassigned") rows = rows.filter(isUnassigned);
       if(state.sort === "stagn") rows.sort((a,b)=>Number(b["滞留日数"]||0)-Number(a["滞留日数"]||0));
       if(!rows.length){ body.innerHTML = '<div class="empty">該当する故障・異常はありません</div>'; return; }
-      const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','滞留','担当者','RCA要否','次アクション'];
+      const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','現在地','滞留','担当者','RCA要否','次アクション'];
       const cols = heads.length;
       body.innerHTML = '<table><thead><tr>' +
         heads.map(h=>`<th>${h}</th>`).join('') +
@@ -205,6 +224,7 @@
             <td>${esc(r["再発性"]||"—")}</td>
             <td>${esc(r["一次判定"]||"—")}</td>
             <td>${esc(r["状態表示"]||"")}</td>
+            <td>${stageBadge(r)}</td>
             <td><span class="stagn ${stCls}">${oi.days}日${oi.lv==="over"?" 🟥":oi.lv==="warn"?" ⚠":""}</span></td>
             <td>${assignee}</td>
             <td><span class="rca-tag ${rcaClass(r["rca要否"])}">${esc(r["rca要否"]||"—")}</span></td>
@@ -239,7 +259,14 @@
 
     async function loadAll(){
       try{
-        state.rows = await sb.get("v_defect_rca_list?order=発見日時_jst.desc");
+        const [rows, pipe] = await Promise.all([
+          sb.get("v_defect_rca_list?order=発見日時_jst.desc"),
+          sb.get("v_case_pipeline?select=*").catch(()=>[])
+        ]);
+        const pm = {};
+        (pipe||[]).forEach(p => { pm[p["案件id"]] = p; });
+        rows.forEach(r => { r._pipe = pm[r["故障id"]] || null; });
+        state.rows = rows;
         renderKpis();
         render();
       }catch(e){
