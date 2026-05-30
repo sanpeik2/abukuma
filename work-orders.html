@@ -351,6 +351,7 @@
   <div id="woCreate" style="display:none;margin:0 0 16px;"></div>
 
   <div class="bar">
+    <button class="r" onclick="openManualNew()" style="background:#1f6feb;color:#fff;border:none;font-weight:700;">＋ 新規作業票</button>
 
 
 
@@ -1001,74 +1002,129 @@
 
 
 
-    /* ===== 要件1: 異常から作業票を起票（defect_finding_id 引継ぎ・重複防止） ===== */
+    /* ===== 作業票 起票（4起票元: 異常判断 / 点検計画 / 点検実施 / 新規） ===== */
     function qparam(k){ return new URLSearchParams(location.search).get(k); }
+    function enc(v){ return encodeURIComponent(v); }
     function warnBox(m){ return `<div style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#1c2128;color:#f85149;">${m}</div>`; }
     function closeCreate(){ const b=document.getElementById('woCreate'); b.style.display='none'; b.innerHTML=''; history.replaceState({},'',location.pathname); }
-    async function checkDefectParam(){
-      const did = qparam('defect_finding_id');
-      if(!did) return;
-      const box = document.getElementById('woCreate');
-      box.style.display='block';
-      box.innerHTML = '<div style="padding:14px;color:#8b949e;">異常情報を読み込み中…</div>';
-      try{
-        const dups = await sb.get(`work_orders?defect_finding_id=eq.${encodeURIComponent(did)}&select=id,work_order_no,status`);
-        if(dups && dups.length){ box.innerHTML = dupPanel(dups[0]); return; }
-        const ds = await sb.get(`defect_findings?id=eq.${encodeURIComponent(did)}&select=*`);
-        if(!ds || !ds.length){ box.innerHTML = warnBox('対象の異常が見つかりませんでした'); return; }
-        const d = ds[0];
-        let tno = '';
-        if(d.turbine_id){ const t = await sb.get(`turbines?id=eq.${encodeURIComponent(d.turbine_id)}&select=turbine_no`); if(t && t.length) tno = t[0].turbine_no || ''; }
-        box.innerHTML = createForm(d, tno);
-        box.scrollIntoView({behavior:'smooth', block:'start'});
-      }catch(e){ box.innerHTML = warnBox('読み込みエラー: ' + sb.esc(e.message)); }
+    function openManualNew(){ history.replaceState({},'','?new=1'); openCreate('manual', null); }
+    async function turbineNo(tid){ if(!tid) return ''; try{ const t=await sb.get(`turbines?id=eq.${enc(tid)}&select=turbine_no`); return (t&&t.length)?(t[0].turbine_no||''):''; }catch(e){ return ''; } }
+
+    async function checkCreateParam(){
+      const did=qparam('defect_finding_id'), pid=qparam('inspection_plan_id'), rid=qparam('inspection_result_id'), nw=qparam('new');
+      if(did) return openCreate('defect', did);
+      if(pid) return openCreate('inspection_plan', pid);
+      if(rid) return openCreate('inspection_result', rid);
+      if(nw)  return openCreate('manual', null);
     }
+
+    const SRC = {
+      defect:            {badge:'異常起点',     rgb:'210,153,34', note:'defect_finding_id を引き継いで保存します'},
+      inspection_plan:   {badge:'点検計画起点', rgb:'63,185,80',  note:'計画ID(source_id)を引き継いで保存します'},
+      inspection_result: {badge:'点検実施起点', rgb:'63,185,80',  note:'点検結果ID(result_id)を引き継いで保存します'},
+      manual:            {badge:'新規（手動）', rgb:'88,166,255', note:'起票元と起票理由を記録します'}
+    };
+
     function dupPanel(w){
-      return `<div style="padding:14px 16px;border:1px solid rgba(63,185,80,.45);border-radius:10px;background:rgba(63,185,80,.10);display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-size:20px;">✔</span><div style="flex:1 1 auto;"><div style="color:#7ee787;font-weight:700;">この異常には既に作業票があります</div><div style="color:#c9d1d9;font-size:12.5px;margin-top:3px;">${sb.esc(w.work_order_no||w.id)}（状態: ${sb.esc(w.status||'—')}）— 重複起票を防止しました</div></div><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;">閉じる</button></div>`;
+      return `<div style="padding:14px 16px;border:1px solid rgba(63,185,80,.45);border-radius:10px;background:rgba(63,185,80,.10);display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-size:20px;">✔</span><div style="flex:1 1 auto;"><div style="color:#7ee787;font-weight:700;">この起票元には既に作業票があります</div><div style="color:#c9d1d9;font-size:12.5px;margin-top:3px;">${sb.esc(w.work_order_no||w.id)}（状態: ${sb.esc(w.status||'—')}）— 重複起票を防止しました</div></div><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;">閉じる</button></div>`;
     }
-    function createForm(d, tno){
-      const wono = 'WO-' + new Date().toISOString().replace(/[^0-9]/g,'').slice(2,14);
-      const title = d.finding_title || '';
-      const detail = d.finding_detail || '';
-      const desc = (title?title:'') + (detail?('\n'+detail):'');
-      const inp = 'width:100%;background:#0d1117;border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;';
-      const lab = 'display:block;color:#8b949e;font-size:11.5px;margin:0 0 4px;font-weight:600;';
-      return `<div style="padding:16px 18px;border:1px solid rgba(210,153,34,.5);border-radius:12px;background:linear-gradient(180deg,rgba(210,153,34,.08),#161b22);"><div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap;"><span style="background:#d29922;color:#11161d;font-weight:800;font-size:11px;padding:3px 9px;border-radius:999px;">異常起点</span><h2 style="font-size:15px;margin:0;color:#fff;">この異常から作業票を起票</h2><span style="margin-left:auto;color:#8b949e;font-size:11px;">defect_finding_id を引き継いで保存します</span></div><input type="hidden" id="f_did" value="${sb.esc(d.id)}"><input type="hidden" id="f_tid" value="${sb.esc(d.turbine_id||'')}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div><label style="${lab}">作業票番号</label><input id="f_no" style="${inp}" value="${sb.esc(wono)}"></div><div><label style="${lab}">対象WTG</label><input style="${inp}opacity:.8;" value="${sb.esc(tno||'(不明)')}" readonly></div><div><label style="${lab}">作業種別</label><select id="f_type" style="${inp}"><option value="corrective">是正</option><option value="preventive">予防</option><option value="inspection">点検</option><option value="other">その他</option></select></div><div><label style="${lab}">優先度</label><select id="f_prio" style="${inp}"><option>高</option><option selected>中</option><option>低</option></select></div><div style="grid-column:1/3;"><label style="${lab}">概要（異常内容を引継ぎ）</label><textarea id="f_desc" rows="3" style="${inp}resize:vertical;">${sb.esc(desc)}</textarea></div><div><label style="${lab}">深刻度（安全影響）</label><input id="f_sev" style="${inp}" value="${sb.esc(d.safety_impact||'')}"></div><div><label style="${lab}">対応予定日</label><input id="f_date" type="date" style="${inp}"></div><div><label style="${lab}">停止時間（分・任意）</label><input id="f_dt" type="number" min="0" style="${inp}" placeholder="例: 120"></div><div><label style="${lab}">逸失電力（kWh・任意）</label><input id="f_kwh" type="number" min="0" step="0.1" style="${inp}" placeholder="例: 350"></div><div style="grid-column:1/3;"><label style="${lab}">暫定処置（任意）</label><textarea id="f_temp" rows="2" style="${inp}resize:vertical;"></textarea></div></div><div style="display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap;"><button onclick="submitWO()" id="f_submit" style="background:#d29922;color:#11161d;font-weight:800;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:13px;">作業票を登録</button><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:10px 16px;cursor:pointer;">キャンセル</button><span id="f_msg" style="color:#8b949e;font-size:12px;"></span></div><div style="margin-top:10px;color:#6e7681;font-size:11px;">※ 詳細な停止報告（停止種別・開始/終了時刻・売電影響・アグリゲーター連絡要否 等）は Issue #7 要件2 で追加予定。</div></div>`;
+
+    async function openCreate(kind, sid){
+      const box=document.getElementById('woCreate');
+      box.style.display='block';
+      box.innerHTML='<div style="padding:14px;color:#8b949e;">読み込み中…</div>';
+      box.scrollIntoView({behavior:'smooth',block:'start'});
+      try{
+        const ctx={ kind, source_type:kind, work_type:'corrective' };
+        if(kind==='defect'){
+          const dups=await sb.get(`work_orders?defect_finding_id=eq.${enc(sid)}&select=id,work_order_no,status`);
+          if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
+          const ds=await sb.get(`defect_findings?id=eq.${enc(sid)}&select=*`);
+          if(!ds||!ds.length){ box.innerHTML=warnBox('対象の異常が見つかりませんでした'); return; }
+          const d=ds[0];
+          ctx.defect_finding_id=sid; ctx.turbine_id=d.turbine_id||'';
+          ctx.desc=[d.finding_title,d.finding_detail].filter(Boolean).join('\n');
+          ctx.severity=d.safety_impact||'';
+        }else if(kind==='inspection_plan'){
+          const dups=await sb.get(`work_orders?source_type=eq.inspection_plan&source_id=eq.${enc(sid)}&select=id,work_order_no,status`);
+          if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
+          const ps=await sb.get(`inspection_plans?id=eq.${enc(sid)}&select=*`);
+          if(!ps||!ps.length){ box.innerHTML=warnBox('対象の点検計画が見つかりませんでした'); return; }
+          const p=ps[0];
+          ctx.source_id=sid; ctx.turbine_id=p.turbine_id||'';
+          ctx.planned_date=p.planned_date||''; ctx.desc=p.notes||''; ctx.work_type='preventive';
+        }else if(kind==='inspection_result'){
+          const dups=await sb.get(`work_orders?result_id=eq.${enc(sid)}&select=id,work_order_no,status`);
+          if(dups&&dups.length){ box.innerHTML=dupPanel(dups[0]); return; }
+          const rs=await sb.get(`inspection_results?id=eq.${enc(sid)}&select=*`);
+          if(!rs||!rs.length){ box.innerHTML=warnBox('対象の点検結果が見つかりませんでした'); return; }
+          const r=rs[0];
+          ctx.result_id=sid; ctx.turbine_id=r.turbine_id||'';
+          ctx.desc=r.anomaly_description||''; ctx.severity=r.severity||'';
+        }
+        ctx.tno=await turbineNo(ctx.turbine_id);
+        box.innerHTML=createForm(ctx);
+      }catch(e){ box.innerHTML=warnBox('読み込みエラー: '+sb.esc(e.message)); }
     }
+
+    function createForm(ctx){
+      const meta=SRC[ctx.kind]||SRC.manual;
+      const wono='WO-'+new Date().toISOString().replace(/[^0-9]/g,'').slice(2,14);
+      const inp='width:100%;background:#0d1117;border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;';
+      const lab='display:block;color:#8b949e;font-size:11.5px;margin:0 0 4px;font-weight:600;';
+      const sel=(v,cur)=>v===cur?' selected':'';
+      const manualBlock = ctx.kind==='manual' ? `<div><label style="${lab}">起票元（必須）</label><select id="f_origin" style="${inp}"><option>その他故障是正</option><option>予防保全</option><option>緊急対応</option><option>管理部依頼</option></select></div><div style="grid-column:1/3;"><label style="${lab}">起票理由（必須）</label><textarea id="f_reason" rows="2" style="${inp}resize:vertical;" placeholder="なぜこの作業票を起票するか"></textarea></div>` : '';
+      const turbineField = ctx.kind==='manual'
+        ? `<div><label style="${lab}">対象WTG（号機・任意）</label><input id="f_tno" style="${inp}" value="${sb.esc(ctx.tno||'')}" placeholder="例: T01"></div>`
+        : `<div><label style="${lab}">対象WTG</label><input style="${inp}opacity:.8;" value="${sb.esc(ctx.tno||'(不明)')}" readonly></div>`;
+      return `<div style="padding:16px 18px;border:1px solid rgba(${meta.rgb},.5);border-radius:12px;background:linear-gradient(180deg,rgba(${meta.rgb},.08),#161b22);"><div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap;"><span style="background:rgb(${meta.rgb});color:#11161d;font-weight:800;font-size:11px;padding:3px 9px;border-radius:999px;">${meta.badge}</span><h2 style="font-size:15px;margin:0;color:#fff;">作業票を作成</h2><span style="margin-left:auto;color:#8b949e;font-size:11px;">${meta.note}</span></div><input type="hidden" id="f_kind" value="${sb.esc(ctx.kind)}"><input type="hidden" id="f_did" value="${sb.esc(ctx.defect_finding_id||'')}"><input type="hidden" id="f_tid" value="${sb.esc(ctx.turbine_id||'')}"><input type="hidden" id="f_sid" value="${sb.esc(ctx.source_id||'')}"><input type="hidden" id="f_rid" value="${sb.esc(ctx.result_id||'')}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div><label style="${lab}">作業票番号</label><input id="f_no" style="${inp}" value="${sb.esc(wono)}"></div>${turbineField}<div><label style="${lab}">作業種別</label><select id="f_type" style="${inp}"><option value="corrective"${sel('corrective',ctx.work_type)}>是正</option><option value="preventive"${sel('preventive',ctx.work_type)}>予防</option><option value="inspection"${sel('inspection',ctx.work_type)}>点検</option><option value="other"${sel('other',ctx.work_type)}>その他</option></select></div><div><label style="${lab}">優先度</label><select id="f_prio" style="${inp}"><option>高</option><option selected>中</option><option>低</option></select></div>${manualBlock}<div style="grid-column:1/3;"><label style="${lab}">概要</label><textarea id="f_desc" rows="3" style="${inp}resize:vertical;">${sb.esc(ctx.desc||'')}</textarea></div><div><label style="${lab}">深刻度（安全影響）</label><input id="f_sev" style="${inp}" value="${sb.esc(ctx.severity||'')}"></div><div><label style="${lab}">対応予定日</label><input id="f_date" type="date" style="${inp}" value="${sb.esc(ctx.planned_date||'')}"></div><div><label style="${lab}">停止時間（分・任意）</label><input id="f_dt" type="number" min="0" style="${inp}" placeholder="例: 120"></div><div><label style="${lab}">逸失電力（kWh・任意）</label><input id="f_kwh" type="number" min="0" step="0.1" style="${inp}" placeholder="例: 350"></div><div style="grid-column:1/3;"><label style="${lab}">暫定処置（任意）</label><textarea id="f_temp" rows="2" style="${inp}resize:vertical;"></textarea></div></div><div style="display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap;"><button onclick="submitWO()" id="f_submit" style="background:rgb(${meta.rgb});color:#11161d;font-weight:800;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:13px;">作業票を登録</button><button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:8px;padding:10px 16px;cursor:pointer;">キャンセル</button><span id="f_msg" style="color:#8b949e;font-size:12px;"></span></div><div style="margin-top:10px;color:#6e7681;font-size:11px;">※ 停止種別・開始/終了時刻・売電影響・保安規定報告候補・主任確認・証跡 等の詳細停止報告は Issue #7 要件2（スキーマ移行）で追加予定。</div></div>`;
+    }
+
     async function submitWO(){
-      const g = id => document.getElementById(id);
-      const msg = g('f_msg'), btn = g('f_submit');
-      const no = g('f_no').value.trim();
+      const g=id=>document.getElementById(id);
+      const msg=g('f_msg'), btn=g('f_submit');
+      const no=g('f_no').value.trim();
       if(!no){ msg.style.color='#f85149'; msg.textContent='作業票番号を入力してください'; return; }
-      const did = g('f_did').value, tid = g('f_tid').value;
-      if(!did){ msg.style.color='#f85149'; msg.textContent='defect_finding_id がありません（異常起点必須）'; return; }
-      const body = {
-        work_order_no: no,
-        turbine_id: tid || null,
-        source_type: 'defect',
-        defect_finding_id: did,
-        work_type: g('f_type').value,
-        priority: g('f_prio').value,
-        severity: g('f_sev').value || null,
-        anomaly_description: g('f_desc').value || null,
-        planned_date: g('f_date').value || null,
-        temporary_action: g('f_temp').value || null,
-        downtime_minutes: g('f_dt').value ? parseInt(g('f_dt').value,10) : null,
-        estimated_loss_kwh: g('f_kwh').value ? parseFloat(g('f_kwh').value) : null,
-        status: 'open',
-        created_at: new Date().toISOString()
+      const kind=g('f_kind').value;
+      let desc=g('f_desc').value||'';
+      let turbine_id=g('f_tid').value||null;
+      const body={
+        work_order_no:no, source_type:kind,
+        work_type:g('f_type').value, priority:g('f_prio').value,
+        severity:g('f_sev').value||null,
+        planned_date:g('f_date').value||null,
+        temporary_action:g('f_temp').value||null,
+        downtime_minutes:g('f_dt').value?parseInt(g('f_dt').value,10):null,
+        estimated_loss_kwh:g('f_kwh').value?parseFloat(g('f_kwh').value):null,
+        status:'open', created_at:new Date().toISOString()
       };
-      btn.disabled = true; msg.style.color='#8b949e'; msg.textContent='登録中…';
+      if(kind==='defect'){
+        body.defect_finding_id=g('f_did').value||null;
+        if(!body.defect_finding_id){ msg.style.color='#f85149'; msg.textContent='defect_finding_id がありません（異常起点必須）'; return; }
+      }else if(kind==='inspection_plan'){
+        body.source_id=g('f_sid').value||null;
+      }else if(kind==='inspection_result'){
+        body.result_id=g('f_rid').value||null;
+      }else if(kind==='manual'){
+        const origin=g('f_origin').value, reason=(g('f_reason').value||'').trim();
+        if(!reason){ msg.style.color='#f85149'; msg.textContent='起票理由は必須です'; return; }
+        desc=`【起票元: ${origin}】\n【起票理由】${reason}`+(desc?`\n\n${desc}`:'');
+        const tno=(g('f_tno')&&g('f_tno').value||'').trim();
+        if(!turbine_id && tno){ try{ const t=await sb.get(`turbines?turbine_no=eq.${enc(tno)}&select=id`); if(t&&t.length) turbine_id=t[0].id; }catch(e){} }
+      }
+      body.turbine_id=turbine_id;
+      body.anomaly_description=desc||null;
+      btn.disabled=true; msg.style.color='#8b949e'; msg.textContent='登録中…';
       try{
         await sb.write('POST','work_orders', body);
         msg.style.color='#7ee787'; msg.textContent='✔ 登録しました（v_case_pipeline の現在地が「作業票起票済」へ進みます）';
         history.replaceState({},'',location.pathname);
         await load();
         setTimeout(closeCreate, 1200);
-      }catch(e){ btn.disabled=false; msg.style.color='#f85149'; msg.textContent='登録失敗: ' + e.message; }
+      }catch(e){ btn.disabled=false; msg.style.color='#f85149'; msg.textContent='登録失敗: '+e.message; }
     }
 
-    sb.requireLogin({ onReady: async ()=>{ await load(); checkDefectParam(); } });
+    sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); } });
 
 
 
