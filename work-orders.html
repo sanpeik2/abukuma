@@ -211,7 +211,7 @@ function render(d){
   if(!d.length){ rows.innerHTML = '<tr><td colspan="13" class="empty">該当する作業票はありません</td></tr>'; return; }
   rows.innerHTML = d.map(r=>{
     const s = SUMMARY_MAP[r['id']] || null;
-    return `<tr onclick="openDetail('${sb.esc(r['id'])}')">
+    return `<tr data-woid="${sb.esc(r['id'])}" onclick="openDetail('${sb.esc(r['id'])}')">
       <td class="no">${sb.esc(r['作業票番号'])}</td>
       <td>${sb.esc(r['風車'])||'–'}</td>
       <td>${sb.esc(r['作業種別'])||'–'}</td>
@@ -276,7 +276,7 @@ function buildDetailHtml(r, s){
     <!-- 停止・発電影響セクション -->
     <div class="dsec" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
       <span>停止・発電影響</span>
-      <button class="btn-sm" onclick="openOutageAdd('${sb.esc(id)}','${sb.esc(tid)}',null,{})">＋ 停止時間帯を追加</button>
+      <button class="btn-sm" onclick="openOutageAdd('${sb.esc(id)}','${sb.esc(tid)}',null,'${encodeURIComponent(JSON.stringify({}))}')">＋ 停止時間帯を追加</button>
     </div>
     ${outageSummaryHtml(s)}
     <div id="outageList" style="margin-top:8px"><div style="color:var(--muted);font-size:12px;">読み込み中…</div></div>
@@ -290,9 +290,9 @@ function buildDetailHtml(r, s){
 
 function outageSummaryHtml(s){
   if(!s || !s.outage_occurred){
-    return `<div style="color:var(--muted);font-size:12px;padding:6px 0;">停止記録なし</div>`;
+    return `<div id="outageSummaryCard" style="color:var(--muted);font-size:12px;padding:6px 0;">停止記録なし</div>`;
   }
-  return `<div style="background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);border-radius:8px;padding:10px 14px;margin-top:6px;">
+  return `<div id="outageSummaryCard" style="background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);border-radius:8px;padding:10px 14px;margin-top:6px;">
     <div style="display:flex;flex-wrap:wrap;gap:16px;">
       <div><div style="font-size:10.5px;color:var(--muted);">停止件数</div><div style="font-size:16px;font-weight:700;color:#f85149;">${s.outage_count}件</div></div>
       <div><div style="font-size:10.5px;color:var(--muted);">合計停止時間</div><div style="font-size:16px;font-weight:700;color:#fff;">${s.total_downtime_minutes.toLocaleString('ja-JP')}<small style="font-size:11px;font-weight:normal;color:var(--muted);"> 分</small></div></div>
@@ -311,16 +311,51 @@ async function refreshOutageSection(woId, turbineId){
   const listEl = document.getElementById('outageList');
   if(!listEl) return;
   try{
-    const rows = await sb.get(`work_order_outages?work_order_id=eq.${encodeURIComponent(woId)}&order=started_at.asc`);
-    listEl.innerHTML = outageTableHtml(rows||[], woId, turbineId||'');
-    // サマリも更新
-    const sums = await sb.get(`v_work_order_outages_summary?work_order_id=eq.${encodeURIComponent(woId)}`);
-    if(sums && sums.length){
-      SUMMARY_MAP[woId] = sums[0];
-    } else {
-      delete SUMMARY_MAP[woId];
+    // 停止詳細行 + サマリを並行取得
+    const [outageRows, sums] = await Promise.all([
+      sb.get(`work_order_outages?work_order_id=eq.${encodeURIComponent(woId)}&order=started_at.asc`),
+      sb.get(`v_work_order_outages_summary?work_order_id=eq.${encodeURIComponent(woId)}`)
+    ]);
+    listEl.innerHTML = outageTableHtml(outageRows||[], woId, turbineId||'');
+
+    // SUMMARY_MAP 更新
+    const newSum = (sums && sums.length) ? sums[0] : null;
+    if(newSum) SUMMARY_MAP[woId] = newSum; else delete SUMMARY_MAP[woId];
+
+    // ドロワー内サマリカードを差し替え
+    const cardEl = document.getElementById('outageSummaryCard');
+    if(cardEl){
+      const tmp = document.createElement('div');
+      tmp.innerHTML = outageSummaryHtml(newSum);
+      cardEl.replaceWith(tmp.firstElementChild);
     }
-    // 一覧の停止カラムをその場で更新（完全再レンダリングは重いので KPI のみ）
+
+    // 一覧行の停止カラム5列をその場で更新
+    const tr = document.querySelector(`tr[data-woid="${CSS.escape(woId)}"]`);
+    if(tr){
+      const cells = tr.querySelectorAll('td');
+      if(cells.length >= 11){
+        cells[6].innerHTML  = stopBadge(newSum);
+        cells[7].textContent  = newSum && newSum.total_downtime_minutes > 0 ? newSum.total_downtime_minutes : '–';
+        cells[8].textContent  = newSum && newSum.total_lost_energy_kwh  > 0 ? newSum.total_lost_energy_kwh.toLocaleString('ja-JP') : '–';
+        cells[9].textContent  = newSum ? fmtYen(newSum.total_lost_revenue_jpy) : '–';
+        cells[10].innerHTML   = chiefBadge(newSum?.chief_engineer_review_status);
+      }
+    }
+
+    // work_orders キャッシュ列を同期（逸失kWh / 停止時間の合計を書き戻し）
+    try{
+      await sbPatch(`work_orders?id=eq.${encodeURIComponent(woId)}`, {
+        downtime_minutes:    newSum?.total_downtime_minutes || null,
+        estimated_loss_kwh:  newSum?.total_lost_energy_kwh  || null
+      });
+      const r = ALL.find(x => String(x['id'])===String(woId));
+      if(r){
+        r['停止時間min']   = newSum?.total_downtime_minutes || null;
+        r['逸失電力kwh']   = newSum?.total_lost_energy_kwh  || null;
+      }
+    }catch(ce){ console.warn('work_orders cache sync failed:', ce.message); }
+
     renderKpi(ALL);
   }catch(e){
     if(listEl) listEl.innerHTML = `<div style="color:#f85149;font-size:12px;">取得エラー: ${sb.esc(e.message)}</div>`;
@@ -335,6 +370,24 @@ function outageTableHtml(rows, woId, turbineId){
     const eid = sb.esc(o.id);
     const eWo = sb.esc(woId);
     const eTid = sb.esc(turbineId);
+    const origChief = o.chief_engineer_review_status||'not_required';
+    const prefill = encodeURIComponent(JSON.stringify({
+      outage_type:               o.outage_type||'',
+      outage_reason:             o.outage_reason||'',
+      started_at:                o.started_at ? o.started_at.slice(0,16) : '',
+      ended_at:                  o.ended_at   ? o.ended_at.slice(0,16)   : '',
+      downtime_minutes:          o.downtime_minutes||'',
+      lost_energy_kwh:           o.lost_energy_kwh||'',
+      unit_price_jpy:            o.unit_price_jpy||'',
+      decided_by:                o.decided_by||'',
+      decided_role:              o.decided_role||'',
+      decided_at:                o.decided_at ? o.decided_at.slice(0,16) : '',
+      regulatory_report_candidate: !!o.regulatory_report_candidate,
+      aggregator_contact_required: !!o.aggregator_contact_required,
+      chief_engineer_review_status: origChief,
+      _originalChiefStatus:      origChief,
+      note:                      o.note||''
+    }));
     return `<tr>
       <td>${sb.esc(OUTAGE_TYPE_JA[o.outage_type]||o.outage_type||'–')}</td>
       <td>${fmtDt(o.started_at)}</td>
@@ -346,22 +399,7 @@ function outageTableHtml(rows, woId, turbineId){
       <td>${o.regulatory_report_candidate?'🔴':'–'}</td>
       <td>${o.aggregator_contact_required?'🟡':'–'}</td>
       <td class="act">
-        <button class="btn-sm" onclick="openOutageAdd('${eWo}','${eTid}','${eid}',${JSON.stringify({
-          outage_type:o.outage_type||'',
-          outage_reason:o.outage_reason||'',
-          started_at:o.started_at?o.started_at.slice(0,16):'',
-          ended_at:o.ended_at?o.ended_at.slice(0,16):'',
-          downtime_minutes:o.downtime_minutes||'',
-          lost_energy_kwh:o.lost_energy_kwh||'',
-          unit_price_jpy:o.unit_price_jpy||'',
-          decided_by:o.decided_by||'',
-          decided_role:o.decided_role||'',
-          decided_at:o.decided_at?o.decided_at.slice(0,16):'',
-          regulatory_report_candidate:!!o.regulatory_report_candidate,
-          aggregator_contact_required:!!o.aggregator_contact_required,
-          chief_engineer_review_status:o.chief_engineer_review_status||'not_required',
-          note:o.note||''
-        }).replace(/"/g,"'")})">編集</button>
+        <button class="btn-sm" onclick="openOutageAdd('${eWo}','${eTid}','${eid}','${prefill}')">編集</button>
         <button class="btn-sm btn-del" onclick="deleteOutage('${eid}','${eWo}','${eTid}')">削除</button>
       </td>
     </tr>`;
@@ -377,9 +415,9 @@ function outageTableHtml(rows, woId, turbineId){
 
 /* ===== 停止時間帯 追加/編集フォーム ===== */
 function openOutageAdd(woId, turbineId, editId, prefill){
-  // prefillはJSON文字列（テーブル内でattribute経由）またはオブジェクト
-  if(typeof prefill === 'string') try{ prefill=JSON.parse(prefill.replace(/'/g,'"')); }catch(e){ prefill={}; }
+  if(typeof prefill === 'string') try{ prefill=JSON.parse(decodeURIComponent(prefill)); }catch(e){ prefill={}; }
   const p = prefill||{};
+  const origChief = p._originalChiefStatus || p.chief_engineer_review_status || 'not_required';
   const inp = 'class="of-inp"';
   const lab = v => `<label>${v}</label>`;
   const sel = (id, opts, cur) => `<select id="${id}" ${inp}>${opts.map(([v,t])=>`<option value="${v}"${v===cur?' selected':''}>${t}</option>`).join('')}</select>`;
@@ -391,6 +429,7 @@ function openOutageAdd(woId, turbineId, editId, prefill){
       <b style="font-size:13px;color:#fff;">${isEdit?'停止時間帯を編集':'停止時間帯を追加'}</b>
       <button class="btn-sm" onclick="document.getElementById('outageForm').style.display='none'">✕ 閉じる</button>
     </div>
+    <input type="hidden" id="of_orig_chief" value="${sb.esc(origChief)}">
     <div class="of-grid">
       <div>${lab('停止種別')}${sel('of_type',[['forced','故障停止'],['planned','計画停止'],['grid_request','系統要請'],['safety_measure','保安措置'],['curtailment','出力抑制'],['test','試験'],['other','その他']],p.outage_type||'forced')}</div>
       <div>${lab('停止理由')}<input id="of_reason" ${inp} value="${sb.esc(p.outage_reason||'')}" placeholder="例: ピッチ系異常"></div>
@@ -453,9 +492,23 @@ async function submitOutageAdd(woId, turbineId, editId){
     aggregator_contact_required: g('of_agg').checked,
     chief_engineer_review_status: g('of_chief').value,
     chief_engineer_confirmed: g('of_chief').value==='confirmed',
-    chief_engineer_confirmed_at: g('of_chief').value==='confirmed' ? new Date().toISOString() : null,
     note: g('of_note').value||null
   };
+  // chief_engineer_confirmed_at: confirmed に「なった」時のみ現在時刻を記録
+  // 既に confirmed の行を再保存しても確認時刻を上書きしない
+  const newChief  = g('of_chief').value;
+  const origChief = (g('of_orig_chief') && g('of_orig_chief').value) || '';
+  if(!editId){
+    // 新規: confirmed なら今の時刻、そうでなければ null
+    body.chief_engineer_confirmed_at = newChief === 'confirmed' ? new Date().toISOString() : null;
+  } else if(origChief !== 'confirmed' && newChief === 'confirmed'){
+    // 編集: not_required/pending/rejected → confirmed に変わった場合のみ記録
+    body.chief_engineer_confirmed_at = new Date().toISOString();
+  } else if(newChief !== 'confirmed'){
+    // 編集: confirmed → 他ステータスに戻した場合はクリア
+    body.chief_engineer_confirmed_at = null;
+  }
+  // 編集: confirmed → confirmed のままの場合は body に含めない（DB値を維持）
   msg.style.color='#8b949e'; msg.textContent='保存中…';
   try{
     if(editId){
