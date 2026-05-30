@@ -58,6 +58,164 @@
     SCADA（朝会側 <code>alarm_events</code>）→ O&M側 <code>work_orders</code> へ自動起票で連携する。
   </div>
 
+  <!-- ===== 業務別ビュー（Phase 2 / 現場・管理者向けの入口） ===== -->
+  <h2 style="font-size:16px;margin:6px 0 4px;color:#fff">▶ O&M業務から見たデータ構造（業務別ビュー）</h2>
+  <div style="color:#8b949e;font-size:12.5px;margin-bottom:14px">「この業務のとき、どのテーブルを見て、どのライブ画面で操作するか」。技術ER図の前に、業務の順番で読む地図。</div>
+
+  <div style="display:flex;flex-direction:column;gap:0;margin-bottom:30px">
+    <!-- 各ステップ -->
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #56a3d9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">1</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">監視</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">SCADA・KPI・健全度を眺め、異常の予兆を拾う</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #56a3d9;background:#0d1117;color:#9cd2ff">alarm_events</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #56a3d9;background:#0d1117;color:#9cd2ff">daily_kpi</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #56a3d9;background:#0d1117;color:#9cd2ff">component_risk_dashboard</span>
+          <a href="./index.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">🌅 朝会コックピット</a>
+          <a href="./live-board.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">🌀 風車カルテ</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #3fb950;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">2</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">異常検知</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">点検・巡視で異常を見つけ、記録して起票する</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #3fb950;background:#0d1117;color:#7ee787">inspection_results</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #3fb950;background:#0d1117;color:#7ee787">result_checklist</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">defect_findings</span>
+          <a href="./inspection-input.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">🛠 点検実績入力</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #f85149;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">3</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">一次判断 (A〜F)</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">5軸で評価し、記録だけ／補修／交換／RCA／MOC／即停止を分岐</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">defect_findings.initial_judgement</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">risk_assessments</span>
+          <a href="./defect-rca.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">🔧 故障/RCA</a>
+          <a href="./decision-flow.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">🧭 考え方フロー</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #d29922;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">4</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">作業票</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">直す作業を指示書（WO）にする</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #d29922;background:#0d1117;color:#e3c98b">work_orders ★</span>
+          <a href="./work-orders.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">📝 作業票一覧</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #d29922;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">5</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">安全・法令確認</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">作業許可(PTW)・LOTO・KYで安全に止めてから着手</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #d29922;background:#0d1117;color:#e3c98b">work_permits</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #d29922;background:#0d1117;color:#e3c98b">ky_records</span>
+          <a href="./permits.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">🔒 作業許可(PTW)</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #d29922;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">6</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">作業実施</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">作業を行い、結果・部品交換・所見を記録する</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #d29922;background:#0d1117;color:#e3c98b">work_orders.status</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #39c5cf;background:#0d1117;color:#7fdde3">parts_usage</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #3fb950;background:#0d1117;color:#7ee787">maintenance_results</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #f85149;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">7</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">復旧確認</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">直ったか・再発しないかを確認する</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">closeout_reviews</span>
+          <a href="./defect-rca.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">🔧 故障/RCA</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #db61a2;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">8</div>
+        <div style="flex:1;width:2px;background:#30363d;margin:3px 0;min-height:18px"></div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">クローズ・承認</div>
+      <div style="padding-bottom:18px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">主任技術者が証跡を確認して承認・クローズ</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #db61a2;background:#0d1117;color:#f0a6cd">approvals</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #db61a2;background:#0d1117;color:#f0a6cd">attachments(BOX)</span>
+          <a href="./approvals.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">✅ 承認待ち一覧</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:34px 150px 1fr;gap:0 12px;align-items:start">
+      <div style="grid-column:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1c2128;border:2px solid #bc8cff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">9</div>
+      </div>
+      <div style="color:#fff;font-weight:600;font-size:13.5px;padding-top:4px">再発防止・横展開</div>
+      <div style="padding-bottom:4px">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:6px">真因を断ち、他号機へ展開。設定変更はMOCで管理</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">rca_investigations</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">corrective_actions</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #bc8cff;background:#0d1117;color:#d2b8ff">moc_changes</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #bc8cff;background:#0d1117;color:#d2b8ff">near_miss_reports</span>
+          <a href="./guide-rca.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">⑦ RCAの基本</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid #30363d;margin-bottom:24px"></div>
+  <h2 style="font-size:15px;margin-bottom:4px;color:#fff">▼ ここから下は技術ER図（開発・設計者向け）</h2>
+  <div style="color:#8b949e;font-size:12px;margin-bottom:18px">テーブルの主キー・外部キー・参照関係の詳細。上の業務別ビューで「どのテーブルか」を掴んでから読むと分かりやすい。</div>
+
   <div class="legend">
     <span><i class="dot" style="background:var(--master)"></i>マスター</span>
     <span><i class="dot" style="background:var(--insp)"></i>点検</span>
