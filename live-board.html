@@ -1,482 +1,2410 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿武隈OS — タービン / アラーム / 点検カレンダー（ライブ）</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
-    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
-  a{color:var(--master);text-decoration:none}
-
-  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
-  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
-  .topbar h1{font-size:16px;color:#fff;font-weight:700}
-  .topbar .sub{font-size:11.5px;color:var(--muted)}
-  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
-
-  .tabs{display:flex;gap:8px;padding:12px 22px 0;border-bottom:1px solid var(--line)}
-  .tabs button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:14px;font-weight:600;padding:9px 14px 12px;cursor:pointer}
-  .tabs button.active{color:#fff;border-bottom-color:var(--master)}
-  .tabs .count{font-size:11px;color:var(--muted);margin-left:6px}
-
-  .view{display:none;padding:18px 22px 40px}
-  .view.active{display:block}
-
-  /* ---- turbine master-detail（カルテ）---- */
-  .turb-wrap{display:grid;grid-template-columns:minmax(180px,220px) 1fr;gap:18px;align-items:start}
-  .turb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-height:80vh;overflow:auto;padding-right:4px}
-  .tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer;transition:border-color .12s,transform .12s}
-  .tcard:hover{transform:translateY(-2px)}
-  .tcard.sel{border-color:var(--master);box-shadow:0 0 0 1px var(--master)}
-  .tcard .id{font-size:12.5px;color:#fff;font-weight:700;display:flex;align-items:center;gap:6px}
-  .tcard .kw{font-size:10.5px;color:var(--muted);margin-top:3px}
-  .sdot{width:9px;height:9px;border-radius:50%;flex:none}
-  .s-normal{background:var(--insp)} .s-warn{background:var(--work)} .s-stop{background:var(--defect)} .s-inspect{background:var(--master)}
-
-  .detail{background:transparent;border:none;padding:0}
-  .detail .dhead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-  .detail .dhead h2{font-size:22px;color:#fff}
-  .pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;border:1px solid}
-  .p-normal{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
-  .p-warn{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
-  .p-stop{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
-  .p-inspect{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
-  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0}
-  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
-  .metric .l{font-size:11px;color:var(--muted)}
-  .metric .v{font-size:19px;color:#fff;font-weight:700;margin-top:2px}
-  .metric .v small{font-size:12px;color:var(--muted);font-weight:400}
-
-  /* karte grid of section cards */
-  .karte{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-top:8px}
-  .kcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-  .kcard.span2{grid-column:1/-1}
-  .dsec{font-size:12px;color:#fff;font-weight:700;margin:0 0 9px;display:flex;align-items:center;gap:7px}
-  .dsec .badge{font-size:10.5px;color:var(--muted);font-weight:600;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
-  .drow{font-size:12.5px;padding:7px 0;border-top:1px solid var(--line);display:flex;gap:8px;align-items:flex-start}
-  .drow:first-of-type{border-top:none}
-  .dempty{font-size:12px;color:var(--muted);padding:6px 0}
-  .kscroll{max-height:280px;overflow:auto}
-
-  /* AI診断カード */
-  .diag{border:1px solid var(--ai);background:linear-gradient(180deg,rgba(255,123,114,.07),rgba(255,123,114,.02))}
-  .diag .dsec{color:#ffb0a8}
-  .verdict{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
-  .vscore{font-size:34px;font-weight:900;line-height:1}
-  .vlabel{font-size:14px;font-weight:800;padding:3px 12px;border-radius:999px;border:1px solid}
-  .v-good{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
-  .v-watch{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
-  .v-caution{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
-  .v-act{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.14)}
-  .hbar{height:8px;border-radius:6px;background:#0d1117;border:1px solid var(--line);overflow:hidden;flex:1;min-width:120px}
-  .hbar > i{display:block;height:100%}
-  .acts{list-style:none;margin:6px 0 0}
-  .acts li{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;padding:7px 0;border-top:1px solid var(--line)}
-  .acts li:first-child{border-top:none}
-  .prio{font-size:10px;font-weight:800;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap;flex:none;margin-top:1px}
-  .prio.p1{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
-  .prio.p2{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
-  .prio.p3{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
-  .predict{font-size:12px;color:#ffb0a8;background:rgba(255,123,114,.06);border:1px dashed rgba(255,123,114,.4);border-radius:8px;padding:9px 11px;margin-top:10px}
-  .diag .foot{font-size:10.5px;color:var(--muted);margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
-  /* health pill for components */
-  .hp{font-size:11px;font-weight:800;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
-  .hp-ok{color:#7ee787;border-color:var(--insp)} .hp-warn{color:#f0c674;border-color:var(--work)} .hp-bad{color:#ff9a92;border-color:var(--defect)}
-
-  /* ---- alarms table ---- */
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;background:var(--bg)}
-  tr.ongoing{background:rgba(248,81,73,.05)}
-  .sev{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
-  .sev-critical{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
-  .sev-warning{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
-  .sev-info{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
-  .tag-open{color:#ff9a92;font-weight:700} .tag-done{color:#7ee787}
-  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
-  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
-
-  /* ---- inspection calendar ---- */
-  .cal-month{margin-bottom:26px}
-  .cal-month h3{font-size:15px;color:#fff;margin-bottom:10px}
-  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .cal .dow{font-size:11px;color:var(--muted);text-align:center;padding:4px 0;font-weight:600}
-  .cal .day{min-height:86px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 7px;overflow:hidden}
-  .cal .day.empty{background:transparent;border:none}
-  .cal .day.today{border-color:var(--master);box-shadow:0 0 0 1px var(--master)}
-  .cal .dnum{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px}
-  .cal .day.today .dnum{color:var(--master)}
-  .chip{font-size:10.5px;padding:2px 5px;border-radius:5px;margin-bottom:3px;border-left:3px solid;background:var(--panel2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .c-planned{border-color:var(--master)} .c-in_progress{border-color:var(--work)} .c-done{border-color:var(--insp);opacity:.6} .c-cancelled{border-color:var(--muted);opacity:.45;text-decoration:line-through}
-  .cal-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-bottom:14px}
-  .cal-legend span{display:inline-flex;align-items:center;gap:5px}
-  .lg{width:10px;height:10px;border-radius:2px;display:inline-block}
-
-  .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
-  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
-  @media(max-width:780px){.turb-wrap{grid-template-columns:1fr}.turb-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));max-height:40vh}}
-</style>
-</head>
-<body>
-<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:10px 16px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(88,166,255);background:rgba(88,166,255,.13);border:1px solid rgba(88,166,255,.45);">🔵 監視・管制フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">2 / 11</span><span style="flex:0 0 auto;display:inline-block;width:130px;max-width:34vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:18%;border-radius:999px;background:rgb(88,166,255);"></span></span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;"><a href="./index.html" title="今日の管制塔へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;font-size:11.5px;padding:5px 10px;border-radius:8px;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;font-weight:600;"><span style="font-size:9px;color:rgba(88,166,255,.95);">1</span>今日の管制塔</a><span style="flex:0 0 auto;color:#484f58;font-size:13px;">→</span><span title="現在この画面です" style="display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:12px;font-weight:700;padding:6px 13px;border-radius:8px;color:#fff;background:rgb(88,166,255);border:1px solid rgb(88,166,255);box-shadow:0 0 0 3px rgba(88,166,255,.22);"><span style="width:7px;height:7px;border-radius:50%;background:#fff;"></span>監視</span><span style="flex:0 0 auto;color:#484f58;font-size:13px;">→</span><a href="./inspection-plan.html" title="点検計画へ移動" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;font-size:11.5px;padding:5px 10px;border-radius:8px;color:#c9d1d9;background:#1c2128;border:1px solid #30363d;font-weight:600;"><span style="font-size:9px;color:rgba(63,185,80,.95);">3</span>点検計画</a><span style="flex:1 1 auto;"></span><button type="button" aria-expanded="false" onclick="var p=document.getElementById('omFlowAll');var o=(p.style.display=='none'||!p.style.display);p.style.display=o?'block':'none';this.setAttribute('aria-expanded',o);this.querySelector('.t').textContent=o?'閉じる':'全工程を見る';this.querySelector('.a').textContent=o?'▲':'▾';" style="flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:600;color:#58a6ff;background:transparent;border:1px solid #30363d;border-radius:8px;padding:5px 10px;font-family:inherit;"><span class="t">全工程を見る</span><span class="a">▾</span></button></div><div style="margin-top:5px;color:#8b949e;font-size:11px;"><span style="color:rgba(88,166,255,.9);font-weight:700;">▶ 監視</span><span style="margin:0 6px;color:#484f58;">|</span>号機カルテ・アラーム・健全度を確認</div><div id="omFlowAll" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid #30363d;"><div style="margin:8px 0 3px;color:rgb(88,166,255);font-size:10.5px;font-weight:800;letter-spacing:.03em;">🔵 監視・管制</div><a href="./index.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(88,166,255,.9);font-weight:700;">1</span><span style="flex:1 1 auto;">今日の管制塔</span><span style="color:#6e7681;font-size:10px;">→ index.html</span></a><div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;background:rgba(88,166,255,.14);border:1px solid rgba(88,166,255,.45);font-size:11.5px;color:#fff;font-weight:700;"><span style="color:rgb(88,166,255);">▶</span><span style="width:18px;text-align:right;color:rgb(88,166,255);">2</span><span style="flex:1 1 auto;">監視</span><span style="color:#8b949e;font-size:10px;">live-board.html（現在地）</span></div><div style="margin:8px 0 3px;color:rgb(63,185,80);font-size:10.5px;font-weight:800;letter-spacing:.03em;">🟢 点検</div><a href="./inspection-plan.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(63,185,80,.9);font-weight:700;">3</span><span style="flex:1 1 auto;">点検計画</span><span style="color:#6e7681;font-size:10px;">→ inspection-plan.html</span></a><a href="./inspection-input.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(63,185,80,.9);font-weight:700;">4</span><span style="flex:1 1 auto;">点検実施</span><span style="color:#6e7681;font-size:10px;">→ inspection-input.html</span></a><div style="margin:8px 0 3px;color:rgb(210,153,34);font-size:10.5px;font-weight:800;letter-spacing:.03em;">🟠 異常〜作業</div><a href="./defect-rca.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(210,153,34,.9);font-weight:700;">5</span><span style="flex:1 1 auto;">異常判断</span><span style="color:#6e7681;font-size:10px;">→ defect-rca.html</span></a><a href="./work-orders.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(210,153,34,.9);font-weight:700;">6</span><span style="flex:1 1 auto;">作業票</span><span style="color:#6e7681;font-size:10px;">→ work-orders.html</span></a><a href="./permits.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(210,153,34,.9);font-weight:700;">7</span><span style="flex:1 1 auto;">PTW/KY</span><span style="color:#6e7681;font-size:10px;">→ permits.html</span></a><a href="./approvals.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(210,153,34,.9);font-weight:700;">8</span><span style="flex:1 1 auto;">承認</span><span style="color:#6e7681;font-size:10px;">→ approvals.html</span></a><a href="./work-orders.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(210,153,34,.9);font-weight:700;">9</span><span style="flex:1 1 auto;">作業実施</span><span style="color:#6e7681;font-size:10px;">→ work-orders.html</span></a><a href="./defect-rca.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(210,153,34,.9);font-weight:700;">10</span><span style="flex:1 1 auto;">復旧確認</span><span style="color:#6e7681;font-size:10px;">→ defect-rca.html</span></a><div style="margin:8px 0 3px;color:rgb(219,97,162);font-size:10.5px;font-weight:800;letter-spacing:.03em;">🩷 報告</div><a href="./report-candidates.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:11.5px;color:#c9d1d9;"><span style="width:8px;"></span><span style="width:18px;text-align:right;color:rgba(219,97,162,.9);font-weight:700;">11</span><span style="flex:1 1 auto;">クローズ・報告確認</span><span style="color:#6e7681;font-size:10px;">→ report-candidates.html</span></a></div></nav>
-  <div class="topbar">
-    <div class="mark">AW</div>
-    <div>
-      <h1>タービン / アラーム / 点検カレンダー</h1>
-      <div class="sub">阿武隈OS ライブ盤 — Supabase連携</div>
-    </div>
-    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
-  </div>
-
-  <div class="tabs">
-    <button data-tab="turb" class="active">🌀 タービン一覧<span class="count" id="cTurb"></span></button>
-    <button data-tab="alarm">🚨 アラーム一覧<span class="count" id="cAlarm"></span></button>
-    <button data-tab="cal">📅 点検カレンダー<span class="count" id="cCal"></span></button>
-  </div>
-
-  <section id="view-turb" class="view active">
-    <div id="turbBody" class="loading">読み込み中…</div>
-  </section>
-  <section id="view-alarm" class="view">
-    <div class="filters" id="alarmFilters">
-      <button data-f="all" class="active">すべて</button>
-      <button data-f="open">未解決のみ</button>
-      <button data-f="critical">重大</button>
-      <button data-f="warning">警告</button>
-    </div>
-    <div id="alarmBody" class="loading">読み込み中…</div>
-  </section>
-  <section id="view-cal" class="view">
-    <div class="cal-legend">
-      <span><i class="lg" style="background:var(--master)"></i>予定</span>
-      <span><i class="lg" style="background:var(--work)"></i>実施中</span>
-      <span><i class="lg" style="background:var(--insp)"></i>完了</span>
-      <span><i class="lg" style="background:var(--muted)"></i>中止</span>
-    </div>
-    <div id="calBody" class="loading">読み込み中…</div>
-  </section>
-
-  <script src="./lib/supabase.js"></script>
-  <script>
-    const esc = sb.esc;
-    const TODAY = "2026-05-29";
-    const state = { wtg: [], alarms: [], insp: [], detail: {}, sel: null, alarmFilter: "all" };
-
-    const statusLabel = { normal:"正常", warn:"警告", stop:"停止", inspect:"点検中" };
-    const inspStatusLabel = { planned:"予定", in_progress:"実施中", done:"完了", cancelled:"中止" };
-    const sevLabel = { critical:"重大", warning:"警告", info:"情報" };
-
-    function fmtTime(t){ return t ? t.slice(0,5) : ""; }
-    function fmtDT(s){ return sb.fmtDateTime(s); }
-
-    /* ---------- TURBINES (purpose-built views) ---------- */
-    function renderTurbines(){
-      const body = document.getElementById("turbBody");
-      if(!state.wtg.length){ body.innerHTML = '<div class="dempty">タービンデータがありません。</div>'; return; }
-      const cards = state.wtg.map(t => {
-        const id = t["風車id"], st = t["状態"] || "normal";
-        const alm = t["未解決アラーム数"] || 0;
-        return `<div class="tcard${state.sel===id?' sel':''}" data-id="${esc(id)}">
-          <div class="id"><span class="sdot s-${esc(st)}"></span>${esc(id)}${alm>0?` <span style="margin-left:auto;color:#ff9a92;font-size:11px">🚨${alm}</span>`:""}</div>
-          <div class="kw">${t["出力kw"]!=null?Math.round(t["出力kw"])+" kW":"–"}${t["出力率pct"]!=null?` ・ ${t["出力率pct"]}%`:""}</div>
-        </div>`;
-      }).join("");
-      body.innerHTML = `<div class="turb-wrap">
-        <div class="turb-grid">${cards}</div>
-        <div class="detail" id="turbDetail"></div>
-      </div>`;
-      body.querySelectorAll(".tcard").forEach(c =>
-        c.addEventListener("click", () => { state.sel = c.dataset.id; renderTurbines(); }));
-      renderTurbineDetail();
-    }
-
-    async function loadDetail(wtgId){
-      if(state.detail[wtgId]) return state.detail[wtgId];
-      const q = "?wtg_id=eq." + encodeURIComponent(wtgId);
-      const [base, alarms, comps, hist, risk, maint] = await Promise.all([
-        sb.get("v_wtg_detail_base" + q),
-        sb.get("v_wtg_detail_alarms" + q + "&order=発生日時_jst.desc"),
-        sb.get("v_wtg_detail_components" + q + "&order=current_health_score.asc"),
-        sb.get("v_wtg_detail_work_history" + q + "&order=実施日.desc"),
-        sb.get("component_risk_dashboard" + q + "&order=current_health_score.asc"),
-        sb.get("maintenance_results" + q + "&order=work_date.desc").catch(()=>[])
-      ]);
-      const d = { base: base[0] || null, alarms, comps, hist, risk, maint };
-      state.detail[wtgId] = d;
-      return d;
-    }
-
-    /* ---------- カルテ診断（ルールベース簡易・将来AI/Supabaseで高度化）---------- */
-    function diagnose(c){
-      const b = c.base || {};
-      const risk = c.risk || [];
-      const comps = c.comps || [];
-      const insp = (state.inspResults||[]).filter(r => (r["風車"]||"")===c.wtgId);
-      // 健康スコア = 最低健全度（律速）。なければコンポ平均
-      const scores = risk.map(r=>r.current_health_score).filter(v=>v!=null);
-      const compScores = comps.map(x=>x.current_health_score).filter(v=>v!=null);
-      const pool = scores.length?scores:compScores;
-      const worst = pool.length? Math.min(...pool) : null;
-      const openAlm = b["未解決アラーム数"]||0, openDef = b["未対応異常数"]||0;
-      const hasCritRisk = risk.some(r=>r.risk_level==="critical") || b.status==="stop";
-      const hasWarnRisk = risk.some(r=>r.risk_level==="warning");
-      const predAlerts = risk.reduce((s,r)=>s+(r.open_predictive_alerts||0),0);
-      const ngInsp = insp.filter(r=>r["異常あり"]).length;
-
-      // 区分
-      let label="良好", cls="v-good", color="#7ee787";
-      if(hasCritRisk || (worst!=null&&worst<50) || b.status==="stop"){ label="要対応"; cls="v-act"; color="#ff9a92"; }
-      else if(hasWarnRisk || (worst!=null&&worst<65) || openDef>0){ label="要注意"; cls="v-caution"; color="#f0c674"; }
-      else if((worst!=null&&worst<80) || openAlm>0 || predAlerts>0 || ngInsp>0){ label="要観察"; cls="v-watch"; color="#9cd2ff"; }
-
-      // 予防アクション
-      const acts=[];
-      risk.forEach(r=>{
-        const hs=r.current_health_score;
-        if(r.risk_level==="critical" || (hs!=null&&hs<50))
-          acts.push({p:1,t:`${r.component_name_ja}（健全度${hs??"?"}点）：劣化進行。整備計画を前倒し・作業票化を検討`});
-        else if(r.risk_level==="warning" || (hs!=null&&hs<65))
-          acts.push({p:2,t:`${r.component_name_ja}（健全度${hs??"?"}点）：傾向監視を強化し、次回点検で重点確認`});
-        if(r.expected_replace_date){
-          const days=Math.round((new Date(r.expected_replace_date)-new Date(TODAY))/86400000);
-          if(days<=180) acts.push({p:days<=60?1:2,t:`${r.component_name_ja}：交換目安まで約${days}日（${r.expected_replace_date}）。部品手配・交換計画を`});
-        }
-        if(r.open_predictive_alerts>0) acts.push({p:1,t:`${r.component_name_ja}：予知アラート${r.open_predictive_alerts}件。詳細確認`});
-      });
-      if(openDef>0) acts.push({p:1,t:`未対応の異常 ${openDef}件：是正判断（→ 故障/RCA 一覧へ）`});
-      if(openAlm>0) acts.push({p:2,t:`未解決アラーム ${openAlm}件：一次対応・原因確認`});
-      if(ngInsp>0)  acts.push({p:2,t:`直近点検でNG ${ngInsp}件：再点検／作業票化を検討`});
-      if(!acts.length) acts.push({p:3,t:`現時点で予防対応の必要なし。定期点検を継続し傾向を監視`});
-      acts.sort((a,b)=>a.p-b.p);
-
-      // 故障予知メモ
-      let predict="";
-      const wr = risk.slice().sort((a,b)=>(a.current_health_score??999)-(b.current_health_score??999))[0];
-      if(wr && wr.current_health_score!=null && wr.current_health_score<65){
-        predict = `最も劣化が進む <b>${esc(wr.component_name_ja)}</b>（健全度${wr.current_health_score}点・${wr.risk_level}）。`
-          + (wr.alarms_90d?`直近90日で関連アラーム${wr.alarms_90d}件。`:"")
-          + `このまま推移すると機能低下・停止リスク。早めの傾向監視と整備計画が有効です。`;
-      }
-      return { worst, label, cls, color, acts, predict, ngInsp, predAlerts };
-    }
-
-    function renderTurbineDetail(){
-      const box = document.getElementById("turbDetail");
-      if(!box) return;
-      if(!state.sel){ box.innerHTML = '<div class="dempty">← 一覧からタービンを選択してください。</div>'; return; }
-      const wtgId = state.sel;
-      const cached = state.detail[wtgId];
-      if(!cached){
-        box.innerHTML = '<div class="loading">詳細を読み込み中…</div>';
-        loadDetail(wtgId).then(() => { if(state.sel===wtgId) renderTurbineDetail(); })
-          .catch(e => { box.innerHTML = '<div class="err">詳細取得に失敗: '+esc(e.message)+'</div>'; });
-        return;
-      }
-      const b = cached.base;
-      if(!b){ box.innerHTML = '<div class="dempty">該当データなし。</div>'; return; }
-      cached.wtgId = wtgId;
-      const st = b.status || "normal";
-      const hpCls = v => v==null?"" : (v<65?"hp-bad":v<80?"hp-warn":"hp-ok");
-
-      // 健全度（risk_dashboard 優先、なければ detail_components）
-      const compSrc = (cached.risk && cached.risk.length) ? cached.risk : cached.comps;
-      const compRows = compSrc.length ? compSrc.map(c =>{
-        const hs=c.current_health_score;
-        const rep = c.expected_replace_date ? ` ・ 交換目安 ${esc(c.expected_replace_date)}`
-                  : (c["交換まで日数"]!=null? ` ・ 交換まで${c["交換まで日数"]}日`:"");
-        const extra = (c.alarms_90d!=null)?`90日アラーム ${c.alarms_90d}件`:`${esc(c.manufacturer||"")} ${esc(c.model_number||"")}`;
-        return `<div class="drow"><span class="hp ${hpCls(hs)}" style="white-space:nowrap">${hs!=null?hs+"点":"–"}</span>
-         <div><b>${esc(c.component_name_ja||c.component)}</b> ${c.risk_level?`<span style="color:var(--muted)">[${esc(c.risk_level)}]</span>`:""}<br>
-         <span style="color:var(--muted)">${extra}${rep}</span></div></div>`;
-      }).join("") : '<div class="dempty">コンポーネント登録なし</div>';
-
-      const alarmRows = cached.alarms.length ? cached.alarms.slice(0,8).map(a =>
-        `<div class="drow"><span class="sev sev-${esc(a.severity)}">${esc(a["深刻度表示"]||a.severity)}</span>
-         <div><b>${esc(a.alarm_type)}</b> ${a["解決日時_jst"]?'<span class="tag-done">解決済</span>':'<span class="tag-open">未解決</span>'}${a.recurrence_count>1?` <span style="color:var(--muted)">×${a.recurrence_count}</span>`:""}<br>
-         <span style="color:var(--muted)">${esc(a.detail||"")} <small>${esc(a["発生日時_jst"]||"")}</small></span></div></div>`
-        ).join("") : '<div class="dempty">アラームなし</div>';
-
-      const histRows = cached.hist.length ? cached.hist.slice(0,10).map(h =>
-        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(h["実施日"]||"")}</span>
-         <div><b>${esc(h["作業種別"]||"")}</b> <span style="color:var(--muted)">[${inspStatusLabel[h["状態"]]||esc(h["状態"]||"")}]</span>${h["ptw番号"]?` <span style="color:var(--muted)">${esc(h["ptw番号"])}</span>`:""}<br>
-         <span style="color:var(--muted)">${esc(h["種別"]==="work_order"?"作業票":"点検計画")} / ${h["作業員数"]||"?"}名</span></div></div>`
-        ).join("") : '<div class="dempty">作業履歴なし</div>';
-
-      // 点検実績（この号機）
-      const insp = (state.inspResults||[]).filter(r => (r["風車"]||"")===wtgId).slice(0,10);
-      const inspRows = insp.length ? insp.map(r =>
-        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(r["実施日"]||"")}</span>
-         <div><b>${esc(r["結果表示"]||r["結果"]||"")}</b> <span style="color:var(--muted)">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</span>${r["深刻度"]?` <span style="color:#ff9a92">深刻度:${esc(r["深刻度"])}</span>`:""}<br>
-         <span style="color:var(--muted)">${esc(r["異常内容"]||r["コメント"]||"")}</span></div></div>`
-        ).join("") : '<div class="dempty">点検実績なし</div>';
-
-      // 整備・部品交換履歴（maintenance_results）
-      const maint = cached.maint || [];
-      const partsHist = maint.filter(m => Array.isArray(m.parts_replaced) && m.parts_replaced.length);
-      const maintRows = maint.length ? maint.slice(0,10).map(m =>
-        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(m.work_date||"")}</span>
-         <div><b>${esc(m.component_name_ja||m.component||m.work_type||"")}</b> ${m.result?`<span style="color:var(--muted)">[${esc(m.result)}]</span>`:""}<br>
-         <span style="color:var(--muted)">${esc(m.finding||"")}${m.action_taken?` → ${esc(m.action_taken)}`:""}</span>
-         ${(Array.isArray(m.parts_replaced)&&m.parts_replaced.length)?`<br><span style="color:#9cd2ff">交換: ${esc(m.parts_replaced.join("、"))}${m.parts_cost_yen?`（¥${Number(m.parts_cost_yen).toLocaleString()}）`:""}</span>`:""}
-         ${m.root_cause?`<br><span style="color:#ffb0a8">根本原因: ${esc(m.root_cause)}</span>`:""}</div></div>`
-        ).join("") : '<div class="dempty">整備・部品交換の記録なし（点検実績/作業票から蓄積されます）</div>';
-
-      // 今後の点検予定
-      const upcoming = (state.insp||[]).filter(i => i.wtg_id===wtgId && i.date>=TODAY && i.status!=="cancelled" && i.status!=="done")
-        .sort((a,b)=> a.date<b.date?-1:1).slice(0,8);
-      const upRows = upcoming.length ? upcoming.map(i =>
-        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(i.date||"")}</span>
-         <div><b>${esc(i.work_type||"")}</b> <span style="color:var(--muted)">[${inspStatusLabel[i.status]||esc(i.status||"")}]</span>${i.required_qualification?`<br><span style="color:var(--muted)">資格:${esc(i.required_qualification)}</span>`:""}</div></div>`
-        ).join("") : '<div class="dempty">今後の点検予定なし</div>';
-
-      // 診断
-      const dg = diagnose(cached);
-      const actsHtml = dg.acts.map(a=>`<li><span class="prio p${a.p}">${a.p===1?"優先":a.p===2?"注意":"通常"}</span><span>${a.t}</span></li>`).join("");
-
-      box.innerHTML = `
-        <div class="dhead"><span class="sdot s-${esc(st)}"></span><h2>${esc(b.wtg_id)}</h2>
-          <span class="pill p-${esc(st)}">${esc(b["状態表示"]||statusLabel[st]||st)}</span>
-          <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">最終更新 ${esc(b["更新日時_jst"]||"")}</span></div>
-        <div style="font-size:11.5px;color:var(--muted)">${esc(b.maker||"")} ${esc(b.model_name||"")} ・ ${esc(b.area||"")} ・ 設置 ${esc(b.installed_at||"–")} ・ 定格 ${b.rated_power_kw!=null?b.rated_power_kw+"kW":"–"}</div>
-        <div class="metrics">
-          <div class="metric"><div class="l">出力</div><div class="v">${b.output_kw!=null?Math.round(b.output_kw):"–"} <small>kW (${b["出力率pct"]!=null?b["出力率pct"]+"%":"–"})</small></div></div>
-          <div class="metric"><div class="l">風速</div><div class="v">${b.wind_speed_ms!=null?b.wind_speed_ms:"–"} <small>m/s</small></div></div>
-          <div class="metric"><div class="l">未解決アラーム</div><div class="v">${b["未解決アラーム数"]||0}<small> 件</small></div></div>
-          <div class="metric"><div class="l">未対応異常</div><div class="v">${b["未対応異常数"]||0}<small> 件</small></div></div>
-          <div class="metric"><div class="l">健全度低下</div><div class="v">${b["健全度低下コンポーネント数"]||0}<small> 件</small></div></div>
-        </div>
-        ${b.alarm_code?`<div style="font-size:12px;color:#f0c674;margin-bottom:6px">アラームコード: ${esc(b.alarm_code)}</div>`:""}
-
-        <div class="karte">
-          <div class="kcard diag span2">
-            <div class="dsec">🩺 カルテ診断・故障予知 <span class="badge">ルールベース簡易</span></div>
-            <div class="verdict">
-              <div class="vscore" style="color:${dg.color}">${dg.worst!=null?dg.worst:"–"}<small style="font-size:13px;color:var(--muted);font-weight:600"> /100</small></div>
-              <div class="vlabel ${dg.cls}">${dg.label}</div>
-              <div class="hbar"><i style="width:${dg.worst!=null?dg.worst:0}%;background:${dg.color}"></i></div>
-            </div>
-            <ul class="acts">${actsHtml}</ul>
-            ${dg.predict?`<div class="predict">🔮 故障予知メモ：${dg.predict}</div>`:""}
-            <div class="foot">※ 本診断は現データ（健全度・アラーム・点検・予知アラート）からのルールベース簡易診断です。将来、Supabase上のAI読取専用ビュー経由で高度化予定（<a href="./ai-data-boundary.html">データ境界</a>）。最終判断は電気主任技術者・保安規定が優先。</div>
-          </div>
-
-          <div class="kcard"><div class="dsec">🔧 コンポーネント健全度</div><div class="kscroll">${compRows}</div></div>
-          <div class="kcard"><div class="dsec">🚨 アラーム履歴</div><div class="kscroll">${alarmRows}</div></div>
-          <div class="kcard"><div class="dsec">📋 点検実績</div><div class="kscroll">${inspRows}</div></div>
-          <div class="kcard"><div class="dsec">🧰 整備・部品交換履歴</div><div class="kscroll">${maintRows}</div></div>
-          <div class="kcard"><div class="dsec">🗂 作業履歴</div><div class="kscroll">${histRows}</div></div>
-          <div class="kcard"><div class="dsec">📅 今後の点検予定</div><div class="kscroll">${upRows}</div></div>
-        </div>
-
-        <div style="margin-top:16px;display:flex;gap:16px;font-size:12px;flex-wrap:wrap">
-          <a href="./inspection-input.html">🛠 点検実績を入力</a>
-          <a href="./defect-rca.html">🔧 故障/RCAへ</a>
-          <a href="./work-orders.html">📝 作業票一覧へ</a>
-          <a href="./report-candidates.html">⚖ 報告候補へ</a>
-        </div>`;
-    }
-
-    /* ---------- ALARMS ---------- */
-    function renderAlarms(){
-      const body = document.getElementById("alarmBody");
-      let rows = state.alarms.slice();
-      const f = state.alarmFilter;
-      if(f==="open") rows = rows.filter(a => !a.resolved_at);
-      else if(f==="critical") rows = rows.filter(a => a.severity==="critical");
-      else if(f==="warning") rows = rows.filter(a => a.severity==="warning");
-      if(!rows.length){ body.innerHTML = '<div class="dempty">該当するアラームはありません。</div>'; return; }
-      const trs = rows.map(a => `<tr class="${a.resolved_at?'':'ongoing'}">
-        <td><span class="sev sev-${esc(a.severity)}">${sevLabel[a.severity]||esc(a.severity)}</span></td>
-        <td><b>${esc(a.wtg_id)}</b></td>
-        <td>${esc(a.alarm_type)}</td>
-        <td style="color:var(--muted)">${esc(a.detail||"")}</td>
-        <td>${esc(a.owner||"–")}</td>
-        <td style="white-space:nowrap">${fmtDT(a.started_at)}</td>
-        <td>${a.resolved_at?'<span class="tag-done">解決済</span>':'<span class="tag-open">未解決</span>'}</td>
-      </tr>`).join("");
-      body.innerHTML = `<table><thead><tr>
-        <th>重要度</th><th>号機</th><th>種別</th><th>内容</th><th>担当</th><th>発生</th><th>状態</th>
-      </tr></thead><tbody>${trs}</tbody></table>`;
-    }
-
-    /* ---------- INSPECTION CALENDAR ---------- */
-    function renderCalendar(){
-      const body = document.getElementById("calBody");
-      if(!state.insp.length){ body.innerHTML = '<div class="dempty">点検計画がありません。</div>'; return; }
-      const byDate = {};
-      state.insp.forEach(i => { (byDate[i.date] = byDate[i.date] || []).push(i); });
-      const dates = state.insp.map(i => i.date).sort();
-      const first = dates[0], last = dates[dates.length-1];
-      const months = monthsBetween(first, last);
-      const dows = ["日","月","火","水","木","金","土"];
-      body.innerHTML = months.map(m => {
-        const y = m.y, mo = m.m;
-        const firstDay = new Date(y, mo, 1).getDay();
-        const daysIn = new Date(y, mo+1, 0).getDate();
-        let cells = "";
-        for(let i=0;i<firstDay;i++) cells += '<div class="day empty"></div>';
-        for(let d=1; d<=daysIn; d++){
-          const ds = `${y}-${String(mo+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-          const items = byDate[ds] || [];
-          const chips = items.map(i =>
-            `<div class="chip c-${esc(i.status)}" title="${esc(i.wtg_id)} ${esc(i.work_type)} (${inspStatusLabel[i.status]||i.status})">${esc(i.wtg_id)} ${esc(i.work_type)}</div>`).join("");
-          cells += `<div class="day${ds===TODAY?' today':''}"><div class="dnum">${d}</div>${chips}</div>`;
-        }
-        const dowHead = dows.map(w => `<div class="dow">${w}</div>`).join("");
-        return `<div class="cal-month"><h3>${y}年${mo+1}月</h3><div class="cal">${dowHead}${cells}</div></div>`;
-      }).join("");
-    }
-    function monthsBetween(a, b){
-      const [ay,am] = a.split("-").map(Number);
-      const [by,bm] = b.split("-").map(Number);
-      const out = []; let y=ay, m=am-1;
-      while(y<by || (y===by && m<=bm-1)){ out.push({y,m}); m++; if(m>11){m=0;y++;} }
-      return out;
-    }
-
-    /* ---------- TABS ---------- */
-    document.querySelectorAll(".tabs button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById("view-" + btn.dataset.tab).classList.add("active");
-      }));
-    document.querySelectorAll("#alarmFilters button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#alarmFilters button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.alarmFilter = btn.dataset.f;
-        renderAlarms();
-      }));
-
-    /* ---------- LOAD ---------- */
-    async function loadAll(){
-      try{
-        const [wtg, alarms, insp, inspRes] = await Promise.all([
-          sb.get("v_top_wtg_list?order=風車id.asc"),
-          sb.get("alarm_events?select=*&order=started_at.desc"),
-          sb.get("inspection_plan?select=*&order=date.asc,time_start.asc"),
-          sb.get("v_inspection_results_list?order=実施日.desc").catch(()=>[])
-        ]);
-        state.wtg = wtg; state.alarms = alarms; state.insp = insp; state.inspResults = inspRes;
-        state.sel = wtg.length ? wtg[0]["風車id"] : null;
-        document.getElementById("cTurb").textContent = wtg.length;
-        document.getElementById("cAlarm").textContent = alarms.filter(a=>!a.resolved_at).length + "/" + alarms.length;
-        document.getElementById("cCal").textContent = insp.length;
-        renderTurbines(); renderAlarms(); renderCalendar();
-      }catch(e){
-        const msg = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
-        ["turbBody","alarmBody","calBody"].forEach(id => document.getElementById(id).innerHTML = msg);
-      }
-    }
-    sb.requireLogin({ onReady: loadAll });
-  </script>
-</body>
-</html>
+<!DOCTYPE html>
+
+
+
+
+<html lang="ja">
+
+
+
+
+<head>
+
+
+
+
+<meta charset="UTF-8">
+
+
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+
+<title>阿武隈OS — タービン / アラーム / 点検カレンダー（ライブ）</title>
+
+
+
+
+<style>
+
+
+
+
+  :root{
+
+
+
+
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+
+
+
+
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+
+
+
+
+  }
+
+
+
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+
+
+
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+
+
+
+
+  a{color:var(--master);text-decoration:none}
+
+
+
+
+
+
+
+
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+
+
+
+
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+
+
+
+
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+
+
+
+
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+
+
+
+
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+
+
+
+
+
+
+
+
+
+  .tabs{display:flex;gap:8px;padding:12px 22px 0;border-bottom:1px solid var(--line)}
+
+
+
+
+  .tabs button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:14px;font-weight:600;padding:9px 14px 12px;cursor:pointer}
+
+
+
+
+  .tabs button.active{color:#fff;border-bottom-color:var(--master)}
+
+
+
+
+  .tabs .count{font-size:11px;color:var(--muted);margin-left:6px}
+
+
+
+
+
+
+
+
+
+  .view{display:none;padding:18px 22px 40px}
+
+
+
+
+  .view.active{display:block}
+
+
+
+
+
+
+
+
+
+  /* ---- turbine master-detail（カルテ）---- */
+
+
+
+
+  .turb-wrap{display:grid;grid-template-columns:minmax(180px,220px) 1fr;gap:18px;align-items:start}
+
+
+
+
+  .turb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-height:80vh;overflow:auto;padding-right:4px}
+
+
+
+
+  .tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer;transition:border-color .12s,transform .12s}
+
+
+
+
+  .tcard:hover{transform:translateY(-2px)}
+
+
+
+
+  .tcard.sel{border-color:var(--master);box-shadow:0 0 0 1px var(--master)}
+
+
+
+
+  .tcard .id{font-size:12.5px;color:#fff;font-weight:700;display:flex;align-items:center;gap:6px}
+
+
+
+
+  .tcard .kw{font-size:10.5px;color:var(--muted);margin-top:3px}
+
+
+
+
+  .sdot{width:9px;height:9px;border-radius:50%;flex:none}
+
+
+
+
+  .s-normal{background:var(--insp)} .s-warn{background:var(--work)} .s-stop{background:var(--defect)} .s-inspect{background:var(--master)}
+
+
+
+
+
+
+
+
+
+  .detail{background:transparent;border:none;padding:0}
+
+
+
+
+  .detail .dhead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+
+
+
+
+  .detail .dhead h2{font-size:22px;color:#fff}
+
+
+
+
+  .pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;border:1px solid}
+
+
+
+
+  .p-normal{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
+
+
+
+
+  .p-warn{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+
+
+
+
+  .p-stop{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+
+
+
+
+  .p-inspect{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+
+
+
+
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0}
+
+
+
+
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+
+
+
+
+  .metric .l{font-size:11px;color:var(--muted)}
+
+
+
+
+  .metric .v{font-size:19px;color:#fff;font-weight:700;margin-top:2px}
+
+
+
+
+  .metric .v small{font-size:12px;color:var(--muted);font-weight:400}
+
+
+
+
+
+
+
+
+
+  /* karte grid of section cards */
+
+
+
+
+  .karte{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-top:8px}
+
+
+
+
+  .kcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+
+
+
+
+  .kcard.span2{grid-column:1/-1}
+
+
+
+
+  .dsec{font-size:12px;color:#fff;font-weight:700;margin:0 0 9px;display:flex;align-items:center;gap:7px}
+
+
+
+
+  .dsec .badge{font-size:10.5px;color:var(--muted);font-weight:600;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+
+
+
+
+  .drow{font-size:12.5px;padding:7px 0;border-top:1px solid var(--line);display:flex;gap:8px;align-items:flex-start}
+
+
+
+
+  .drow:first-of-type{border-top:none}
+
+
+
+
+  .dempty{font-size:12px;color:var(--muted);padding:6px 0}
+
+
+
+
+  .kscroll{max-height:280px;overflow:auto}
+
+
+
+
+
+
+
+
+
+  /* AI診断カード */
+
+
+
+
+  .diag{border:1px solid var(--ai);background:linear-gradient(180deg,rgba(255,123,114,.07),rgba(255,123,114,.02))}
+
+
+
+
+  .diag .dsec{color:#ffb0a8}
+
+
+
+
+  .verdict{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+
+
+
+
+  .vscore{font-size:34px;font-weight:900;line-height:1}
+
+
+
+
+  .vlabel{font-size:14px;font-weight:800;padding:3px 12px;border-radius:999px;border:1px solid}
+
+
+
+
+  .v-good{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
+
+
+
+
+  .v-watch{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+
+
+
+
+  .v-caution{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+
+
+
+
+  .v-act{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.14)}
+
+
+
+
+  .hbar{height:8px;border-radius:6px;background:#0d1117;border:1px solid var(--line);overflow:hidden;flex:1;min-width:120px}
+
+
+
+
+  .hbar > i{display:block;height:100%}
+
+
+
+
+  .acts{list-style:none;margin:6px 0 0}
+
+
+
+
+  .acts li{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;padding:7px 0;border-top:1px solid var(--line)}
+
+
+
+
+  .acts li:first-child{border-top:none}
+
+
+
+
+  .prio{font-size:10px;font-weight:800;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap;flex:none;margin-top:1px}
+
+
+
+
+  .prio.p1{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+
+
+
+
+  .prio.p2{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+
+
+
+
+  .prio.p3{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+
+
+
+
+  .predict{font-size:12px;color:#ffb0a8;background:rgba(255,123,114,.06);border:1px dashed rgba(255,123,114,.4);border-radius:8px;padding:9px 11px;margin-top:10px}
+
+
+
+
+  .diag .foot{font-size:10.5px;color:var(--muted);margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+
+
+
+
+  /* health pill for components */
+
+
+
+
+  .hp{font-size:11px;font-weight:800;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+
+
+
+
+  .hp-ok{color:#7ee787;border-color:var(--insp)} .hp-warn{color:#f0c674;border-color:var(--work)} .hp-bad{color:#ff9a92;border-color:var(--defect)}
+
+
+
+
+
+
+
+
+
+  /* ---- alarms table ---- */
+
+
+
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+
+
+
+
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+
+
+
+
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;background:var(--bg)}
+
+
+
+
+  tr.ongoing{background:rgba(248,81,73,.05)}
+
+
+
+
+  .sev{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+
+
+
+
+  .sev-critical{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+
+
+
+
+  .sev-warning{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+
+
+
+
+  .sev-info{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+
+
+
+
+  .tag-open{color:#ff9a92;font-weight:700} .tag-done{color:#7ee787}
+
+
+
+
+  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+
+
+
+
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+
+
+
+
+  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
+
+
+
+
+
+
+
+
+
+  /* ---- inspection calendar ---- */
+
+
+
+
+  .cal-month{margin-bottom:26px}
+
+
+
+
+  .cal-month h3{font-size:15px;color:#fff;margin-bottom:10px}
+
+
+
+
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+
+
+
+
+  .cal .dow{font-size:11px;color:var(--muted);text-align:center;padding:4px 0;font-weight:600}
+
+
+
+
+  .cal .day{min-height:86px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 7px;overflow:hidden}
+
+
+
+
+  .cal .day.empty{background:transparent;border:none}
+
+
+
+
+  .cal .day.today{border-color:var(--master);box-shadow:0 0 0 1px var(--master)}
+
+
+
+
+  .cal .dnum{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px}
+
+
+
+
+  .cal .day.today .dnum{color:var(--master)}
+
+
+
+
+  .chip{font-size:10.5px;padding:2px 5px;border-radius:5px;margin-bottom:3px;border-left:3px solid;background:var(--panel2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+
+
+
+  .c-planned{border-color:var(--master)} .c-in_progress{border-color:var(--work)} .c-done{border-color:var(--insp);opacity:.6} .c-cancelled{border-color:var(--muted);opacity:.45;text-decoration:line-through}
+
+
+
+
+  .cal-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-bottom:14px}
+
+
+
+
+  .cal-legend span{display:inline-flex;align-items:center;gap:5px}
+
+
+
+
+  .lg{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+
+
+
+
+
+
+
+
+  .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+
+
+
+
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+
+
+
+
+  @media(max-width:780px){.turb-wrap{grid-template-columns:1fr}.turb-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));max-height:40vh}}
+
+
+
+
+</style>
+
+
+
+
+</head>
+
+
+
+
+<body>
+
+
+
+
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:14px 18px 12px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;"><span style="display:flex;flex-direction:column;line-height:1.15;border-left:3px solid rgb(88,166,255);padding-left:9px;flex:0 0 auto;"><b style="color:#e6edf3;font-size:12.5px;font-weight:800;letter-spacing:.04em;">業務フロー</b><span style="color:#6e7681;font-size:10px;">現在地</span></span><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(88,166,255);background:rgba(88,166,255,.13);border:1px solid rgba(88,166,255,.45);">🔵 監視・管制フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">2 / 11</span><span style="flex:0 0 auto;display:inline-block;width:120px;max-width:30vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:10%;border-radius:999px;background:rgb(88,166,255);"></span></span></div><div style="display:flex;align-items:flex-start;flex-wrap:wrap;row-gap:6px;"><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./index.html" title="今日の管制塔（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">今日の管制塔</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><div title="現在この画面です" aria-current="step" style="display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:rgb(88,166,255);color:#11161d;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:2px solid rgb(88,166,255);box-shadow:0 0 0 4px rgba(88,166,255,.22);box-sizing:border-box;">2</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#fff;font-weight:800;max-width:78px;word-break:break-word;">監視</span></div></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-plan.html" title="点検計画（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">3</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">点検計画</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-input.html" title="点検実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">4</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">点検実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="異常判断（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">5</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">異常判断</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業票（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">6</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業票</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./permits.html" title="PTW/KY（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">7</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">PTW/KY</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./approvals.html" title="承認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">8</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">承認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">9</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="復旧確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">10</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">復旧確認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./report-candidates.html" title="クローズ・報告確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">11</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">クローズ・報告確認</span></a></div></div></nav>
+
+
+
+
+  <div class="topbar">
+
+
+
+
+    <div class="mark">AW</div>
+
+
+
+
+    <div>
+
+
+
+
+      <h1>タービン / アラーム / 点検カレンダー</h1>
+
+
+
+
+      <div class="sub">阿武隈OS ライブ盤 — Supabase連携</div>
+
+
+
+
+    </div>
+
+
+
+
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="tabs">
+
+
+
+
+    <button data-tab="turb" class="active">🌀 タービン一覧<span class="count" id="cTurb"></span></button>
+
+
+
+
+    <button data-tab="alarm">🚨 アラーム一覧<span class="count" id="cAlarm"></span></button>
+
+
+
+
+    <button data-tab="cal">📅 点検カレンダー<span class="count" id="cCal"></span></button>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <section id="view-turb" class="view active">
+
+
+
+
+    <div id="turbBody" class="loading">読み込み中…</div>
+
+
+
+
+  </section>
+
+
+
+
+  <section id="view-alarm" class="view">
+
+
+
+
+    <div class="filters" id="alarmFilters">
+
+
+
+
+      <button data-f="all" class="active">すべて</button>
+
+
+
+
+      <button data-f="open">未解決のみ</button>
+
+
+
+
+      <button data-f="critical">重大</button>
+
+
+
+
+      <button data-f="warning">警告</button>
+
+
+
+
+    </div>
+
+
+
+
+    <div id="alarmBody" class="loading">読み込み中…</div>
+
+
+
+
+  </section>
+
+
+
+
+  <section id="view-cal" class="view">
+
+
+
+
+    <div class="cal-legend">
+
+
+
+
+      <span><i class="lg" style="background:var(--master)"></i>予定</span>
+
+
+
+
+      <span><i class="lg" style="background:var(--work)"></i>実施中</span>
+
+
+
+
+      <span><i class="lg" style="background:var(--insp)"></i>完了</span>
+
+
+
+
+      <span><i class="lg" style="background:var(--muted)"></i>中止</span>
+
+
+
+
+    </div>
+
+
+
+
+    <div id="calBody" class="loading">読み込み中…</div>
+
+
+
+
+  </section>
+
+
+
+
+
+
+
+
+
+  <script src="./lib/supabase.js"></script>
+
+
+
+
+  <script>
+
+
+
+
+    const esc = sb.esc;
+
+
+
+
+    const TODAY = "2026-05-29";
+
+
+
+
+    const state = { wtg: [], alarms: [], insp: [], detail: {}, sel: null, alarmFilter: "all" };
+
+
+
+
+
+
+
+
+
+    const statusLabel = { normal:"正常", warn:"警告", stop:"停止", inspect:"点検中" };
+
+
+
+
+    const inspStatusLabel = { planned:"予定", in_progress:"実施中", done:"完了", cancelled:"中止" };
+
+
+
+
+    const sevLabel = { critical:"重大", warning:"警告", info:"情報" };
+
+
+
+
+
+
+
+
+
+    function fmtTime(t){ return t ? t.slice(0,5) : ""; }
+
+
+
+
+    function fmtDT(s){ return sb.fmtDateTime(s); }
+
+
+
+
+
+
+
+
+
+    /* ---------- TURBINES (purpose-built views) ---------- */
+
+
+
+
+    function renderTurbines(){
+
+
+
+
+      const body = document.getElementById("turbBody");
+
+
+
+
+      if(!state.wtg.length){ body.innerHTML = '<div class="dempty">タービンデータがありません。</div>'; return; }
+
+
+
+
+      const cards = state.wtg.map(t => {
+
+
+
+
+        const id = t["風車id"], st = t["状態"] || "normal";
+
+
+
+
+        const alm = t["未解決アラーム数"] || 0;
+
+
+
+
+        return `<div class="tcard${state.sel===id?' sel':''}" data-id="${esc(id)}">
+
+
+
+
+          <div class="id"><span class="sdot s-${esc(st)}"></span>${esc(id)}${alm>0?` <span style="margin-left:auto;color:#ff9a92;font-size:11px">🚨${alm}</span>`:""}</div>
+
+
+
+
+          <div class="kw">${t["出力kw"]!=null?Math.round(t["出力kw"])+" kW":"–"}${t["出力率pct"]!=null?` ・ ${t["出力率pct"]}%`:""}</div>
+
+
+
+
+        </div>`;
+
+
+
+
+      }).join("");
+
+
+
+
+      body.innerHTML = `<div class="turb-wrap">
+
+
+
+
+        <div class="turb-grid">${cards}</div>
+
+
+
+
+        <div class="detail" id="turbDetail"></div>
+
+
+
+
+      </div>`;
+
+
+
+
+      body.querySelectorAll(".tcard").forEach(c =>
+
+
+
+
+        c.addEventListener("click", () => { state.sel = c.dataset.id; renderTurbines(); }));
+
+
+
+
+      renderTurbineDetail();
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    async function loadDetail(wtgId){
+
+
+
+
+      if(state.detail[wtgId]) return state.detail[wtgId];
+
+
+
+
+      const q = "?wtg_id=eq." + encodeURIComponent(wtgId);
+
+
+
+
+      const [base, alarms, comps, hist, risk, maint] = await Promise.all([
+
+
+
+
+        sb.get("v_wtg_detail_base" + q),
+
+
+
+
+        sb.get("v_wtg_detail_alarms" + q + "&order=発生日時_jst.desc"),
+
+
+
+
+        sb.get("v_wtg_detail_components" + q + "&order=current_health_score.asc"),
+
+
+
+
+        sb.get("v_wtg_detail_work_history" + q + "&order=実施日.desc"),
+
+
+
+
+        sb.get("component_risk_dashboard" + q + "&order=current_health_score.asc"),
+
+
+
+
+        sb.get("maintenance_results" + q + "&order=work_date.desc").catch(()=>[])
+
+
+
+
+      ]);
+
+
+
+
+      const d = { base: base[0] || null, alarms, comps, hist, risk, maint };
+
+
+
+
+      state.detail[wtgId] = d;
+
+
+
+
+      return d;
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /* ---------- カルテ診断（ルールベース簡易・将来AI/Supabaseで高度化）---------- */
+
+
+
+
+    function diagnose(c){
+
+
+
+
+      const b = c.base || {};
+
+
+
+
+      const risk = c.risk || [];
+
+
+
+
+      const comps = c.comps || [];
+
+
+
+
+      const insp = (state.inspResults||[]).filter(r => (r["風車"]||"")===c.wtgId);
+
+
+
+
+      // 健康スコア = 最低健全度（律速）。なければコンポ平均
+
+
+
+
+      const scores = risk.map(r=>r.current_health_score).filter(v=>v!=null);
+
+
+
+
+      const compScores = comps.map(x=>x.current_health_score).filter(v=>v!=null);
+
+
+
+
+      const pool = scores.length?scores:compScores;
+
+
+
+
+      const worst = pool.length? Math.min(...pool) : null;
+
+
+
+
+      const openAlm = b["未解決アラーム数"]||0, openDef = b["未対応異常数"]||0;
+
+
+
+
+      const hasCritRisk = risk.some(r=>r.risk_level==="critical") || b.status==="stop";
+
+
+
+
+      const hasWarnRisk = risk.some(r=>r.risk_level==="warning");
+
+
+
+
+      const predAlerts = risk.reduce((s,r)=>s+(r.open_predictive_alerts||0),0);
+
+
+
+
+      const ngInsp = insp.filter(r=>r["異常あり"]).length;
+
+
+
+
+
+
+
+
+
+      // 区分
+
+
+
+
+      let label="良好", cls="v-good", color="#7ee787";
+
+
+
+
+      if(hasCritRisk || (worst!=null&&worst<50) || b.status==="stop"){ label="要対応"; cls="v-act"; color="#ff9a92"; }
+
+
+
+
+      else if(hasWarnRisk || (worst!=null&&worst<65) || openDef>0){ label="要注意"; cls="v-caution"; color="#f0c674"; }
+
+
+
+
+      else if((worst!=null&&worst<80) || openAlm>0 || predAlerts>0 || ngInsp>0){ label="要観察"; cls="v-watch"; color="#9cd2ff"; }
+
+
+
+
+
+
+
+
+
+      // 予防アクション
+
+
+
+
+      const acts=[];
+
+
+
+
+      risk.forEach(r=>{
+
+
+
+
+        const hs=r.current_health_score;
+
+
+
+
+        if(r.risk_level==="critical" || (hs!=null&&hs<50))
+
+
+
+
+          acts.push({p:1,t:`${r.component_name_ja}（健全度${hs??"?"}点）：劣化進行。整備計画を前倒し・作業票化を検討`});
+
+
+
+
+        else if(r.risk_level==="warning" || (hs!=null&&hs<65))
+
+
+
+
+          acts.push({p:2,t:`${r.component_name_ja}（健全度${hs??"?"}点）：傾向監視を強化し、次回点検で重点確認`});
+
+
+
+
+        if(r.expected_replace_date){
+
+
+
+
+          const days=Math.round((new Date(r.expected_replace_date)-new Date(TODAY))/86400000);
+
+
+
+
+          if(days<=180) acts.push({p:days<=60?1:2,t:`${r.component_name_ja}：交換目安まで約${days}日（${r.expected_replace_date}）。部品手配・交換計画を`});
+
+
+
+
+        }
+
+
+
+
+        if(r.open_predictive_alerts>0) acts.push({p:1,t:`${r.component_name_ja}：予知アラート${r.open_predictive_alerts}件。詳細確認`});
+
+
+
+
+      });
+
+
+
+
+      if(openDef>0) acts.push({p:1,t:`未対応の異常 ${openDef}件：是正判断（→ 故障/RCA 一覧へ）`});
+
+
+
+
+      if(openAlm>0) acts.push({p:2,t:`未解決アラーム ${openAlm}件：一次対応・原因確認`});
+
+
+
+
+      if(ngInsp>0)  acts.push({p:2,t:`直近点検でNG ${ngInsp}件：再点検／作業票化を検討`});
+
+
+
+
+      if(!acts.length) acts.push({p:3,t:`現時点で予防対応の必要なし。定期点検を継続し傾向を監視`});
+
+
+
+
+      acts.sort((a,b)=>a.p-b.p);
+
+
+
+
+
+
+
+
+
+      // 故障予知メモ
+
+
+
+
+      let predict="";
+
+
+
+
+      const wr = risk.slice().sort((a,b)=>(a.current_health_score??999)-(b.current_health_score??999))[0];
+
+
+
+
+      if(wr && wr.current_health_score!=null && wr.current_health_score<65){
+
+
+
+
+        predict = `最も劣化が進む <b>${esc(wr.component_name_ja)}</b>（健全度${wr.current_health_score}点・${wr.risk_level}）。`
+
+
+
+
+          + (wr.alarms_90d?`直近90日で関連アラーム${wr.alarms_90d}件。`:"")
+
+
+
+
+          + `このまま推移すると機能低下・停止リスク。早めの傾向監視と整備計画が有効です。`;
+
+
+
+
+      }
+
+
+
+
+      return { worst, label, cls, color, acts, predict, ngInsp, predAlerts };
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function renderTurbineDetail(){
+
+
+
+
+      const box = document.getElementById("turbDetail");
+
+
+
+
+      if(!box) return;
+
+
+
+
+      if(!state.sel){ box.innerHTML = '<div class="dempty">← 一覧からタービンを選択してください。</div>'; return; }
+
+
+
+
+      const wtgId = state.sel;
+
+
+
+
+      const cached = state.detail[wtgId];
+
+
+
+
+      if(!cached){
+
+
+
+
+        box.innerHTML = '<div class="loading">詳細を読み込み中…</div>';
+
+
+
+
+        loadDetail(wtgId).then(() => { if(state.sel===wtgId) renderTurbineDetail(); })
+
+
+
+
+          .catch(e => { box.innerHTML = '<div class="err">詳細取得に失敗: '+esc(e.message)+'</div>'; });
+
+
+
+
+        return;
+
+
+
+
+      }
+
+
+
+
+      const b = cached.base;
+
+
+
+
+      if(!b){ box.innerHTML = '<div class="dempty">該当データなし。</div>'; return; }
+
+
+
+
+      cached.wtgId = wtgId;
+
+
+
+
+      const st = b.status || "normal";
+
+
+
+
+      const hpCls = v => v==null?"" : (v<65?"hp-bad":v<80?"hp-warn":"hp-ok");
+
+
+
+
+
+
+
+
+
+      // 健全度（risk_dashboard 優先、なければ detail_components）
+
+
+
+
+      const compSrc = (cached.risk && cached.risk.length) ? cached.risk : cached.comps;
+
+
+
+
+      const compRows = compSrc.length ? compSrc.map(c =>{
+
+
+
+
+        const hs=c.current_health_score;
+
+
+
+
+        const rep = c.expected_replace_date ? ` ・ 交換目安 ${esc(c.expected_replace_date)}`
+
+
+
+
+                  : (c["交換まで日数"]!=null? ` ・ 交換まで${c["交換まで日数"]}日`:"");
+
+
+
+
+        const extra = (c.alarms_90d!=null)?`90日アラーム ${c.alarms_90d}件`:`${esc(c.manufacturer||"")} ${esc(c.model_number||"")}`;
+
+
+
+
+        return `<div class="drow"><span class="hp ${hpCls(hs)}" style="white-space:nowrap">${hs!=null?hs+"点":"–"}</span>
+
+
+
+
+         <div><b>${esc(c.component_name_ja||c.component)}</b> ${c.risk_level?`<span style="color:var(--muted)">[${esc(c.risk_level)}]</span>`:""}<br>
+
+
+
+
+         <span style="color:var(--muted)">${extra}${rep}</span></div></div>`;
+
+
+
+
+      }).join("") : '<div class="dempty">コンポーネント登録なし</div>';
+
+
+
+
+
+
+
+
+
+      const alarmRows = cached.alarms.length ? cached.alarms.slice(0,8).map(a =>
+
+
+
+
+        `<div class="drow"><span class="sev sev-${esc(a.severity)}">${esc(a["深刻度表示"]||a.severity)}</span>
+
+
+
+
+         <div><b>${esc(a.alarm_type)}</b> ${a["解決日時_jst"]?'<span class="tag-done">解決済</span>':'<span class="tag-open">未解決</span>'}${a.recurrence_count>1?` <span style="color:var(--muted)">×${a.recurrence_count}</span>`:""}<br>
+
+
+
+
+         <span style="color:var(--muted)">${esc(a.detail||"")} <small>${esc(a["発生日時_jst"]||"")}</small></span></div></div>`
+
+
+
+
+        ).join("") : '<div class="dempty">アラームなし</div>';
+
+
+
+
+
+
+
+
+
+      const histRows = cached.hist.length ? cached.hist.slice(0,10).map(h =>
+
+
+
+
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(h["実施日"]||"")}</span>
+
+
+
+
+         <div><b>${esc(h["作業種別"]||"")}</b> <span style="color:var(--muted)">[${inspStatusLabel[h["状態"]]||esc(h["状態"]||"")}]</span>${h["ptw番号"]?` <span style="color:var(--muted)">${esc(h["ptw番号"])}</span>`:""}<br>
+
+
+
+
+         <span style="color:var(--muted)">${esc(h["種別"]==="work_order"?"作業票":"点検計画")} / ${h["作業員数"]||"?"}名</span></div></div>`
+
+
+
+
+        ).join("") : '<div class="dempty">作業履歴なし</div>';
+
+
+
+
+
+
+
+
+
+      // 点検実績（この号機）
+
+
+
+
+      const insp = (state.inspResults||[]).filter(r => (r["風車"]||"")===wtgId).slice(0,10);
+
+
+
+
+      const inspRows = insp.length ? insp.map(r =>
+
+
+
+
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(r["実施日"]||"")}</span>
+
+
+
+
+         <div><b>${esc(r["結果表示"]||r["結果"]||"")}</b> <span style="color:var(--muted)">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</span>${r["深刻度"]?` <span style="color:#ff9a92">深刻度:${esc(r["深刻度"])}</span>`:""}<br>
+
+
+
+
+         <span style="color:var(--muted)">${esc(r["異常内容"]||r["コメント"]||"")}</span></div></div>`
+
+
+
+
+        ).join("") : '<div class="dempty">点検実績なし</div>';
+
+
+
+
+
+
+
+
+
+      // 整備・部品交換履歴（maintenance_results）
+
+
+
+
+      const maint = cached.maint || [];
+
+
+
+
+      const partsHist = maint.filter(m => Array.isArray(m.parts_replaced) && m.parts_replaced.length);
+
+
+
+
+      const maintRows = maint.length ? maint.slice(0,10).map(m =>
+
+
+
+
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(m.work_date||"")}</span>
+
+
+
+
+         <div><b>${esc(m.component_name_ja||m.component||m.work_type||"")}</b> ${m.result?`<span style="color:var(--muted)">[${esc(m.result)}]</span>`:""}<br>
+
+
+
+
+         <span style="color:var(--muted)">${esc(m.finding||"")}${m.action_taken?` → ${esc(m.action_taken)}`:""}</span>
+
+
+
+
+         ${(Array.isArray(m.parts_replaced)&&m.parts_replaced.length)?`<br><span style="color:#9cd2ff">交換: ${esc(m.parts_replaced.join("、"))}${m.parts_cost_yen?`（¥${Number(m.parts_cost_yen).toLocaleString()}）`:""}</span>`:""}
+
+
+
+
+         ${m.root_cause?`<br><span style="color:#ffb0a8">根本原因: ${esc(m.root_cause)}</span>`:""}</div></div>`
+
+
+
+
+        ).join("") : '<div class="dempty">整備・部品交換の記録なし（点検実績/作業票から蓄積されます）</div>';
+
+
+
+
+
+
+
+
+
+      // 今後の点検予定
+
+
+
+
+      const upcoming = (state.insp||[]).filter(i => i.wtg_id===wtgId && i.date>=TODAY && i.status!=="cancelled" && i.status!=="done")
+
+
+
+
+        .sort((a,b)=> a.date<b.date?-1:1).slice(0,8);
+
+
+
+
+      const upRows = upcoming.length ? upcoming.map(i =>
+
+
+
+
+        `<div class="drow"><span style="color:var(--muted);white-space:nowrap">${esc(i.date||"")}</span>
+
+
+
+
+         <div><b>${esc(i.work_type||"")}</b> <span style="color:var(--muted)">[${inspStatusLabel[i.status]||esc(i.status||"")}]</span>${i.required_qualification?`<br><span style="color:var(--muted)">資格:${esc(i.required_qualification)}</span>`:""}</div></div>`
+
+
+
+
+        ).join("") : '<div class="dempty">今後の点検予定なし</div>';
+
+
+
+
+
+
+
+
+
+      // 診断
+
+
+
+
+      const dg = diagnose(cached);
+
+
+
+
+      const actsHtml = dg.acts.map(a=>`<li><span class="prio p${a.p}">${a.p===1?"優先":a.p===2?"注意":"通常"}</span><span>${a.t}</span></li>`).join("");
+
+
+
+
+
+
+
+
+
+      box.innerHTML = `
+
+
+
+
+        <div class="dhead"><span class="sdot s-${esc(st)}"></span><h2>${esc(b.wtg_id)}</h2>
+
+
+
+
+          <span class="pill p-${esc(st)}">${esc(b["状態表示"]||statusLabel[st]||st)}</span>
+
+
+
+
+          <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">最終更新 ${esc(b["更新日時_jst"]||"")}</span></div>
+
+
+
+
+        <div style="font-size:11.5px;color:var(--muted)">${esc(b.maker||"")} ${esc(b.model_name||"")} ・ ${esc(b.area||"")} ・ 設置 ${esc(b.installed_at||"–")} ・ 定格 ${b.rated_power_kw!=null?b.rated_power_kw+"kW":"–"}</div>
+
+
+
+
+        <div class="metrics">
+
+
+
+
+          <div class="metric"><div class="l">出力</div><div class="v">${b.output_kw!=null?Math.round(b.output_kw):"–"} <small>kW (${b["出力率pct"]!=null?b["出力率pct"]+"%":"–"})</small></div></div>
+
+
+
+
+          <div class="metric"><div class="l">風速</div><div class="v">${b.wind_speed_ms!=null?b.wind_speed_ms:"–"} <small>m/s</small></div></div>
+
+
+
+
+          <div class="metric"><div class="l">未解決アラーム</div><div class="v">${b["未解決アラーム数"]||0}<small> 件</small></div></div>
+
+
+
+
+          <div class="metric"><div class="l">未対応異常</div><div class="v">${b["未対応異常数"]||0}<small> 件</small></div></div>
+
+
+
+
+          <div class="metric"><div class="l">健全度低下</div><div class="v">${b["健全度低下コンポーネント数"]||0}<small> 件</small></div></div>
+
+
+
+
+        </div>
+
+
+
+
+        ${b.alarm_code?`<div style="font-size:12px;color:#f0c674;margin-bottom:6px">アラームコード: ${esc(b.alarm_code)}</div>`:""}
+
+
+
+
+
+
+
+
+
+        <div class="karte">
+
+
+
+
+          <div class="kcard diag span2">
+
+
+
+
+            <div class="dsec">🩺 カルテ診断・故障予知 <span class="badge">ルールベース簡易</span></div>
+
+
+
+
+            <div class="verdict">
+
+
+
+
+              <div class="vscore" style="color:${dg.color}">${dg.worst!=null?dg.worst:"–"}<small style="font-size:13px;color:var(--muted);font-weight:600"> /100</small></div>
+
+
+
+
+              <div class="vlabel ${dg.cls}">${dg.label}</div>
+
+
+
+
+              <div class="hbar"><i style="width:${dg.worst!=null?dg.worst:0}%;background:${dg.color}"></i></div>
+
+
+
+
+            </div>
+
+
+
+
+            <ul class="acts">${actsHtml}</ul>
+
+
+
+
+            ${dg.predict?`<div class="predict">🔮 故障予知メモ：${dg.predict}</div>`:""}
+
+
+
+
+            <div class="foot">※ 本診断は現データ（健全度・アラーム・点検・予知アラート）からのルールベース簡易診断です。将来、Supabase上のAI読取専用ビュー経由で高度化予定（<a href="./ai-data-boundary.html">データ境界</a>）。最終判断は電気主任技術者・保安規定が優先。</div>
+
+
+
+
+          </div>
+
+
+
+
+
+
+
+
+
+          <div class="kcard"><div class="dsec">🔧 コンポーネント健全度</div><div class="kscroll">${compRows}</div></div>
+
+
+
+
+          <div class="kcard"><div class="dsec">🚨 アラーム履歴</div><div class="kscroll">${alarmRows}</div></div>
+
+
+
+
+          <div class="kcard"><div class="dsec">📋 点検実績</div><div class="kscroll">${inspRows}</div></div>
+
+
+
+
+          <div class="kcard"><div class="dsec">🧰 整備・部品交換履歴</div><div class="kscroll">${maintRows}</div></div>
+
+
+
+
+          <div class="kcard"><div class="dsec">🗂 作業履歴</div><div class="kscroll">${histRows}</div></div>
+
+
+
+
+          <div class="kcard"><div class="dsec">📅 今後の点検予定</div><div class="kscroll">${upRows}</div></div>
+
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+
+        <div style="margin-top:16px;display:flex;gap:16px;font-size:12px;flex-wrap:wrap">
+
+
+
+
+          <a href="./inspection-input.html">🛠 点検実績を入力</a>
+
+
+
+
+          <a href="./defect-rca.html">🔧 故障/RCAへ</a>
+
+
+
+
+          <a href="./work-orders.html">📝 作業票一覧へ</a>
+
+
+
+
+          <a href="./report-candidates.html">⚖ 報告候補へ</a>
+
+
+
+
+        </div>`;
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /* ---------- ALARMS ---------- */
+
+
+
+
+    function renderAlarms(){
+
+
+
+
+      const body = document.getElementById("alarmBody");
+
+
+
+
+      let rows = state.alarms.slice();
+
+
+
+
+      const f = state.alarmFilter;
+
+
+
+
+      if(f==="open") rows = rows.filter(a => !a.resolved_at);
+
+
+
+
+      else if(f==="critical") rows = rows.filter(a => a.severity==="critical");
+
+
+
+
+      else if(f==="warning") rows = rows.filter(a => a.severity==="warning");
+
+
+
+
+      if(!rows.length){ body.innerHTML = '<div class="dempty">該当するアラームはありません。</div>'; return; }
+
+
+
+
+      const trs = rows.map(a => `<tr class="${a.resolved_at?'':'ongoing'}">
+
+
+
+
+        <td><span class="sev sev-${esc(a.severity)}">${sevLabel[a.severity]||esc(a.severity)}</span></td>
+
+
+
+
+        <td><b>${esc(a.wtg_id)}</b></td>
+
+
+
+
+        <td>${esc(a.alarm_type)}</td>
+
+
+
+
+        <td style="color:var(--muted)">${esc(a.detail||"")}</td>
+
+
+
+
+        <td>${esc(a.owner||"–")}</td>
+
+
+
+
+        <td style="white-space:nowrap">${fmtDT(a.started_at)}</td>
+
+
+
+
+        <td>${a.resolved_at?'<span class="tag-done">解決済</span>':'<span class="tag-open">未解決</span>'}</td>
+
+
+
+
+      </tr>`).join("");
+
+
+
+
+      body.innerHTML = `<table><thead><tr>
+
+
+
+
+        <th>重要度</th><th>号機</th><th>種別</th><th>内容</th><th>担当</th><th>発生</th><th>状態</th>
+
+
+
+
+      </tr></thead><tbody>${trs}</tbody></table>`;
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /* ---------- INSPECTION CALENDAR ---------- */
+
+
+
+
+    function renderCalendar(){
+
+
+
+
+      const body = document.getElementById("calBody");
+
+
+
+
+      if(!state.insp.length){ body.innerHTML = '<div class="dempty">点検計画がありません。</div>'; return; }
+
+
+
+
+      const byDate = {};
+
+
+
+
+      state.insp.forEach(i => { (byDate[i.date] = byDate[i.date] || []).push(i); });
+
+
+
+
+      const dates = state.insp.map(i => i.date).sort();
+
+
+
+
+      const first = dates[0], last = dates[dates.length-1];
+
+
+
+
+      const months = monthsBetween(first, last);
+
+
+
+
+      const dows = ["日","月","火","水","木","金","土"];
+
+
+
+
+      body.innerHTML = months.map(m => {
+
+
+
+
+        const y = m.y, mo = m.m;
+
+
+
+
+        const firstDay = new Date(y, mo, 1).getDay();
+
+
+
+
+        const daysIn = new Date(y, mo+1, 0).getDate();
+
+
+
+
+        let cells = "";
+
+
+
+
+        for(let i=0;i<firstDay;i++) cells += '<div class="day empty"></div>';
+
+
+
+
+        for(let d=1; d<=daysIn; d++){
+
+
+
+
+          const ds = `${y}-${String(mo+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+
+
+
+          const items = byDate[ds] || [];
+
+
+
+
+          const chips = items.map(i =>
+
+
+
+
+            `<div class="chip c-${esc(i.status)}" title="${esc(i.wtg_id)} ${esc(i.work_type)} (${inspStatusLabel[i.status]||i.status})">${esc(i.wtg_id)} ${esc(i.work_type)}</div>`).join("");
+
+
+
+
+          cells += `<div class="day${ds===TODAY?' today':''}"><div class="dnum">${d}</div>${chips}</div>`;
+
+
+
+
+        }
+
+
+
+
+        const dowHead = dows.map(w => `<div class="dow">${w}</div>`).join("");
+
+
+
+
+        return `<div class="cal-month"><h3>${y}年${mo+1}月</h3><div class="cal">${dowHead}${cells}</div></div>`;
+
+
+
+
+      }).join("");
+
+
+
+
+    }
+
+
+
+
+    function monthsBetween(a, b){
+
+
+
+
+      const [ay,am] = a.split("-").map(Number);
+
+
+
+
+      const [by,bm] = b.split("-").map(Number);
+
+
+
+
+      const out = []; let y=ay, m=am-1;
+
+
+
+
+      while(y<by || (y===by && m<=bm-1)){ out.push({y,m}); m++; if(m>11){m=0;y++;} }
+
+
+
+
+      return out;
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /* ---------- TABS ---------- */
+
+
+
+
+    document.querySelectorAll(".tabs button").forEach(btn =>
+
+
+
+
+      btn.addEventListener("click", () => {
+
+
+
+
+        document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+
+
+
+
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+
+
+
+
+        btn.classList.add("active");
+
+
+
+
+        document.getElementById("view-" + btn.dataset.tab).classList.add("active");
+
+
+
+
+      }));
+
+
+
+
+    document.querySelectorAll("#alarmFilters button").forEach(btn =>
+
+
+
+
+      btn.addEventListener("click", () => {
+
+
+
+
+        document.querySelectorAll("#alarmFilters button").forEach(b => b.classList.remove("active"));
+
+
+
+
+        btn.classList.add("active");
+
+
+
+
+        state.alarmFilter = btn.dataset.f;
+
+
+
+
+        renderAlarms();
+
+
+
+
+      }));
+
+
+
+
+
+
+
+
+
+    /* ---------- LOAD ---------- */
+
+
+
+
+    async function loadAll(){
+
+
+
+
+      try{
+
+
+
+
+        const [wtg, alarms, insp, inspRes] = await Promise.all([
+
+
+
+
+          sb.get("v_top_wtg_list?order=風車id.asc"),
+
+
+
+
+          sb.get("alarm_events?select=*&order=started_at.desc"),
+
+
+
+
+          sb.get("inspection_plan?select=*&order=date.asc,time_start.asc"),
+
+
+
+
+          sb.get("v_inspection_results_list?order=実施日.desc").catch(()=>[])
+
+
+
+
+        ]);
+
+
+
+
+        state.wtg = wtg; state.alarms = alarms; state.insp = insp; state.inspResults = inspRes;
+
+
+
+
+        state.sel = wtg.length ? wtg[0]["風車id"] : null;
+
+
+
+
+        document.getElementById("cTurb").textContent = wtg.length;
+
+
+
+
+        document.getElementById("cAlarm").textContent = alarms.filter(a=>!a.resolved_at).length + "/" + alarms.length;
+
+
+
+
+        document.getElementById("cCal").textContent = insp.length;
+
+
+
+
+        renderTurbines(); renderAlarms(); renderCalendar();
+
+
+
+
+      }catch(e){
+
+
+
+
+        const msg = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+
+
+
+
+        ["turbBody","alarmBody","calBody"].forEach(id => document.getElementById(id).innerHTML = msg);
+
+
+
+
+      }
+
+
+
+
+    }
+
+
+
+
+    sb.requireLogin({ onReady: loadAll });
+
+
+
+
+  </script>
+
+
+
+
+</body>
+
+
+
+
+</html>
+
+
+
+
