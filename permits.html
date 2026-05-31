@@ -609,13 +609,15 @@
       `;
 
       const foot = document.getElementById('drawerFoot');
+      const printBtn = `<a href="./print.html?type=ptw&id=${esc(r['id']||'')}" target="_blank" style="font-size:13px;font-weight:700;padding:8px 14px;border-radius:6px;cursor:pointer;background:var(--panel2);color:var(--muted);border:1px solid var(--line);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">🖨 印刷</a>`;
       if(locked) {
-        foot.innerHTML = `<button class="btn-close-drawer" onclick="closeDrawer()">閉じる</button>`;
+        foot.innerHTML = printBtn + `<button class="btn-close-drawer" onclick="closeDrawer()">閉じる</button>`;
       } else {
         const st = r['状態'] || '';
         foot.innerHTML =
           `<button class="btn-save" id="dwSaveBtn" onclick="saveDrawer('${esc(r['id']||'')}')">💾 保存</button>`
           + (st === 'draft' ? `<button class="btn-submit" onclick="submitDrawer('${esc(r['id']||'')}')">📤 承認申請</button>` : '')
+          + printBtn
           + `<button class="btn-close-drawer" onclick="closeDrawer()">閉じる</button>`;
       }
     }
