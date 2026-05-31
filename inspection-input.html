@@ -1273,7 +1273,10 @@
 
 
 
-    const SOURCE_LABEL = {planned:'計画点検',manual:'現場判断',scada:'SCADA異常',alarm:'アラーム発報',weather:'天候後確認',recovery:'復旧確認',chief_instruction:'主任技術者指示'};
+    // 起点ラベル（フォーム用）
+    const SOURCE_LABEL = {manual:'現場判断',scada:'SCADA異常',alarm:'アラーム発報',weather:'天候後確認',recovery:'復旧確認',chief_instruction:'主任技術者指示'};
+    // 作業種別表示（一覧用）— 起点に応じて「臨時/緊急」か「臨時」に分類
+    const SOURCE_KIND  = {manual:'臨時',scada:'臨時/緊急',alarm:'臨時/緊急',weather:'臨時',recovery:'臨時',chief_instruction:'臨時'};
     const state = { turbines:[], userId:null, weather:"", sev:"", set:"", items:{}, submitting:false, adhocMode:false };
 
 
@@ -2883,7 +2886,11 @@
             ? '<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.10);border:1px solid rgba(219,97,162,.4);border-radius:4px;padding:1px 6px;margin-left:4px;">臨時</span>'
             : '';
           // 作業種別の表示
-          const workLabel = isAdhoc ? (SOURCE_LABEL[r.source_type]||r.source_type||'臨時点検') : esc(r.work_type||'');
+          const srcType   = r.source_type||'manual';
+          const workLabel = isAdhoc
+            ? (SOURCE_KIND[srcType]||'臨時')  // 作業種別は「臨時」or「臨時/緊急」
+            : esc(r.work_type||'');
+          const srcNote   = isAdhoc ? '<div style="font-size:10px;color:var(--muted);margin-top:1px;">'+esc(SOURCE_LABEL[srcType]||srcType)+'</div>' : '';
           // ナビ先
           let navUrl = '';
           if(isAdhoc && rid) navUrl = './inspection-input.html?readonly=1&result_id='+rid;
@@ -2905,7 +2912,7 @@
           return '<tr style="cursor:pointer;'+(isAdhoc?'background:rgba(219,97,162,.04);':'')+'" onclick="if(!event.defaultPrevented&&\''+navUrl+'\')location.href=\''+navUrl+'\'">'+
             '<td style="white-space:nowrap;color:var(--muted);">'+esc(r.planned_date||'')+'</td>'+
             '<td><b style="color:#fff;font-family:monospace;">'+esc(r.turbine_no||'')+'</b></td>'+
-            '<td>'+workLabel+kindBadge+note+'</td>'+
+            '<td>'+workLabel+kindBadge+srcNote+note+'</td>'+
             '<td>'+esc(time)+'</td>'+
             '<td>'+badge+'</td>'+
             '<td style="white-space:nowrap;">'+action+holdBtn+'</td>'+
