@@ -289,11 +289,16 @@
 
 
       <button data-f="all" class="active">すべて</button>
+      <span style="color:var(--line);margin:0 4px;">｜</span>
       <button data-f="draft">📋 計画中</button>
       <button data-f="pending">📨 申請中</button>
       <button data-f="approved">✅ 承認済</button>
       <button data-f="returned">↩ 差戻し</button>
-      <button data-f="overdue">⚠️ 期限超過</button>
+      <span style="color:var(--line);margin:0 4px;">｜</span>
+      <button data-f="ku_年次">年次</button>
+      <button data-f="ku_定期">定期</button>
+      <button data-f="ku_随時緊急">随時/緊急</button>
+      <button data-f="ku_その他">その他</button>
 
 
 
@@ -472,8 +477,12 @@
 
 
 
-      if(f === "overdue")      rows = rows.filter(r => r["期限超過"]);
-      else if(f !== "all")     rows = rows.filter(r => (r["approval_status"]||"draft") === f);
+      if(f === "all")                   { /* 全件 */ }
+      else if(f === "ku_年次")          rows = rows.filter(r => r["点検区分"] === "年次");
+      else if(f === "ku_定期")          rows = rows.filter(r => r["点検区分"] === "定期");
+      else if(f === "ku_随時緊急")      rows = rows.filter(r => r["点検区分"] === "随時/緊急");
+      else if(f === "ku_その他")        rows = rows.filter(r => r["点検区分"] === "その他");
+      else                              rows = rows.filter(r => (r["approval_status"]||"draft") === f);
 
 
 
