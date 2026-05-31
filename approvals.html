@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 
 
@@ -339,6 +339,8 @@
 
 
       <button data-f="inspection_result">点検実績</button>
+      <button data-f="inspection_plan">点検計画</button>
+      <button data-f="defect_finding">異常判断</button>
 
 
 
@@ -388,31 +390,17 @@
 
 
 
-    const typeClass = { work_order:"wo", work_permit:"ptw", inspection_result:"insp" };
+    const typeClass = { work_order:"wo", work_permit:"ptw", inspection_result:"insp", inspection_plan:"plan", defect_finding:"defect", near_miss:"nm", moc:"moc", permit:"ptw" };
 
 
 
 
     const patchTarget = {
-
-
-
-
-      work_order:   { table:"work_orders",  approve:{status:"in_progress"},      revise:{status:"open"} },
-
-
-
-
-      work_permit:  { table:"work_permits", approve:{permit_status:"approved"},  revise:{permit_status:"rejected"} },
-
-
-
-
-      inspection_result:{ table:"inspection_results", approve:{result_status:"ok"}, revise:{} }
-
-
-
-
+      work_order:       { table:"work_orders",         approve:{status:"in_progress", approval_status:"approved"}, revise:{status:"open",             approval_status:"returned"} },
+      work_permit:      { table:"work_permits",         approve:{permit_status:"approved", approval_status:"approved"}, revise:{permit_status:"rejected", approval_status:"returned"} },
+      inspection_result:{ table:"inspection_results",  approve:{result_status:"ok", approval_status:"approved"},   revise:{approval_status:"returned"} },
+      defect_finding:   { table:"defect_findings",      approve:{status:"assessed", approval_status:"approved"},   revise:{approval_status:"returned"} },
+      inspection_plan:  { table:"inspection_plans",     approve:{status:"approved"},                               revise:{status:"returned"} },
     };
 
 
