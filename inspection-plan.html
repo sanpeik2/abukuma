@@ -492,7 +492,7 @@
 
 
 
-        ['計画日','号機','作業種別','区分','点検ステータス','期限','時間','必要資格','人数','PTW','操作'].map(h=>`<th>${h}</th>`).join('') +
+        ['計画日','号機','作業種別','区分','点検ステータス','期限','時間','必要資格','人数','PTW','詳細'].map(h=>`<th>${h}</th>`).join('') +
 
 
 
@@ -700,17 +700,11 @@
       let b = "";
 
       // ── 詳細ボタン（常に表示・承認状態で編集可否が変わる）──
+      // 詳細ボタンのみ（承認申請はステータス列に移動済み）
       b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}">📄 詳細</button>`;
 
-      // ── 承認フローボタン ──
-      if(appSt === "draft"){
-        b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 承認申請</button>`;
-      } else if(appSt === "returned"){
-        b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 再申請</button>`;
-      } else if(appSt === "pending"){
-        b += `<span style="${BTN.view}">⏳ 承認待ち</span>`;
-      } else if(appSt === "approved"){
-        b += `<span style="${BTN.locked}">🔒 承認済</span>`;
+      // 承認済のみ差戻し申請を表示
+      if(appSt === "approved"){
         b += `<button onclick="requestRevision('${esc(rawId)}')" style="${BTN.revise}">↩ 差戻し申請</button>`;
       }
 
