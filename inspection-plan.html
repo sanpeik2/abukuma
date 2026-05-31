@@ -290,7 +290,7 @@
 
       <button data-f="all" class="active">すべて</button>
       <button data-f="draft">📋 計画中</button>
-      <button data-f="pending">⏳ 承認待ち</button>
+      <button data-f="pending">📨 申請中</button>
       <button data-f="approved">✅ 承認済</button>
       <button data-f="returned">↩ 差戻し</button>
       <button data-f="overdue">⚠️ 期限超過</button>
@@ -436,7 +436,7 @@
       return '<span style="font-size:11px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:5px;padding:2px 7px;white-space:nowrap;">⚠ '+label+'</span>';
     }
     function planApprovalBadge(s){
-      const lbl={draft:'📋 計画中',pending:'⏳ 承認待ち',approved:'✅ 承認済',returned:'↩ 差戻し'};
+      const lbl={draft:'📋 計画中',pending:'📨 申請中',approved:'✅ 承認済',returned:'↩ 差戻し'};
       const col={draft:'#8b949e',pending:'#e3b341',approved:'#7ee787',returned:'#ff9a92'};
       const bg ={draft:'rgba(139,148,158,.10)',pending:'rgba(210,153,34,.12)',approved:'rgba(63,185,80,.12)',returned:'rgba(248,81,73,.10)'};
       const bd ={draft:'#30363d',pending:'rgba(210,153,34,.5)',approved:'rgba(63,185,80,.5)',returned:'rgba(248,81,73,.5)'};
@@ -683,10 +683,7 @@
       // 詳細ボタンのみ（承認申請はステータス列に移動済み）
       b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}">📄 詳細</button>`;
 
-      // 承認済のみ差戻し申請を表示
-      if(appSt === "approved"){
-        b += `<button onclick="requestRevision('${esc(rawId)}')" style="${BTN.revise}">↩ 差戻し申請</button>`;
-      }
+      // 差戻しは approvals.html（承認者画面）の権限のため担当者側には表示しない
 
       return b;
     }
