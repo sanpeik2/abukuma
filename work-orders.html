@@ -267,7 +267,7 @@ function buildDetailHtml(r, s){
       ${(r['approval_status']||'draft')==='returned'?'<span style="font-size:11px;color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:5px;padding:2px 8px;">↩ 差戻し</span>':''}
       ${(['draft','returned'].includes(r['approval_status']||'draft'))?`<button onclick="openWoEdit('${sb.esc(id)}')" style="font-size:11.5px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:5px 10px;cursor:pointer;">✏ 編集</button>`:''}
       ${(['draft','returned'].includes(r['approval_status']||'draft'))?`<button onclick="submitWoApproval('${sb.esc(id)}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:4px 9px;cursor:pointer;">📨 承認申請</button>`:''}
-      ${(r['approval_status']==='approved')?`<button onclick="requestWoRevision('${sb.esc(id)}')" style="font-size:11px;color:#e3b341;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:4px 9px;cursor:pointer;">↩ 差戻し申請</button>`:''}
+      <a href="./print.html?type=wo&id=${sb.esc(id)}" target="_blank" style="font-size:11px;color:#8b949e;background:rgba(139,148,158,.1);border:1px solid rgba(139,148,158,.35);border-radius:6px;padding:4px 9px;text-decoration:none;">🖨 印刷</a>
     </div>
     <div class="dgrid">
       <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
@@ -850,14 +850,14 @@ async function saveWoSafetyConfirm(id){
     load();
   }catch(e){ alert('記録失敗: '+e.message); }
 }
-async function requestWoRevision(id){
-  const reason=prompt('差戻し理由を入力してください:','');
-  if(reason===null) return;
+async function submitWoApproval(id){
+  if(!confirm('この作業票を承認申請しますか？')) return;
   try{
     await fetch(`${sb.URL}/rest/v1/work_orders?id=eq.${encodeURIComponent(id)}`,
-      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'returned'})});
-    alert('差戻し完了しました。'); load();
-  }catch(e){ alert('差戻し失敗: '+e.message); }
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+       body:JSON.stringify({approval_status:'pending',updated_at:new Date().toISOString()})});
+    load();
+  }catch(e){ alert('申請失敗: '+e.message); }
 }
 sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); } });
 </script>
