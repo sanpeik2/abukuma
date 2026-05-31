@@ -1148,7 +1148,8 @@
       }
       if(isDone(r)) return `<div style="margin-top:12px;color:var(--muted);font-size:12px;">クローズ済（作業票なし）</div>`;
       const did = encodeURIComponent(r["故障id"]);
-      return `<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);"><span style="color:#e3b341;font-weight:700;font-size:12.5px;">この異常から作業票を作成</span><span style="color:#8b949e;font-size:11.5px;">作業票を作成すると WTG・異常内容・判定が引き継がれます</span><a href="./work-orders.html?defect_finding_id=${did}" style="margin-left:auto;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">📝 作業票を作成</a></div>`;
+      const _irid = r["inspection_result_id"] ? '&inspection_result_id=' + encodeURIComponent(r["inspection_result_id"]) : '';
+      return `<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);"><span style="color:#e3b341;font-weight:700;font-size:12.5px;">この異常から作業票を作成</span><span style="color:#8b949e;font-size:11.5px;">作業票を作成すると WTG・異常内容・判定が引き継がれます</span><a href="./work-orders.html?defect_finding_id=${did}${_irid}" style="margin-left:auto;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">📝 作業票を作成</a></div>`;
     }
     function render(){
 
@@ -1566,6 +1567,7 @@
 
     async function loadAll(){
       const _planId = new URLSearchParams(location.search).get('plan_id');
+      const _resultId = new URLSearchParams(location.search).get('inspection_result_id');
 
 
 
@@ -1583,7 +1585,7 @@
 
 
 
-          sb.get("v_defect_rca_list?order=発見日時_jst.desc"),
+          sb.get(_resultId ? `v_defect_rca_list?inspection_result_id=eq.${encodeURIComponent(_resultId)}&order=発見日時_jst.desc` : "v_defect_rca_list?order=発見日時_jst.desc"),
 
 
 
@@ -1626,7 +1628,8 @@
 
 
         renderKpis();
-        if(_planId) showPlanBanner(_planId);
+        if(_resultId) showResultBanner(_resultId);
+        else if(_planId) showPlanBanner(_planId);
 
 
 
@@ -1695,6 +1698,43 @@
       }catch(e){ bannerEl.style.display='none'; }
     }
 
+
+    /* ===== 点検結果バナー（inspection_result_id パラメータがある場合）===== */
+    async function showResultBanner(rid){
+      const bannerEl = document.getElementById('planBanner');
+      if(!bannerEl) return;
+      try{
+        const [irRows, clRows] = await Promise.all([
+          sb.get(`inspection_results?id=eq.${encodeURIComponent(rid)}&select=turbine_id,plan_id,executed_date,severity,comments`),
+          sb.get(`result_checklist?result_id=eq.${encodeURIComponent(rid)}&check_result=eq.ng&order=created_at.asc`)
+        ]);
+        const ir = irRows && irRows[0];
+        if(!ir){ bannerEl.style.display='none'; return; }
+        let tno='';
+        try{ const ts=await sb.get(`turbines?id=eq.${encodeURIComponent(ir.turbine_id)}&select=turbine_no`); tno=(ts&&ts[0]&&ts[0].turbine_no)||''; }catch(e2){}
+        const SEV_JA={low:'低',medium:'中',high:'高',critical:'重大'};
+        const sev=ir.severity?(SEV_JA[ir.severity]||ir.severity):'–';
+        const ngItems=clRows||[];
+        const ngHtml=ngItems.map(cl=>{
+          const meas=cl.measured_value!=null?`${cl.measured_value}${esc(cl.unit||'')}`:cl.measured_text?esc(cl.measured_text):'';
+          return `<div style="margin-top:6px;padding:6px 10px;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);border-radius:7px;font-size:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;"><b style="color:#ff9a92;">${esc(cl.check_item)}</b>${meas?`<span style="color:var(--muted);">測定値: ${esc(meas)}</span>`:''} ${cl.comment?`<span style="color:var(--muted);">${esc(cl.comment)}</span>`:''}</div>`;
+        }).join('');
+        const planLink=ir.plan_id?`./inspection-input.html?plan_id=${encodeURIComponent(ir.plan_id)}&readonly=1`:'./inspection-input.html?readonly=1';
+        bannerEl.innerHTML=`<div style="padding:12px 16px;border:1px solid rgba(248,81,73,.4);border-radius:9px;background:rgba(248,81,73,.06);margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;${ngItems.length?'margin-bottom:10px;':''}">
+            <span style="color:#ff9a92;font-weight:700;">🔴 点検結果（異常あり）から遷移</span>
+            ${tno?`<b style="color:#fff;">${esc(tno)}</b>`:''}
+            ${ir.executed_date?`<span style="color:var(--muted);">点検日: ${esc(ir.executed_date)}</span>`:''}
+            ${sev!=='–'?`<span style="color:#ff9a92;font-weight:700;">深刻度: ${esc(sev)}</span>`:''}
+            ${ir.comments?`<span style="color:var(--muted);font-size:11.5px;">${esc(ir.comments)}</span>`:''}
+            <a href="${planLink}" style="margin-left:auto;color:#58a6ff;font-size:12px;text-decoration:none;white-space:nowrap;">点検結果を見る →</a>
+          </div>
+          ${ngHtml}
+          ${ngItems.length?'<div style="margin-top:8px;font-size:11.5px;color:var(--muted);">下の一覧はこの点検結果に紐づく異常のみ表示しています</div>':''}
+        </div>`;
+        bannerEl.style.display='block';
+      }catch(e){ bannerEl.style.display='none'; }
+    }
     sb.requireLogin({ onReady: loadAll });
 
 
