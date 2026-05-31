@@ -676,46 +676,48 @@
     const REPAIR_KW = ['補修','停止','修理','交換','清掃作業'];
 
     function planButtons(r){
-      const st   = r["状態"] || "";
-      const appSt= r["approval_status"] || "draft";
-      const pid  = encodeURIComponent(r["計画id"] || "");
-      const rawId= r["計画id"] || "";
+      const st    = r["状態"] || "";
+      const appSt = r["approval_status"] || "draft";
+      const pid   = encodeURIComponent(r["計画id"] || "");
+      const rawId = r["計画id"] || "";
       const hasAnomaly = !!(r["異常件数"] && r["異常件数"] > 0);
       const isRepair   = REPAIR_KW.some(k => (r["作業種別"]||"").includes(k));
-      const canEdit    = (appSt === "draft" || appSt === "returned");
       let b = "";
 
-      // 業務アクションボタン
-      if(st === "planned" || st === "in_progress"){
-        const lbl = st === "in_progress" ? "点検を続ける" : "点検を開始";
-        const btnSt = st === "in_progress" ? BTN.cont : BTN.start;
-        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${btnSt}">${lbl}</a>`;
-        if(isRepair) b += `<a href="./work-orders.html?inspection_plan_id=${pid}" style="${BTN.planWo}">計画作業票</a>`;
+      if(st === "planned"){
+        // ── 承認前 ──────────────────────
+        if(appSt === "draft" || appSt === "returned"){
+          b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}">✏ 編集</button>`;
+          b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 承認申請</button>`;
+          if(appSt === "returned") b += `<span style="font-size:11px;color:#ff9a92;margin-left:2px;">↩ 差戻し中</span>`;
+        } else if(appSt === "pending"){
+          // 承認待ち中は点検開始させない
+          b += `<span style="${BTN.view}">⏳ 承認待ち</span>`;
+          b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}" title="内容を確認">👁 確認</button>`;
+        } else if(appSt === "approved"){
+          // 承認済なら点検開始可能
+          b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">✅ 点検を開始</a>`;
+          b += `<span style="${BTN.locked}">🔒 承認済</span>`;
+          if(isRepair) b += `<a href="./work-orders.html?inspection_plan_id=${pid}" style="${BTN.planWo}">計画作業票</a>`;
+        }
+      } else if(st === "in_progress"){
+        // 実施中 — 追加編集は許可、ただし主要変更は差戻し経由
+        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.cont}">点検を続ける</a>`;
       } else if(st === "completed" || st === "done"){
+        // 完了 — 結果確認・是正判断へ
+        b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${BTN.view}">結果を見る</a>`;
         if(hasAnomaly){
-          b += `<a href="./defect-rca.html?plan_id=${pid}" style="${BTN.anomaly}">異常判断へ</a>`;
+          b += `<a href="./defect-rca.html?plan_id=${pid}" style="${BTN.anomaly}">⚠ 是正判断へ</a>`;
           b += `<a href="./work-orders.html?inspection_plan_id=${pid}" style="${BTN.wo}">作業票を作成</a>`;
         }
-        b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${BTN.view}">結果を見る</a>`;
-      } else {
-        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">点検を開始</a>`;
-      }
-
-      // 編集ボタン（draft/returned のみ）
-      if(canEdit){
-        b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}">✏ 編集</button>`;
-      }
-
-      // 承認フロー
-      if(appSt === "draft" || appSt === "returned"){
-        b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 承認申請</button>`;
-      } else if(appSt === "pending"){
-        b += `<span style="${BTN.view}">⏳ 承認待ち</span>`;
-      } else if(appSt === "approved"){
+        // 完了後の計画承認は不要。結果(inspection_results)は別途承認。
+      } else if(appSt === "approved" && st !== "completed"){
         b += `<span style="${BTN.locked}">🔒 承認済</span>`;
         b += `<button onclick="requestRevision('${esc(rawId)}')" style="${BTN.revise}">↩ 差戻し申請</button>`;
+      } else {
+        b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}">✏ 編集</button>`;
+        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">点検を開始</a>`;
       }
-
       return b;
     }
 async function submitApproval(id){
