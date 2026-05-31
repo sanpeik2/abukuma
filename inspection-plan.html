@@ -23,7 +23,7 @@
 
 
 
-<title>阿武隈OS — 点検管理（ライブ）</title>
+<title>阿武隈OS — 点検計画（ライブ）</title>
 
 
 
@@ -238,7 +238,7 @@
 
 
 
-      <h1>点検管理</h1>
+      <h1>点検計画</h1>
 
 
 
@@ -310,7 +310,7 @@
 
     <div id="body" class="loading">読み込み中…</div>
     <div style="margin-top:14px">
-      <button onclick="openEditPanel('')" style="background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;">＋ 新規点検計画を起票</button>
+      <button onclick="openNewPlanPanel()" style="background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;">＋ 新規点検計画を起票（定期・年次）</button>
     </div>
 
 
@@ -422,8 +422,8 @@
         return '<span style="font-size:11px;color:var(--muted);">不要</span>';
       }
       if(num){
-        // PTW要・番号あり
-        return '<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.4);border-radius:5px;padding:2px 7px;white-space:nowrap;">✅ '+esc(num)+'</span>';
+        // PTW要・番号あり → クリックで詳細カード
+        return `<button onclick="openPtwCard('${esc(num)}',event)" style="font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);border-radius:5px;padding:2px 7px;white-space:nowrap;cursor:pointer;font-family:monospace;">✅ ${esc(num)}</button>`;
       }
       // PTW要・番号なし → 申請ボタン
       const btn = canAct
@@ -819,6 +819,7 @@
             <div id="ep_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               ${!locked ? `<button id="ep_save" onclick="saveEditPanel('${esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>` : ''}
+              <a href="./print.html?type=plan&id=${esc(id)}" target="_blank" style="font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;background:var(--panel2);color:var(--muted);border:1px solid var(--line);text-decoration:none;">🖨 印刷</a>
               <button onclick="closeEditPanel()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 閉じる</button>
               ${!locked ? `<span style="font-size:11px;color:var(--muted);">revision_no: ${d.revision_no||1}</span>` : ''}
             </div>
@@ -871,6 +872,230 @@
         if(btn) btn.disabled = false;
       }
     }
+/* ===== PTW 詳細カード ===== */
+async function openPtwCard(pno, ev) {
+  ev.stopPropagation();
+  document.querySelectorAll('.ptw-detail-card').forEach(el => el.remove());
+
+  const card = document.createElement('div');
+  card.className = 'ptw-detail-card';
+  Object.assign(card.style, {
+    position:'fixed', zIndex:'900',
+    background:'var(--panel)', border:'1px solid var(--line)',
+    borderRadius:'10px', padding:'16px',
+    minWidth:'340px', maxWidth:'430px',
+    boxShadow:'0 8px 32px rgba(0,0,0,.65)', fontSize:'12.5px'
+  });
+  const rect = ev.currentTarget.getBoundingClientRect();
+  const top = Math.min(rect.bottom + 6, window.innerHeight - 340);
+  card.style.top  = Math.max(top, 10) + 'px';
+  card.style.left = Math.max(Math.min(rect.left - 80, window.innerWidth - 450), 10) + 'px';
+  card.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px;">読み込み中…</div>';
+  document.body.appendChild(card);
+
+  setTimeout(() => {
+    document.addEventListener('click', function outside(e) {
+      if(!card.contains(e.target)){ card.remove(); document.removeEventListener('click', outside); }
+    });
+  }, 60);
+
+  try {
+    const rows = await sb.get(`work_permits?permit_no=eq.${encodeURIComponent(pno)}&select=*`);
+    if(!rows || !rows.length){
+      card.innerHTML = `<div style="color:#ff9a92;padding:8px;">PTW <b>${esc(pno)}</b> が見つかりません。<br><a href="./permits.html" style="color:var(--master);">PTW一覧で確認</a></div>`;
+      return;
+    }
+    const r = rows[0];
+    const tmap = {electrical:'電気',height:'高所',lifting:'揚重',hot_work:'火気',confined_space:'閉所',inspection:'点検',maintenance:'保全'};
+    const smap = {draft:'下書き',submitted:'⏳ 申請中',approved:'✅ 承認済',closed:'クローズ'};
+    const scol = {draft:'#8b949e',submitted:'#e3b341',approved:'#7ee787',closed:'#8b949e'};
+    const st = r.permit_status || 'draft';
+    const fdt = v => v ? String(v).replace('T',' ').replace('+09:00','').replace(/\.\d{3}/,'').slice(0,16) : '—';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+        <span style="font-family:monospace;font-size:13px;color:#58a6ff;font-weight:700;">${esc(r.permit_no||pno)}</span>
+        <span style="font-size:11px;font-weight:700;color:${scol[st]};">${smap[st]||st}</span>
+        <button onclick="this.closest('.ptw-detail-card').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;margin-left:auto;line-height:1;padding:0 4px;">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:10px;">
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">許可種別</div><b style="color:#fff;">${esc(tmap[r.permit_type]||r.permit_type||'—')}</b></div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">リスク</div><b>${r.risk_level==='high'?'🔴 高':r.risk_level==='medium'?'🟡 中':'🟢 低'}</b></div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">作業開始</div>${esc(fdt(r.start_at))}</div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">作業終了</div>${esc(fdt(r.end_at))}</div>
+        <div style="grid-column:1/3"><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">作業内容</div><div style="color:#fff;white-space:pre-wrap;max-height:80px;overflow-y:auto;">${esc(r.work_description||'—')}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">LOTO</div>${r.loto_required?'<span style="color:#f0c674;font-weight:700;">要</span>':'不要'}</div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">隔離</div>${r.isolations_required?'<span style="color:#f0c674;font-weight:700;">要</span>':'不要'}</div>
+      </div>
+      ${r.remarks?`<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding:8px 0;">${esc(r.remarks)}</div>`:''}
+      <div style="padding-top:8px;border-top:1px solid var(--line);display:flex;gap:8px;">
+        <a href="./print.html?type=ptw&id=${esc(r.id)}" target="_blank" style="font-size:11px;color:#8b949e;border:1px solid var(--line);border-radius:6px;padding:4px 9px;text-decoration:none;">🖨 印刷</a>
+        <a href="./permits.html" style="font-size:11px;color:var(--master);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:4px 9px;text-decoration:none;">📋 PTW一覧へ</a>
+      </div>`;
+  } catch(e) {
+    card.innerHTML = `<div style="color:#ff9a92;font-size:12px;padding:8px;">取得エラー: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ===== 新規点検計画起票パネル ===== */
+const _TURBINE_CACHE = [];
+
+async function openNewPlanPanel() {
+  const existing = document.getElementById('newPlanPanel');
+  if(existing){ existing.remove(); return; }
+
+  if(!_TURBINE_CACHE.length){
+    try{
+      const ts = await sb.get('turbines?select=id,turbine_no&order=turbine_no');
+      _TURBINE_CACHE.push(...(ts||[]));
+    }catch(e){}
+  }
+
+  const turbineOpts = ['<option value="">— 号機を選択 —</option>']
+    .concat(_TURBINE_CACHE.map(t=>`<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`))
+    .join('');
+
+  const inp = 'width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;';
+  const lbl = 'display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;';
+
+  const panel = document.createElement('div');
+  panel.id = 'newPlanPanel';
+  panel.style.cssText = 'background:var(--panel2);border:1px solid rgba(88,166,255,.4);border-radius:10px;padding:18px 20px;margin-bottom:16px;';
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <span style="font-size:14px;font-weight:700;color:#9cd2ff;">📋 新規点検計画を起票</span>
+      <span style="font-size:11px;color:var(--muted);">定期・年次点検計画の登録（下書き保存後に承認申請できます）</span>
+      <button onclick="document.getElementById('newPlanPanel').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;">
+      <div>
+        <label style="${lbl}">号機 <span style="color:#f85149">*</span></label>
+        <select id="np_turbine" style="${inp}">${turbineOpts}</select>
+      </div>
+      <div>
+        <label style="${lbl}">点検区分 <span style="color:#f85149">*</span></label>
+        <select id="np_ku" style="${inp}" onchange="npSyncWorktype()">
+          <option value="年次">年次点検</option>
+          <option value="定期" selected>定期点検</option>
+          <option value="随時">随時/緊急点検</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div>
+        <label style="${lbl}">作業種別・内容 <span style="color:#f85149">*</span></label>
+        <input id="np_wtype" type="text" style="${inp}" value="定期点検" placeholder="例: 年次定期点検・各部点検">
+      </div>
+      <div>
+        <label style="${lbl}">計画日 <span style="color:#f85149">*</span></label>
+        <input id="np_date" type="date" style="${inp}">
+      </div>
+      <div>
+        <label style="${lbl}">作業開始時刻</label>
+        <input id="np_tstart" type="time" style="${inp}">
+      </div>
+      <div>
+        <label style="${lbl}">作業終了時刻</label>
+        <input id="np_tend" type="time" style="${inp}">
+      </div>
+      <div>
+        <label style="${lbl}">作業人数</label>
+        <input id="np_workers" type="number" min="1" max="30" style="${inp}" placeholder="例: 2">
+      </div>
+      <div>
+        <label style="${lbl}">必要資格</label>
+        <input id="np_qual" type="text" style="${inp}" placeholder="例: 電気主任技術者">
+      </div>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;border:1px solid rgba(210,153,34,.3);border-radius:8px;background:rgba(210,153,34,.05);">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="np_ptw" style="width:14px;height:14px;" onchange="npTogglePtw()"> PTW（作業許可証）要
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="np_ky" style="width:14px;height:14px;"> KY（危険予知）要
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="np_loto" style="width:14px;height:14px;"> LOTO（施錠・タグアウト）要
+      </label>
+    </div>
+    <div id="np_ptw_no_wrap" style="display:none;margin-bottom:12px;">
+      <label style="${lbl}">PTW番号（既存の場合）</label>
+      <input id="np_ptw_no" type="text" style="${inp}" placeholder="PTW-2026-MMDD-NN">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="${lbl}">備考</label>
+      <textarea id="np_notes" rows="2" style="${inp}resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button id="np_save_btn" onclick="saveNewPlan()" style="background:#238636;color:#fff;font-weight:700;border:none;padding:9px 22px;border-radius:8px;font-size:13px;cursor:pointer;">💾 下書きで保存</button>
+      <button onclick="document.getElementById('newPlanPanel').remove()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
+      <span id="np_msg" style="font-size:12px;color:var(--muted);"></span>
+    </div>`;
+
+  const bodyEl = document.getElementById('body');
+  bodyEl.parentElement.insertBefore(panel, bodyEl);
+  panel.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function npSyncWorktype(){
+  const ku = document.getElementById('np_ku')?.value;
+  const wt = document.getElementById('np_wtype');
+  if(!wt) return;
+  const presets = {年次:'年次定期点検', 定期:'定期点検', 随時:'随時点検', その他:'点検'};
+  wt.value = presets[ku] || '点検';
+}
+
+function npTogglePtw(){
+  const checked = document.getElementById('np_ptw')?.checked;
+  const wrap = document.getElementById('np_ptw_no_wrap');
+  if(wrap) wrap.style.display = checked ? 'block' : 'none';
+}
+
+async function saveNewPlan(){
+  const btn   = document.getElementById('np_save_btn');
+  const msgEl = document.getElementById('np_msg');
+  const v = id => (document.getElementById(id)?.value||'').trim();
+
+  const turbine_id  = v('np_turbine') || null;
+  const planned_date = v('np_date');
+  const work_type    = v('np_wtype');
+
+  if(!planned_date){ msgEl.style.color='#f85149'; msgEl.textContent='計画日は必須です'; return; }
+  if(!work_type)   { msgEl.style.color='#f85149'; msgEl.textContent='作業種別は必須です'; return; }
+
+  btn.disabled = true;
+  msgEl.style.color = '#8b949e'; msgEl.textContent = '保存中…';
+
+  const body = {
+    turbine_id,
+    planned_date,
+    work_type,
+    time_start:             v('np_tstart') || null,
+    time_end:               v('np_tend')   || null,
+    worker_count:           v('np_workers') ? Number(v('np_workers')) : null,
+    required_qualification: v('np_qual')   || null,
+    ptw_required:           !!(document.getElementById('np_ptw')?.checked),
+    ptw_number:             v('np_ptw_no') || null,
+    ky_required:            !!(document.getElementById('np_ky')?.checked),
+    loto_required:          !!(document.getElementById('np_loto')?.checked),
+    notes:                  v('np_notes')  || null,
+    source_type:            'periodic',
+    status:                 'planned',
+    approval_status:        'draft',
+    created_at:             new Date().toISOString(),
+    updated_at:             new Date().toISOString()
+  };
+
+  try{
+    await sb.write('POST', 'inspection_plans', body);
+    msgEl.style.color = '#7ee787'; msgEl.textContent = '✔ 保存しました';
+    document.getElementById('newPlanPanel').remove();
+    await loadAll();
+  }catch(e){
+    msgEl.style.color = '#f85149'; msgEl.textContent = '保存失敗: ' + (e.message||String(e));
+    btn.disabled = false;
+  }
+}
+
 sb.requireLogin({ onReady: loadAll });
 
 
