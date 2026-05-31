@@ -876,6 +876,22 @@
 
 
 
+        <!-- 作業前安全確認セクション -->
+        <div class="full" id="safetyCheckSection" style="padding:12px 14px;border:1px solid rgba(210,153,34,.4);border-radius:9px;background:rgba(210,153,34,.06);">
+          <div style="font-size:12.5px;font-weight:700;color:#e3b341;margin-bottom:10px;">⚠ 作業前安全確認（点検開始前に必ず確認してください）</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label id="ky_check_wrap" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;border-radius:7px;border:1px solid #30363d;background:#0d1117;">
+              <input type="checkbox" id="f_ky_confirmed" style="width:16px;height:16px;accent-color:#e3b341;">
+              <span><b style="color:#e3b341;">KY（危険予知）</b> 実施済み — チームで危険箇所・対策を共有した</span>
+            </label>
+            <label id="loto_check_wrap" style="display:none;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;border-radius:7px;border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.04);">
+              <input type="checkbox" id="f_loto_confirmed" style="width:16px;height:16px;accent-color:#ff9a92;">
+              <span><b style="color:#ff9a92;">LOTO（施錠・タグアウト）</b> 施錠確認済み — 対象機器の施錠・タグを確認した</span>
+            </label>
+          </div>
+          <div class="ferr" id="e_safety" style="margin-top:8px;">作業前安全確認をすべてチェックしてください。</div>
+        </div>
+
         <!-- PTW セクション -->
         <div class="full" id="ptwSection">
           <label>PTW（作業許可書）</label>
@@ -2032,6 +2048,15 @@
 
       const eAllNa = !eSet && c.total>0 && c.ok===0 && c.ng===0; if(eAllNa)errs.push("少なくとも1項目は点検");
 
+      // 安全確認チェック（KY は常に必須、LOTO は要の場合のみ）
+      const kyChk  = document.getElementById('f_ky_confirmed')?.checked;
+      const lotoEl = document.getElementById('loto_check_wrap');
+      const lotoRequired = lotoEl && lotoEl.style.display !== 'none';
+      const lotoChk = document.getElementById('f_loto_confirmed')?.checked;
+      const eSafety = !kyChk || (lotoRequired && !lotoChk);
+      setErr(null, "e_safety", eSafety);
+      if(eSafety) errs.push("作業前安全確認");
+
 
 
 
@@ -2344,8 +2369,10 @@
           plan_id:state.planId||null,
           source_type: state.adhocMode ? ($('f_source_type')?.value||'manual') : 'planned',
           source_reason: state.adhocMode ? ($('f_source_reason')?.value?.trim()||null) : null,
-          ptw_required: document.getElementById('f_ptw_req_y')?.checked ?? false,
-          ptw_number:   document.getElementById('f_ptw_req_y')?.checked ? (document.getElementById('f_ptw_number')?.value?.trim()||null) : null,
+          ptw_required:   document.getElementById('f_ptw_req_y')?.checked ?? false,
+          ptw_number:     document.getElementById('f_ptw_req_y')?.checked ? (document.getElementById('f_ptw_number')?.value?.trim()||null) : null,
+          ky_confirmed:   document.getElementById('f_ky_confirmed')?.checked ?? false,
+          loto_confirmed: document.getElementById('f_loto_confirmed')?.checked ?? false,
 
 
 
@@ -2652,7 +2679,7 @@
       const pid=new URLSearchParams(location.search).get('plan_id');
       if(!pid) return;
       try{
-        const ps=await sb.get(`inspection_plans?id=eq.${encodeURIComponent(pid)}&select=turbine_id,planned_date,work_type,status`);
+        const ps=await sb.get(`inspection_plans?id=eq.${encodeURIComponent(pid)}&select=turbine_id,planned_date,work_type,status,ky_required,loto_required,ptw_required,ptw_number`);
         if(!ps||!ps.length) return;
         const p=ps[0]; state.planId=pid;
         if(p.turbine_id){ $("f_wtg").value=p.turbine_id; }
@@ -2661,6 +2688,19 @@
         b.style.cssText="margin:0 0 12px;padding:10px 12px;border:1px solid rgba(63,185,80,.5);border-radius:9px;background:rgba(63,185,80,.10);color:#7ee787;font-size:12.5px;";
         b.innerHTML="📋 点検計画から開始: <b>"+esc(tn)+"</b>"+(p.planned_date?(" ／ 予定日 "+esc(p.planned_date)):"")+(p.work_type?(" ／ "+esc(p.work_type)):"");
         $("f_wtg").insertAdjacentElement("beforebegin", b);
+        // KY/LOTO/PTW 要否を計画から反映
+        if(p.loto_required){
+          const lotoWrap = document.getElementById('loto_check_wrap');
+          if(lotoWrap) lotoWrap.style.display = 'inline-flex';
+        }
+        if(p.ptw_required && p.ptw_number){
+          const ptwReqY = document.getElementById('f_ptw_req_y');
+          const ptwNum  = document.getElementById('f_ptw_number');
+          const ptwWrap = document.getElementById('ptwNumberWrap');
+          if(ptwReqY){ ptwReqY.checked = true; }
+          if(ptwNum)  { ptwNum.value = p.ptw_number; }
+          if(ptwWrap) { ptwWrap.style.display = 'block'; }
+        }
         validate();
         if(p.status==="planned"){ try{ await sb.write("PATCH",`inspection_plans?id=eq.${encodeURIComponent(pid)}`,{status:"in_progress"}); }catch(e){} }
       }catch(e){}
