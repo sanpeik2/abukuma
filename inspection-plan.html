@@ -793,6 +793,20 @@
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW番号</label>
                 <input id="ep_ptw" type="text" value="${esc(d.ptw_number||'')}" ${locked?'disabled':''} placeholder="PTW-2026-001" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">KY（危険予知）</label>
+                <div style="display:flex;gap:12px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ky_y" name="ep_ky" value="1" ${d.ky_required?'checked':''} ${locked?'disabled':''}> 要</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ky_n" name="ep_ky" value="0" ${!d.ky_required?'checked':''} ${locked?'disabled':''}> 不要</label>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">LOTO（施錠・タグアウト）</label>
+                <div style="display:flex;gap:12px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_loto_y" name="ep_loto" value="1" ${d.loto_required?'checked':''} ${locked?'disabled':''}> 要</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_loto_n" name="ep_loto" value="0" ${!d.loto_required?'checked':''} ${locked?'disabled':''}> 不要</label>
+                </div>
+              </div>
             </div>
             <div style="margin-bottom:14px;">
               <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">備考</label>
@@ -828,6 +842,8 @@
         required_qualification:document.getElementById('ep_qual')?.value   || null,
         ptw_required:          document.getElementById('ep_ptw_req_y')?.checked ?? false,
         ptw_number:            document.getElementById('ep_ptw')?.value    || null,
+        ky_required:           document.getElementById('ep_ky_y')?.checked  ?? false,
+        loto_required:         document.getElementById('ep_loto_y')?.checked ?? false,
         notes:                 document.getElementById('ep_notes')?.value  || null,
         updated_at:            new Date().toISOString(),
         revision_no:           999  // actual increment done via DB or just update
