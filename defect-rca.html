@@ -1094,6 +1094,7 @@
 
 
         <div class="dcard"><div class="l">RCA進捗</div><div class="val">${esc(r["rca進捗"]||"—")}</div></div>
+        <div class="dcard"><div class="l">承認状態</div><div class="val">${r["approval_status"]==="approved"?'<span style="color:#7ee787;font-weight:700;">🔒 承認済</span>':r["approval_status"]==="pending"?'<span style="color:#e3b341;">⏳ 承認待ち</span>':r["approval_status"]==="returned"?'<span style="color:#ff9a92;">↩ 差戻し</span>':'<span style="color:var(--muted);">draft</span>'}</div></div>
 
 
 
@@ -1143,13 +1144,32 @@
 
     function woCta(r){
       const hasWO = !!(r["関連作業票"] && String(r["関連作業票"]).trim());
+      const approvalStatus = r["approval_status"] || "draft";
+      const isLocked = approvalStatus === "approved";
+      const approvalBadge = isLocked
+        ? '<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;">🔒 承認済</span>'
+        : approvalStatus==="pending" ? '<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:2px 8px;">⏳ 承認待ち</span>'
+        : approvalStatus==="returned" ? '<span style="font-size:11px;color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:5px;padding:2px 8px;">↩ 差戻し</span>' : '';
+      const approvalBtn = (!isLocked && approvalStatus!=="pending")
+        ? `<button onclick="submitDefectApproval('${esc(r["故障id"])}')" style="font-size:11.5px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:5px 10px;cursor:pointer;">📨 承認申請</button>` : '';
+      const reviseBtn = isLocked
+        ? `<button onclick="requestDefectRevision('${esc(r["故障id"])}')" style="font-size:11.5px;color:#e3b341;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:5px 10px;cursor:pointer;">↩ 差戻し申請</button>` : '';
       if(hasWO){
         return `<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.4);"><span style="color:#7ee787;font-weight:700;font-size:12.5px;">✔ 作業票あり</span><span style="color:#c9d1d9;font-size:12.5px;">${esc(r["関連作業票"])}（${esc(r["作業票状態"]||"状態未登録")}）</span><a href="./work-orders.html" style="margin-left:auto;color:#58a6ff;text-decoration:none;font-size:12px;">作業票一覧で開く →</a></div>`;
       }
       if(isDone(r)) return `<div style="margin-top:12px;color:var(--muted);font-size:12px;">クローズ済（作業票なし）</div>`;
       const did = encodeURIComponent(r["故障id"]);
       const _irid = r["inspection_result_id"] ? '&inspection_result_id=' + encodeURIComponent(r["inspection_result_id"]) : '';
-      return `<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);"><span style="color:#e3b341;font-weight:700;font-size:12.5px;">この異常から作業票を作成</span><span style="color:#8b949e;font-size:11.5px;">作業票を作成すると WTG・異常内容・判定が引き継がれます</span><a href="./work-orders.html?defect_finding_id=${did}${_irid}" style="margin-left:auto;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">📝 作業票を作成</a></div>`;
+const createBtn = !isLocked
+        ? `<a href="./work-orders.html?defect_finding_id=${did}${_irid}" style="margin-left:auto;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">📝 作業票を作成</a>`
+        : `<span style="margin-left:auto;color:var(--muted);font-size:12px;">承認済のため作業票作成はロックされています</span>`;
+      return `<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:${(!isLocked&&!approvalBadge)?0:6}px;">
+          <span style="color:#e3b341;font-weight:700;font-size:12.5px;">この異常から作業票を作成</span>
+          ${approvalBadge} ${approvalBtn} ${reviseBtn} ${createBtn}
+        </div>
+        ${!isLocked?'<div style="font-size:11.5px;color:#8b949e;">作業票を作成すると WTG・異常内容・判定が引き継がれます</div>':''}
+      </div>`;
     }
     function render(){
 
@@ -1780,11 +1800,18 @@
           if(!title){ msgEl.textContent='異常タイトルを入力してください。'; msgEl.style.display='block'; return; }
           btn.disabled=true; btn.textContent='作成中…';
           try{
+            const SEV_MAP={'low':'low','medium':'medium','high':'high','critical':'high'};
+            const detail = ngItems.map(c=>{
+              const v=c.measured_value!=null?`${c.measured_value}${c.unit||''}`:c.measured_text||'';
+              return c.check_item+(v?`：${v}`:'')+（c.comment?`（${c.comment}）`:'');
+            }).join(' / ');
             await sb.write('POST','defect_findings',{
               turbine_id: ir.turbine_id||null,
               source_type: 'inspection',
               source_id: rid,
               finding_title: title,
+              finding_detail: detail||null,
+              safety_impact: ir.severity ? (SEV_MAP[ir.severity]||null) : null,
               detected_at: dtRaw ? new Date(dtRaw).toISOString() : new Date().toISOString(),
               status: 'open'
             });
@@ -1796,6 +1823,27 @@
           }
         });
       }catch(e){ body.innerHTML='<div class="err">データ取得エラー: '+esc(e.message)+'</div>'; }
+    }
+
+    async function submitDefectApproval(id){
+      if(!confirm('この異常判断を承認申請しますか？')) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'pending'})});
+        alert('承認申請しました。承認画面（Step 8）で確認してください。');
+        loadAll();
+      }catch(e){ alert('申請失敗: '+e.message); }
+    }
+
+    async function requestDefectRevision(id){
+      const reason = prompt('差戻し理由（証跡として保存されます）:','');
+      if(reason === null) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'returned'})});
+        alert('差戻し完了しました。');
+        loadAll();
+      }catch(e){ alert('差戻し失敗: '+e.message); }
     }
     sb.requireLogin({ onReady: loadAll });
 
