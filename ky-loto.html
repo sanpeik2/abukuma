@@ -23,8 +23,13 @@
   .card h2{font-size:15px;color:#fff;font-weight:700;margin-bottom:4px}
   .card .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
-  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:8px 11px;border-radius:8px;font-size:13px;font-family:inherit}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--master)}
+  /* ログインオーバーレイを除いた範囲にスコープ */
+  .wrap input,.wrap select,.wrap textarea,
+  .card input,.card select,.card textarea{
+    width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);
+    padding:8px 11px;border-radius:8px;font-size:13px;font-family:inherit;display:block;}
+  .wrap input:focus,.wrap select:focus,.wrap textarea:focus,
+  .card input:focus,.card select:focus,.card textarea:focus{outline:none;border-color:var(--master)}
   textarea{min-height:52px;resize:vertical}
   .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px}
   .full{grid-column:1/-1}
