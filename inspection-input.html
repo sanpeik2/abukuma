@@ -507,9 +507,7 @@
     <h2 id="drawerTitle">📝 点検実績を登録</h2>
     <button class="close-btn" onclick="closeDrawer()">✕</button>
   </div>
-  <div class="drawer-body" id="drawerBody">
-    <!-- フォームコンテンツ（JS で移動）-->
-  </div>
+  <div class="drawer-body" id="drawerBody"></div>
 </div>
 
 
@@ -2982,6 +2980,22 @@
           return '<span style="font-size:10px;color:var(--muted);border:1px solid #30363d;border-radius:4px;padding:1px 7px;">その他</span>';
         }
 
+        // ── 詳細ボタン ──────────────────────────────────────
+        function detailBtn(r){
+          const rid = r.latest_result_id ? encodeURIComponent(r.latest_result_id) : '';
+          const pid = r.plan_id ? encodeURIComponent(r.plan_id) : '';
+          const isAdhoc = r.inspection_kind === 'adhoc';
+          // 結果があれば readonly 表示、なければ計画詳細
+          if(rid){
+            const href = isAdhoc
+              ? `./inspection-input.html?readonly=1&result_id=${rid}`
+              : `./inspection-input.html?plan_id=${pid}&readonly=1`;
+            return `<a href="${href}" onclick="event.stopPropagation()" style="font-size:11px;color:var(--muted);border:1px solid #30363d;border-radius:5px;padding:2px 8px;text-decoration:none;white-space:nowrap;margin-right:4px;">📋 詳細</a>`;
+          }
+          // 結果なし（未実施）
+          return '';
+        }
+
         // ── 次アクションボタン ──────────────────────────────
         function nextAction(r){
           const st=r.execution_status||'not_started';
@@ -3026,7 +3040,7 @@
             '<td style="white-space:nowrap;">'+kindBadge(r)+'</td>'+
             '<td style="max-width:200px;">'+workLabel+anomBadge+'</td>'+
             '<td style="white-space:nowrap;">'+ptwCell(r)+'</td>'+
-            '<td style="white-space:nowrap;">'+nextAction(r)+'</td>'+
+            '<td style="white-space:nowrap;">'+detailBtn(r)+nextAction(r)+'</td>'+
             '</tr>';
         }
 
@@ -3083,8 +3097,8 @@
       // フォームカードのコンテンツをドロワーボディに移動（初回のみ）
       const regCard = document.getElementById('registrationCard');
       const drawerBody = document.getElementById('drawerBody');
-      if(regCard && drawerBody && !drawerBody.hasChildNodes()){
-        // カード内の要素をドロワーボディに移動
+      // コメントノードを除く element children が 0 のときだけ移動
+      if(regCard && drawerBody && drawerBody.children.length === 0){
         while(regCard.firstChild) drawerBody.appendChild(regCard.firstChild);
       }
       if(adhoc){
