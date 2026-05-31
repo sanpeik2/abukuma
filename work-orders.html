@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -256,6 +256,14 @@ function buildDetailHtml(r, s){
       <span class="dpill">${sb.esc(r['優先度表示']||r['優先度']||'')}</span>
       ${r['深刻度']?`<span class="dpill">深刻度 ${sb.esc(r['深刻度'])}</span>`:''}
       ${r['作業種別']?`<span class="dpill">${sb.esc(r['作業種別'])}</span>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      ${(r['approval_status']||'draft')==='approved'?'<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;">🔒 承認済</span>':''}
+      ${(r['approval_status']||'draft')==='pending'?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:2px 8px;">⏳ 承認待ち</span>':''}
+      ${(r['approval_status']||'draft')==='returned'?'<span style="font-size:11px;color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:5px;padding:2px 8px;">↩ 差戻し</span>':''}
+      ${(['draft','returned'].includes(r['approval_status']||'draft'))?`<button onclick="openWoEdit('${sb.esc(id)}')" style="font-size:11.5px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:5px 10px;cursor:pointer;">✏ 編集</button>`:''}
+      ${(['draft','returned'].includes(r['approval_status']||'draft'))?`<button onclick="submitWoApproval('${sb.esc(id)}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:4px 9px;cursor:pointer;">📨 承認申請</button>`:''}
+      ${(r['approval_status']==='approved')?`<button onclick="requestWoRevision('${sb.esc(id)}')" style="font-size:11px;color:#e3b341;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:4px 9px;cursor:pointer;">↩ 差戻し申請</button>`:''}
     </div>
     <div class="dgrid">
       <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
@@ -713,6 +721,95 @@ async function submitWO(){
   }catch(e){ btn.disabled=false; msg.style.color='#f85149'; msg.textContent='登録失敗: '+e.message; }
 }
 
+/* ===== 作業票インライン編集 ===== */
+async function openWoEdit(id){
+  document.querySelectorAll('.wo-edit-panel').forEach(el=>el.remove());
+  try{
+    const rows = await sb.get(`work_orders?id=eq.${encodeURIComponent(id)}&select=*`);
+    const d = rows && rows[0]; if(!d) return;
+    const locked = d.approval_status==='approved'||d.approval_status==='pending';
+    const dBody = document.getElementById('dBody');
+    const panel = document.createElement('div');
+    panel.className = 'wo-edit-panel';
+    panel.style.cssText = 'margin:14px 0;padding:16px;border:1px solid rgba(88,166,255,.4);border-radius:9px;background:rgba(88,166,255,.04);';
+    panel.innerHTML = `<div style="font-size:13px;font-weight:700;color:#9cd2ff;margin-bottom:12px;">✏ 作業票を編集 ${locked?'<span style="font-size:11px;color:#e3b341;">('+d.approval_status+')</span>':''}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;">
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">作業種別</label>
+          <select id="we_type" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;">
+            <option value="corrective" ${d.work_type==='corrective'?'selected':''}>緊急補修</option>
+            <option value="preventive" ${d.work_type==='preventive'?'selected':''}>予防保全</option>
+            <option value="inspection" ${d.work_type==='inspection'?'selected':''}>点検</option>
+            <option value="other"      ${d.work_type==='other'     ?'selected':''}>その他</option>
+          </select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">優先度</label>
+          <select id="we_prio" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;">
+            <option value="urgent" ${d.priority==='urgent'?'selected':''}>🔴 至急</option>
+            <option value="high"   ${d.priority==='high'  ?'selected':''}>🟠 高</option>
+            <option value="normal" ${d.priority==='normal'?'selected':''}>🔵 通常</option>
+            <option value="low"    ${d.priority==='low'   ?'selected':''}>⚪ 低</option>
+          </select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">深刻度</label>
+          <select id="we_sev" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;">
+            <option value="">—</option>
+            <option value="low"     ${d.severity==='low'    ?'selected':''}>低</option>
+            <option value="medium"  ${d.severity==='medium' ?'selected':''}>中</option>
+            <option value="high"    ${d.severity==='high'   ?'selected':''}>高</option>
+            <option value="critical"${d.severity==='critical'?'selected':''}>重大</option>
+          </select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">対応予定日</label>
+          <input id="we_date" type="date" value="${sb.esc(d.planned_date||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;"></div>
+        <div style="grid-column:span 2"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">異常概要</label>
+          <textarea id="we_desc" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${sb.esc(d.anomaly_description||'')}</textarea></div>
+        <div style="grid-column:span 2"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">暫定処置</label>
+          <textarea id="we_tmp" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${sb.esc(d.temporary_action||'')}</textarea></div>
+        <div style="grid-column:span 2"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">根本原因</label>
+          <textarea id="we_root" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${sb.esc(d.root_cause||'')}</textarea></div>
+        <div style="grid-column:span 2"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">恒久処置</label>
+          <textarea id="we_perm" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${sb.esc(d.permanent_action||'')}</textarea></div>
+      </div>
+      <div id="we_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
+      <div style="display:flex;gap:8px;">
+        ${!locked?`<button id="we_save" onclick="saveWoEdit('${sb.esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>`:''}
+        <button onclick="document.querySelectorAll('.wo-edit-panel').forEach(el=>el.remove())" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 閉じる</button>
+      </div>`;
+    dBody.insertAdjacentElement('afterbegin', panel);
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){ alert('取得失敗: '+e.message); }
+}
+async function saveWoEdit(id){
+  const btn=document.getElementById('we_save'), msgEl=document.getElementById('we_msg');
+  if(btn) btn.disabled=true;
+  const patch={
+    work_type:document.getElementById('we_type')?.value||null,
+    priority:document.getElementById('we_prio')?.value||null,
+    severity:document.getElementById('we_sev')?.value||null,
+    planned_date:document.getElementById('we_date')?.value||null,
+    anomaly_description:document.getElementById('we_desc')?.value?.trim()||null,
+    temporary_action:document.getElementById('we_tmp')?.value?.trim()||null,
+    root_cause:document.getElementById('we_root')?.value?.trim()||null,
+    permanent_action:document.getElementById('we_perm')?.value?.trim()||null,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    await fetch(`${sb.URL}/rest/v1/work_orders?id=eq.${encodeURIComponent(id)}`,
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
+    document.querySelectorAll('.wo-edit-panel').forEach(el=>el.remove());
+    load();
+  }catch(e){
+    const msg=e.message||String(e);
+    if(msgEl){msgEl.textContent=msg.includes('record_locked')?'承認済みのため編集不可。差戻しが必要です。':'保存失敗: '+msg;msgEl.style.display='block';}
+    if(btn) btn.disabled=false;
+  }
+}
+async function requestWoRevision(id){
+  const reason=prompt('差戻し理由を入力してください:','');
+  if(reason===null) return;
+  try{
+    await fetch(`${sb.URL}/rest/v1/work_orders?id=eq.${encodeURIComponent(id)}`,
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'returned'})});
+    alert('差戻し完了しました。'); load();
+  }catch(e){ alert('差戻し失敗: '+e.message); }
+}
 sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); } });
 </script>
 </body>
