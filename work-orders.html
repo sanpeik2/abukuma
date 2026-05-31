@@ -767,6 +767,37 @@ async function openWoEdit(id){
         <div style="grid-column:span 2"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">恒久処置</label>
           <textarea id="we_perm" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${sb.esc(d.permanent_action||'')}</textarea></div>
       </div>
+      <!-- 安全確認要否 -->
+      <div style="margin:12px 0;padding:10px 12px;border:1px solid rgba(210,153,34,.35);border-radius:8px;background:rgba(210,153,34,.05);">
+        <div style="font-size:11.5px;font-weight:700;color:#e3b341;margin-bottom:8px;">⚠ 安全要件（作業前確認に反映されます）</div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="we_ky_req" ${d.ky_required?'checked':''} ${locked?'disabled':''} style="width:14px;height:14px;accent-color:#e3b341;">
+            <span>KY（危険予知）要</span>
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="we_loto_req" ${d.loto_required?'checked':''} ${locked?'disabled':''} style="width:14px;height:14px;accent-color:#ff9a92;">
+            <span>LOTO（施錠・タグアウト）要</span>
+          </label>
+        </div>
+      </div>
+      <!-- 作業前安全確認（実施時に使用） -->
+      <div id="wo_safety_wrap" style="margin:12px 0;padding:10px 12px;border:1px solid rgba(210,153,34,.5);border-radius:8px;background:rgba(210,153,34,.08);">
+        <div style="font-size:11.5px;font-weight:700;color:#e3b341;margin-bottom:8px;">⚠ 作業前安全確認（作業開始前に必ずチェック）</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid #30363d;background:#0d1117;">
+            <input type="checkbox" id="we_ky_conf" ${d.ky_confirmed?'checked':''} style="width:15px;height:15px;accent-color:#e3b341;">
+            <span><b style="color:#e3b341;">KY（危険予知）</b> 実施済み</span>
+            ${d.ky_confirmed?'<span style="margin-left:auto;font-size:10px;color:#7ee787;">✓ 確認済</span>':''}
+          </label>
+          <label id="wo_loto_conf_wrap" style="display:${(d.loto_required)?'inline-flex':'none'};align-items:center;gap:8px;font-size:12.5px;cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.04);">
+            <input type="checkbox" id="we_loto_conf" ${d.loto_confirmed?'checked':''} style="width:15px;height:15px;accent-color:#ff9a92;">
+            <span><b style="color:#ff9a92;">LOTO（施錠・タグアウト）</b> 施錠確認済み</span>
+            ${d.loto_confirmed?'<span style="margin-left:auto;font-size:10px;color:#7ee787;">✓ 確認済</span>':''}
+          </label>
+        </div>
+        <button onclick="saveWoSafetyConfirm('${sb.esc(id)}')" style="margin-top:8px;font-size:12px;font-weight:700;background:#238636;color:#fff;border:none;padding:6px 14px;border-radius:7px;cursor:pointer;">✓ 安全確認を記録</button>
+      </div>
       <div id="we_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
       <div style="display:flex;gap:8px;">
         ${!locked?`<button id="we_save" onclick="saveWoEdit('${sb.esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>`:''}
@@ -788,6 +819,8 @@ async function saveWoEdit(id){
     temporary_action:document.getElementById('we_tmp')?.value?.trim()||null,
     root_cause:document.getElementById('we_root')?.value?.trim()||null,
     permanent_action:document.getElementById('we_perm')?.value?.trim()||null,
+    ky_required:  document.getElementById('we_ky_req')?.checked  ?? false,
+    loto_required:document.getElementById('we_loto_req')?.checked ?? false,
     updated_at:new Date().toISOString()
   };
   try{
@@ -800,6 +833,17 @@ async function saveWoEdit(id){
     if(msgEl){msgEl.textContent=msg.includes('record_locked')?'承認済みのため編集不可。差戻しが必要です。':'保存失敗: '+msg;msgEl.style.display='block';}
     if(btn) btn.disabled=false;
   }
+}
+async function saveWoSafetyConfirm(id){
+  const kyConf   = document.getElementById('we_ky_conf')?.checked   ?? false;
+  const lotoConf = document.getElementById('we_loto_conf')?.checked ?? false;
+  try{
+    await fetch(`${sb.URL}/rest/v1/work_orders?id=eq.${encodeURIComponent(id)}`,
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+       body:JSON.stringify({ky_confirmed:kyConf, loto_confirmed:lotoConf})});
+    alert('✓ 安全確認を記録しました。');
+    load();
+  }catch(e){ alert('記録失敗: '+e.message); }
 }
 async function requestWoRevision(id){
   const reason=prompt('差戻し理由を入力してください:','');
