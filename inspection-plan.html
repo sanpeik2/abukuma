@@ -563,7 +563,7 @@
 
 
 
-            ${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]===="approved"?execMiniTag(r["unified_status"]||"ready"):""}</td
+            <td>${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]==="approved"?execMiniTag(r["unified_status"]||"ready"):""}</td>
 
 
 
