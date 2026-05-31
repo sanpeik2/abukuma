@@ -501,7 +501,7 @@
 
 
 
-        if(pr === "approved") foot = '<div class="done ok">✓ 承認しました</div>';
+        if(pr === "approved") foot = '<div class="done ok">✅ 承認しました（差戻し不可）</div>';
 
 
 
@@ -511,27 +511,16 @@
 
 
 
-        else foot = `<textarea class="cmt" data-id="${esc(id)}" placeholder="コメント（任意・証跡に記録されます）"></textarea>
-
-
-
-
+        else {
+          // approval_status が pending のときのみ差戻し可
+          const curStatus = r["approval_status"] || "pending";
+          const canRevise = (curStatus === "pending" || curStatus === "submitted" || curStatus === "open");
+          foot = `<textarea class="cmt" data-id="${esc(id)}" placeholder="コメント（任意・証跡に記録されます）"></textarea>
           <div class="actions">
-
-
-
-
-            <button class="btn-ok" data-id="${esc(id)}" data-act="approve">承認</button>
-
-
-
-
-            <button class="btn-rev" data-id="${esc(id)}" data-act="revise">差戻し</button>
-
-
-
-
+            <button class="btn-ok" data-id="${esc(id)}" data-act="approve">✅ 承認</button>
+            ${canRevise ? `<button class="btn-rev" data-id="${esc(id)}" data-act="revise">↩ 差戻し</button>` : ''}
           </div>`;
+        }
 
 
 
