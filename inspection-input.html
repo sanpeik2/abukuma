@@ -2954,20 +2954,31 @@
         }
 
         // ── 行生成 ──────────────────────────────────────────
+        // ── 区分バッジ（定期点検 / 臨時点検 の大分類）──────
+        function kubunBadge(r){
+          if(r.inspection_kind==='adhoc')
+            return '<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:4px;padding:1px 7px;white-space:nowrap;">臨時点検</span>';
+          return '<span style="font-size:10px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.3);border-radius:4px;padding:1px 7px;white-space:nowrap;">定期点検</span>';
+        }
+
         function makeRow(r){
           const st=r.execution_status||'not_started';
           const isAdhoc=r.inspection_kind==='adhoc';
           const anomBadge=r.has_anomaly?'<span style="font-size:10px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:4px;padding:1px 6px;margin-left:3px;">異常</span>':'';
-          const workLabel=isAdhoc
-            ?(r.source_reason?esc(r.source_reason.length>35?r.source_reason.slice(0,35)+'…':r.source_reason):'<span style="color:var(--muted);">—</span>')
-            :esc(r.work_type||'');
+
+          // 作業種別（計画: work_type テキスト / 臨時: 理由テキスト）
+          const workTypeLabel = isAdhoc
+            ? (r.source_reason ? esc(r.source_reason.length>30?r.source_reason.slice(0,30)+'…':r.source_reason) : '<span style="color:var(--muted);">—</span>')
+            : esc(r.work_type||'');
+
           const dateLabel=esc(r.planned_date||'');
           const rowBg=st==='done_anomaly'?'rgba(248,81,73,.04)':st==='in_progress'?'rgba(88,166,255,.03)':'';
           return '<tr style="cursor:default;'+(rowBg?'background:'+rowBg+';':'')+'" >'+
             '<td style="white-space:nowrap;color:var(--muted);font-size:12px;">'+dateLabel+'</td>'+
             '<td><b style="color:#fff;font-family:monospace;font-size:13px;">'+esc(r.turbine_no||'')+'</b></td>'+
+            '<td style="white-space:nowrap;">'+kubunBadge(r)+'</td>'+
             '<td style="white-space:nowrap;">'+kindBadge(r)+'</td>'+
-            '<td style="max-width:200px;">'+workLabel+anomBadge+'</td>'+
+            '<td style="max-width:180px;">'+workTypeLabel+anomBadge+'</td>'+
             '<td style="white-space:nowrap;">'+ptwCell(r)+'</td>'+
             '<td style="white-space:nowrap;">'+detailBtn(r)+nextAction(r)+'</td>'+
             '</tr>';
@@ -2994,7 +3005,7 @@
 
         // ── テーブル ─────────────────────────────────────
         const thead='<table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr>'+
-          ['点検日','号機','種別','作業種別 / 理由','PTW','次アクション'].map(h=>`<th style="text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;">${h}</th>`).join('')+
+          ['点検日','号機','区分','種別','作業種別 / 理由','PTW','次アクション'].map(h=>`<th style="text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;">${h}</th>`).join('')+
           '</tr></thead><tbody>';
 
         let html='';
