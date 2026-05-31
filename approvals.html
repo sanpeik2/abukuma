@@ -398,7 +398,7 @@
     const patchTarget = {
       work_order:       { table:"work_orders",         approve:{status:"in_progress", approval_status:"approved"}, revise:{status:"open",             approval_status:"returned"} },
       work_permit:      { table:"work_permits",         approve:{permit_status:"approved", approval_status:"approved"}, revise:{permit_status:"rejected", approval_status:"returned"} },
-      inspection_result:{ table:"inspection_results",  approve:{result_status:"ok", approval_status:"approved"},   revise:{approval_status:"returned"} },
+      inspection_result:{ table:"inspection_results",  approve:{approval_status:"approved"},                        revise:{approval_status:"returned"} },
       defect_finding:   { table:"defect_findings",      approve:{status:"assessed", approval_status:"approved"},   revise:{approval_status:"returned"} },
       inspection_plan:  { table:"inspection_plans",     approve:{status:"approved"},                               revise:{status:"returned"} },
     };
