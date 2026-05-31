@@ -497,7 +497,7 @@
 
 
 
-        ['計画番号','申請日','号機','作業種別','区分','点検ステータス','計画日','時間','必要資格','人数','PTW','詳細'].map(h=>`<th>${h}</th>`).join('') +
+        ['計画番号','申請日','号機','作業種別','区分','点検ステータス','計画日','時間','必要資格','人数','PTW','KY/LOTO'].map(h=>`<th>${h}</th>`).join('') +
 
 
 
@@ -686,7 +686,7 @@
 
       // ── 詳細ボタン（常に表示・承認状態で編集可否が変わる）──
       // 詳細ボタンのみ（承認申請はステータス列に移動済み）
-      b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}">📄 詳細</button>`;
+      
       b += `<a href="./ky-loto.html?plan_id=${encodeURIComponent(rawId)}" style="display:inline-block;font-size:11px;font-weight:700;color:#e3b341;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;text-decoration:none;">⚠ KY・LOTO</a>`;
 
       // 差戻しは approvals.html（承認者画面）の権限のため担当者側には表示しない
