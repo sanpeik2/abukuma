@@ -478,6 +478,16 @@
 
 
 
+  /* ===== 右スライドドロワー ===== */
+  .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+  .drawer-overlay.open{opacity:1;pointer-events:auto}
+  .drawer-panel{position:fixed;top:0;right:0;height:100%;width:min(600px,100vw);background:#161b22;border-left:1px solid #30363d;z-index:201;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column;}
+  .drawer-panel.open{transform:translateX(0)}
+  .drawer-header{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #30363d;background:#11161d;position:sticky;top:0;z-index:1;}
+  .drawer-header h2{margin:0;font-size:16px;color:#fff;flex:1}
+  .drawer-header .close-btn{background:transparent;border:1px solid #30363d;color:#8b949e;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;display:grid;place-items:center;}
+  .drawer-header .close-btn:hover{border-color:#58a6ff;color:#58a6ff}
+  .drawer-body{padding:18px 20px;flex:1}
 </style>
 
 
@@ -489,6 +499,18 @@
 
 
 <body>
+
+<!-- ===== 右スライドドロワー（点検登録フォーム）===== -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer-panel" id="drawerPanel">
+  <div class="drawer-header">
+    <h2 id="drawerTitle">📝 点検実績を登録</h2>
+    <button class="close-btn" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <!-- フォームコンテンツ（JS で移動）-->
+  </div>
+</div>
 
 
 
@@ -548,11 +570,7 @@
 
 
 
-    <div class="card">
-
-
-
-
+    <div class="card" id="registrationCard" style="display:none;">
       <h2 id="formTitle">📝 新規 点検実績を登録</h2>
       <!-- 臨時点検モード時のみ表示 -->
       <div id="adhocFields" style="display:none;margin-bottom:18px;padding:12px 14px;border:1px solid rgba(219,97,162,.4);border-radius:9px;background:rgba(219,97,162,.06);">
@@ -2509,6 +2527,8 @@
 
 
         $("confirm").classList.remove("show"); $("checkBtn").style.display="inline-block";
+        // 登録完了 → ドロワーを少し待って閉じて一覧を更新
+        setTimeout(()=>{ closeDrawer(); }, ngItems.length>0 ? 3000 : 1500);
 
 
 
@@ -2971,10 +2991,10 @@
           const BTN=(lbl,href,style)=>`<a href="${href}" style="font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;padding:5px 12px;border-radius:7px;${style}">${lbl}</a>`;
           const GBTN=(lbl,fn,style)=>`<button onclick="${fn}" style="font-size:12px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:5px 12px;border-radius:7px;${style}">${lbl}</button>`;
           if(st==='done_anomaly') return BTN('⚠ 異常判断へ','./defect-rca.html?plan_id='+pid,'background:#d29922;color:#11161d;');
-          if(st==='in_progress')  return BTN('続きから →', './inspection-input.html?plan_id='+pid, 'background:#1f6feb;color:#fff;')
+          if(st==='in_progress')  return GBTN('続きから →','openDrawerForPlan(event,\''+r.plan_id+'\')', 'background:#1f6feb;color:#fff;')
                                        +(pid?GBTN('⏸','setOnHold(event,\''+r.plan_id+'\')', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;'):'');
           if(st==='on_hold')      return (pid?GBTN('▶ 再開','setResume(event,\''+r.plan_id+'\')', 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;'):'');
-          if(st==='not_started')  return BTN('点検を開始', './inspection-input.html?plan_id='+pid, 'background:#238636;color:#fff;')
+          if(st==='not_started')  return GBTN('点検を開始','openDrawerForPlan(event,\''+r.plan_id+'\')', 'background:#238636;color:#fff;')
                                        +(pid?GBTN('⏸','setOnHold(event,\''+r.plan_id+'\')', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;'):'');
           if(st==='work_ordered') return BTN('作業票を見る','./work-orders.html','background:transparent;border:1px solid rgba(210,153,34,.4);color:#d29922;');
           // done / result_approved / adhoc done
@@ -3058,15 +3078,56 @@
       if(sec) sec.style.border = req ? '1px solid rgba(219,97,162,.4)' : '';
     }
 
-    function activateAdhocMode(){
-      state.adhocMode = true;
-      const title = document.getElementById('formTitle');
-      const adhoc = document.getElementById('adhocFields');
-      if(title) title.textContent = '🔴 臨時点検を記録';
-      if(adhoc) adhoc.style.display = 'block';
-      // フォームカードまでスクロール
-      const formCard = document.querySelector('.wrap .card');
-      if(formCard) formCard.scrollIntoView({behavior:'smooth', block:'start'});
+    /* ===== ドロワー開閉 ===== */
+    function openDrawer(adhoc){
+      // フォームカードのコンテンツをドロワーボディに移動（初回のみ）
+      const regCard = document.getElementById('registrationCard');
+      const drawerBody = document.getElementById('drawerBody');
+      if(regCard && drawerBody && !drawerBody.hasChildNodes()){
+        // カード内の要素をドロワーボディに移動
+        while(regCard.firstChild) drawerBody.appendChild(regCard.firstChild);
+      }
+      if(adhoc){
+        state.adhocMode = true;
+        const title = document.getElementById('drawerTitle');
+        const adhocFields = document.getElementById('adhocFields');
+        if(title) title.textContent = '🔴 臨時点検を記録';
+        if(adhocFields) adhocFields.style.display = 'block';
+      } else {
+        state.adhocMode = false;
+        const title = document.getElementById('drawerTitle');
+        const adhocFields = document.getElementById('adhocFields');
+        if(title) title.textContent = '📝 点検実績を登録';
+        if(adhocFields) adhocFields.style.display = 'none';
+      }
+      document.getElementById('drawerOverlay').classList.add('open');
+      document.getElementById('drawerPanel').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer(){
+      document.getElementById('drawerOverlay').classList.remove('open');
+      document.getElementById('drawerPanel').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function activateAdhocMode(){ openDrawer(true); }
+
+    async function openDrawerForPlan(ev, planId){
+      ev.stopPropagation();
+      openDrawer(false);
+      // plan_id をセット（applyPlanParam 相当）
+      if(planId && state.planId !== planId){
+        try{
+          const ps = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(planId)}&select=turbine_id,planned_date,work_type,status`);
+          if(ps && ps[0]){
+            const p = ps[0];
+            state.planId = planId;
+            if(p.turbine_id) $('f_wtg').value = p.turbine_id;
+            validate();
+          }
+        }catch(e){}
+      }
     }
 
     async function setOnHold(ev, planId){
