@@ -1083,7 +1083,7 @@
                   }).join('')}</tbody>
                 </table>
               </details>` : '';
-            return `<div style="border:1px solid ${isNg?'rgba(248,81,73,.4)':'var(--line)'};border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${isNg?'rgba(248,81,73,.04)':'var(--panel2)'};">
+            return `<div data-result-id="${r.id}" style="border:1px solid ${isNg?'rgba(248,81,73,.4)':'var(--line)'};border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${isNg?'rgba(248,81,73,.04)':'var(--panel2)'};">
               <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
                 <span style="font-size:12px;color:var(--muted);">${esc(r.executed_date||'–')}</span>
                 <b style="color:#fff;">${esc(tno2)}</b>
@@ -1095,9 +1095,12 @@
               ${r.anomaly_description?`<div style="margin-top:6px;font-size:12px;color:#ff9a92;">異常内容: ${esc(r.anomaly_description)}</div>`:''}
               ${r.comments?`<div style="margin-top:4px;font-size:12px;color:var(--muted);">${esc(r.comments)}</div>`:''}
               ${clDetail}
-              ${isNg
-                ?`<div style="margin-top:10px;display:flex;justify-content:flex-end;"><a href="./defect-rca.html?inspection_result_id=${encodeURIComponent(r.id)}${pid?'&plan_id='+encodeURIComponent(pid):''}" style="display:inline-block;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">⚠ 異常判断へ進む →</a></div>`
-                :`<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><span style="font-size:12px;color:#7ee787;">✓ 記録済み</span>${r.approval_status!=='approved'&&r.approval_status!=='pending'?`<button onclick="submitResultApproval('${r.id}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;cursor:pointer;">📨 承認申請</button>`:''}${r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;">⏳ 承認待ち</span>':''}</div>`}
+              <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="openResultEdit('${r.id}')" style="font-size:11.5px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:5px 10px;cursor:pointer;">✏ 編集</button>`:''}
+                ${isNg?`<a href="./defect-rca.html?inspection_result_id=${encodeURIComponent(r.id)}${pid?'&plan_id='+encodeURIComponent(pid):''}" style="display:inline-block;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">⚠ 異常判断へ進む →</a>`:`<span style="font-size:12px;color:#7ee787;">✓ 記録済み</span>`}
+                ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="submitResultApproval('${r.id}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;cursor:pointer;">📨 承認申請</button>`:''}
+                ${r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;">⏳ 承認待ち</span>':''}
+              </div>
             </div>`;
           }).join('');
         }
@@ -2672,6 +2675,132 @@
 
 
 
+
+    /* ===== 点検結果インライン編集 ===== */
+    let _editResultId = null;
+
+    async function openResultEdit(id){
+      if(_editResultId === id){ closeResultEdit(); return; }
+      _editResultId = id;
+      // 対象カードを探してeditパネルを開く
+      document.querySelectorAll('.result-edit-panel').forEach(el => el.remove());
+      // 対象カードの data-result-id を参照
+      const allCards = document.querySelectorAll('[data-result-id]');
+      let target = null;
+      allCards.forEach(el => { if(el.dataset.resultId === id) target = el; });
+      if(!target){ alert('カードが見つかりません'); return; }
+      try{
+        const [irRows, clRows] = await Promise.all([
+          sb.get(`inspection_results?id=eq.${encodeURIComponent(id)}&select=*`),
+          sb.get(`result_checklist?result_id=eq.${encodeURIComponent(id)}&order=created_at.asc`)
+        ]);
+        const ir = irRows && irRows[0];
+        if(!ir) return;
+        const locked = ir.approval_status==='approved' || ir.approval_status==='pending';
+        const SEV_JA={low:'低',medium:'中',high:'高',critical:'重大'};
+        const clHtml = (clRows||[]).map(cl => {
+          const isNg = cl.check_result === 'ng';
+          const meas = cl.measured_value!=null ? cl.measured_value : '';
+          return `<tr style="background:${isNg?'rgba(248,81,73,.06)':''}">
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);font-size:12px;">${esc(cl.check_item)}</td>
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);">
+              <select data-cl-id="${esc(cl.id)}" data-field="check_result" ${locked?'disabled':''} style="background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:3px 6px;border-radius:5px;font-size:12px;">
+                <option value="ok"  ${cl.check_result==='ok' ?'selected':''}>OK</option>
+                <option value="ng"  ${cl.check_result==='ng' ?'selected':''}>NG</option>
+                <option value="na"  ${cl.check_result==='na' ?'selected':''}>対象外</option>
+              </select>
+            </td>
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);">
+              <input type="number" step="0.1" data-cl-id="${esc(cl.id)}" data-field="measured_value" value="${esc(meas.toString())}" ${locked?'disabled':''} style="width:80px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:3px 6px;border-radius:5px;font-size:12px;">
+              <span style="font-size:11px;color:var(--muted);">${esc(cl.unit||'')}</span>
+            </td>
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);">
+              <input type="text" data-cl-id="${esc(cl.id)}" data-field="comment" value="${esc(cl.comment||'')}" ${locked?'disabled':''} placeholder="コメント" style="width:150px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:3px 6px;border-radius:5px;font-size:12px;">
+            </td>
+          </tr>`;
+        }).join('');
+        const panel = document.createElement('div');
+        panel.className = 'result-edit-panel';
+        panel.style.cssText = 'margin-top:12px;padding:14px 16px;border:1px solid rgba(88,166,255,.4);border-radius:9px;background:var(--panel2);';
+        panel.innerHTML = `<div style="font-size:13px;font-weight:700;color:#9cd2ff;margin-bottom:10px;">✏ 点検結果を編集${locked?'（'+ir.approval_status+' のため読み取り専用）':''}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">全体の深刻度</label>
+              <select id="ire_sev" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;">
+                <option value="">（選択）</option>
+                <option value="low"     ${ir.severity==='low'    ?'selected':''}>低</option>
+                <option value="medium"  ${ir.severity==='medium' ?'selected':''}>中</option>
+                <option value="high"    ${ir.severity==='high'   ?'selected':''}>高</option>
+                <option value="critical"${ir.severity==='critical'?'selected':''}>重大</option>
+              </select>
+            </div>
+            <div style="grid-column:span 2">
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">全体コメント</label>
+              <textarea id="ire_comment" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(ir.comments||'')}</textarea>
+            </div>
+          </div>
+          ${clRows&&clRows.length?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">チェック項目</div>
+          <div style="overflow-x:auto;margin-bottom:12px;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead><tr>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">項目</th>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">判定</th>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">測定値</th>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">コメント</th>
+              </tr></thead>
+              <tbody>${clHtml}</tbody>
+            </table>
+          </div>`:'' }
+          <div id="ire_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
+          <div style="display:flex;gap:8px;">
+            ${!locked?`<button id="ire_save" onclick="saveResultEdit('${esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>`:''}
+            <button onclick="closeResultEdit()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 閉じる</button>
+          </div>`;
+        target.appendChild(panel);
+      }catch(e){ alert('取得失敗: '+e.message); }
+    }
+
+    function closeResultEdit(){
+      document.querySelectorAll('.result-edit-panel').forEach(el => el.remove());
+      _editResultId = null;
+    }
+
+    async function saveResultEdit(id){
+      const btn = document.getElementById('ire_save');
+      const msgEl = document.getElementById('ire_msg');
+      if(btn) btn.disabled = true;
+      try{
+        // inspection_results PATCH
+        const irPatch = {
+          severity: document.getElementById('ire_sev')?.value || null,
+          comments: document.getElementById('ire_comment')?.value || null,
+          updated_at: new Date().toISOString()
+        };
+        // result_checklist PATCH（各行）
+        const clUpdates = [];
+        document.querySelectorAll('[data-cl-id][data-field="check_result"]').forEach(sel => {
+          const clId = sel.dataset.clId;
+          const patch = { check_result: sel.value };
+          const vEl = document.querySelector(`[data-cl-id="${clId}"][data-field="measured_value"]`);
+          const cEl = document.querySelector(`[data-cl-id="${clId}"][data-field="comment"]`);
+          if(vEl) patch.measured_value = vEl.value !== '' ? Number(vEl.value) : null;
+          if(cEl) patch.comment = cEl.value || null;
+          clUpdates.push({id: clId, patch});
+        });
+        await fetch(`${sb.URL}/rest/v1/inspection_results?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(irPatch)});
+        for(const u of clUpdates){
+          await fetch(`${sb.URL}/rest/v1/result_checklist?id=eq.${encodeURIComponent(u.id)}`,
+            {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(u.patch)});
+        }
+        closeResultEdit();
+        location.reload();
+      }catch(e){
+        const msg = e.message||String(e);
+        if(msgEl){ msgEl.textContent = msg.includes('record_locked') ? '承認済みのため編集できません。差戻しが必要です。' : '保存失敗: '+msg; msgEl.style.display='block'; }
+        if(btn) btn.disabled=false;
+      }
+    }
     async function submitResultApproval(id){
       if(!confirm('この点検結果を承認申請しますか？')) return;
       try{
