@@ -273,7 +273,7 @@
 
 
 
-    <div class="note">点検計画（<code>v_inspection_plan_list</code>）。期限超過・本日の計画をハイライト。実施したら <a href="./inspection-input.html">点検実績入力</a> へ。</div>
+    <div class="note">点検計画の承認管理画面です。<b>承認済みになると点検実施が可能</b>になります。実施・結果確認は <a href="./inspection-input.html">点検実施</a> へ。PTW が必要な点検は承認前に PTW 番号を記録してください。</div>
 
 
 
@@ -358,42 +358,19 @@
 
 
 
-      const overdue = rows.filter(r => r["期限超過"]).length;
-
-
-
-
-      const today = rows.filter(r => r["期限表示"] === "🔵 本日").length;
-
-
-
-
-      const open = rows.filter(r => r["状態"] === "planned" || r["状態"] === "in_progress").length;
-
-
-
+      const cntDraft    = rows.filter(r => (r["approval_status"]||"draft") === "draft").length;
+      const cntPending  = rows.filter(r => r["approval_status"] === "pending").length;
+      const cntApproved = rows.filter(r => r["approval_status"] === "approved").length;
+      const cntReturned = rows.filter(r => r["approval_status"] === "returned").length;
+      const cntOverdue  = rows.filter(r => r["期限超過"]).length;
 
       document.getElementById("kpis").innerHTML =
-
-
-
-
         `<div class="kpi"><div class="v">${rows.length}</div><div class="l">計画 総数</div></div>
-
-
-
-
-         <div class="kpi today"><div class="v">${today}</div><div class="l">本日の計画</div></div>
-
-
-
-
-         <div class="kpi warn"><div class="v">${overdue}</div><div class="l">期限超過</div></div>
-
-
-
-
-         <div class="kpi"><div class="v">${open}</div><div class="l">未完了</div></div>`;
+         <div class="kpi"><div class="v">${cntDraft}</div><div class="l">📋 未申請</div></div>
+         <div class="kpi today"><div class="v">${cntPending}</div><div class="l">📨 申請中</div></div>
+         <div class="kpi"><div class="v">${cntApproved}</div><div class="l">✅ 承認済</div></div>
+         <div class="kpi warn"><div class="v">${cntReturned}</div><div class="l">↩ 差戻し</div></div>
+         <div class="kpi warn"><div class="v">${cntOverdue}</div><div class="l">⚠ 要対応</div></div>`;
 
 
 
