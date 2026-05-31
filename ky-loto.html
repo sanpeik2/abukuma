@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — KY・LOTO チェックシート</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;
+    --master:#58a6ff;--insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--ai:#ff7b72;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:18px 22px 60px;max-width:900px;margin:0 auto}
+  .ctx-banner{padding:10px 14px;border-radius:9px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.07)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:20px}
+  .card-ky{border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.03)}
+  .card-loto{border-color:rgba(248,81,73,.35);background:rgba(248,81,73,.03)}
+  .card h2{font-size:15px;color:#fff;font-weight:700;margin-bottom:4px}
+  .card .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:8px 11px;border-radius:8px;font-size:13px;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--master)}
+  textarea{min-height:52px;resize:vertical}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px}
+  .full{grid-column:1/-1}
+  /* リスクテーブル / エネルギーソーステーブル */
+  .risk-table,.loto-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:10px}
+  .risk-table th,.loto-table th{text-align:left;padding:7px 10px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;background:var(--panel2)}
+  .risk-table td,.loto-table td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .risk-table td input,.risk-table td textarea,.loto-table td input,.loto-table td select{padding:5px 8px;font-size:12px;min-height:unset}
+  .risk-table td textarea,.loto-table td textarea{min-height:40px}
+  .del-btn{background:transparent;border:1px solid rgba(248,81,73,.4);color:#ff9a92;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;white-space:nowrap}
+  .del-btn:hover{background:rgba(248,81,73,.12)}
+  .add-btn{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:7px 14px;cursor:pointer;font-size:12.5px;margin-bottom:14px}
+  .add-btn:hover{border-color:var(--master);color:#fff}
+  .btn-primary{background:#1f6feb;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-primary:hover{opacity:.9}
+  .btn-primary:disabled{opacity:.45;cursor:default}
+  .btn-confirm{background:#238636;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-unlock{background:rgba(248,81,73,.15);color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:8px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer}
+  .status-badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid}
+  .badge-draft{color:#8b949e;border-color:#30363d;background:rgba(139,148,158,.1)}
+  .badge-confirmed{color:#7ee787;border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12)}
+  .badge-locked{color:#ff9a92;border-color:rgba(248,81,73,.5);background:rgba(248,81,73,.10)}
+  .badge-unlocked{color:#7ee787;border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12)}
+  .msg{font-size:13px;font-weight:700;margin-top:8px}
+  .msg.ok{color:#7ee787} .msg.ng{color:#ff9a92}
+  .loading{color:var(--muted);text-align:center;padding:20px}
+  .section-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .saved-list{margin-top:16px}
+  .saved-item{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:8px;background:var(--panel2);font-size:12.5px}
+  .saved-item .si-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .risk-preview,.energy-preview{margin-top:6px;font-size:11.5px;color:var(--muted)}
+  .risk-preview li,.energy-preview li{margin-left:16px;margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="mark">AW</div>
+  <div>
+    <h1>KY・LOTO チェックシート</h1>
+    <div class="sub">阿武隈OS — 作業前安全確認</div>
+  </div>
+  <a class="back" id="backLink" href="./menu.html">≡ メニューへ戻る</a>
+</div>
+
+<div class="wrap">
+  <div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+
+  <!-- ===== KY チェックシート ===== -->
+  <div class="card card-ky">
+    <h2>⚠ KY（危険予知）チェックシート</h2>
+    <div class="hint">作業に潜む危険を洗い出し、全員で対策を確認します。チーム全員がサインするまで作業を開始しません。</div>
+
+    <div class="form-row">
+      <div><label>実施日</label><input type="date" id="ky_date"></div>
+      <div><label>作業内容</label><input type="text" id="ky_work" placeholder="例: 増速機オイル交換"></div>
+      <div class="full"><label>作業メンバー（カンマ区切り）</label><input type="text" id="ky_members" placeholder="例: 田中一郎, 佐藤次郎, 鈴木三郎"></div>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:#e3b341;margin-bottom:8px;">危険ポイントと対策</div>
+    <table class="risk-table" id="kyTable">
+      <thead><tr>
+        <th style="width:40%;">危険ポイント（どこが・どう危ないか）</th>
+        <th style="width:50%;">対策（どうすれば安全か）</th>
+        <th style="width:10%;"></th>
+      </tr></thead>
+      <tbody id="kyBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addKyRow()">＋ 危険ポイントを追加</button>
+
+    <div class="form-row">
+      <div class="full">
+        <label>全員確認サイン（確認者名を入力）</label>
+        <input type="text" id="ky_sign" placeholder="全メンバーの氏名またはサイン確認">
+      </div>
+    </div>
+
+    <div class="section-actions">
+      <span id="kyStatus" class="status-badge badge-draft">未確認</span>
+      <button class="btn-confirm" id="kyConfirmBtn" onclick="saveKy('confirmed')">✅ KY確認済みとして記録</button>
+      <button class="btn-primary" style="background:transparent;border:1px solid var(--line);color:var(--muted);" onclick="saveKy('draft')">一時保存</button>
+      <span class="msg" id="kyMsg"></span>
+    </div>
+  </div>
+
+  <!-- 過去の KY 記録 -->
+  <div class="saved-list" id="kyList" style="margin-bottom:20px;display:none;">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">📋 過去のKY記録</div>
+  </div>
+
+  <!-- ===== LOTO チェックシート ===== -->
+  <div class="card card-loto">
+    <h2>🔒 LOTO（施錠・タグアウト）チェックシート</h2>
+    <div class="hint">作業前に全エネルギー源を遮断・施錠し、タグを取り付けます。解錠は作業完了・工具回収・人員退避確認後のみ行います。</div>
+
+    <div class="form-row">
+      <div><label>実施日</label><input type="date" id="loto_date"></div>
+      <div><label>作業内容</label><input type="text" id="loto_work" placeholder="例: 増速機オイル交換"></div>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:#ff9a92;margin-bottom:8px;">エネルギー源リスト</div>
+    <table class="loto-table" id="lotoTable">
+      <thead><tr>
+        <th style="width:15%;">エネルギー種別</th>
+        <th style="width:25%;">遮断箇所</th>
+        <th style="width:14%;">施錠者</th>
+        <th style="width:14%;">確認者</th>
+        <th style="width:14%;">施錠時刻</th>
+        <th style="width:10%;"></th>
+      </tr></thead>
+      <tbody id="lotoBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addLotoRow()">＋ エネルギー源を追加</button>
+
+    <div style="padding:10px 12px;border:1px solid rgba(248,81,73,.3);border-radius:8px;background:rgba(248,81,73,.05);margin-bottom:12px;font-size:12.5px;">
+      <b style="color:#ff9a92;">解錠前の確認事項（解錠時に必ず確認）</b>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="loto_chk1" style="width:14px;height:14px;accent-color:#ff9a92;"> 作業が完了している</label>
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="loto_chk2" style="width:14px;height:14px;accent-color:#ff9a92;"> 工具・材料の回収が完了している</label>
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="loto_chk3" style="width:14px;height:14px;accent-color:#ff9a92;"> 全作業員が安全な場所に退避している</label>
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="loto_chk4" style="width:14px;height:14px;accent-color:#ff9a92;"> 設備の復旧状態が正常である</label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div><label>解錠者</label><input type="text" id="loto_unlock_by" placeholder="解錠担当者名"></div>
+      <div><label>解錠備考</label><input type="text" id="loto_unlock_note" placeholder="解錠時の特記事項"></div>
+    </div>
+
+    <div class="section-actions">
+      <span id="lotoStatus" class="status-badge badge-locked">施錠中</span>
+      <button class="btn-confirm" id="lotoSaveBtn" onclick="saveLoto()">🔒 LOTO施錠を記録</button>
+      <button class="btn-unlock" id="lotoUnlockBtn" onclick="unlockLoto()" style="display:none;">🔓 解錠を記録</button>
+      <span class="msg" id="lotoMsg"></span>
+    </div>
+  </div>
+
+  <!-- 過去の LOTO 記録 -->
+  <div class="saved-list" id="lotoList" style="display:none;">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">📋 過去のLOTO記録</div>
+  </div>
+</div>
+
+<script src="./lib/supabase.js"></script>
+<script>
+const esc = sb.esc;
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const PLAN_ID = params.get('plan_id');
+const WO_ID   = params.get('work_order_id');
+const TID     = params.get('turbine_id');
+
+let state = { turbineId: TID||null, planId: PLAN_ID||null, woId: WO_ID||null,
+              kyId: null, lotoId: null, lotoStatus: 'locked' };
+
+/* ===== 初期化 ===== */
+async function init(){
+  const today = new Date().toISOString().slice(0,10);
+  $('ky_date').value = today;
+  $('loto_date').value = today;
+
+  if(PLAN_ID){
+    await loadPlanContext();
+    $('backLink').href = './inspection-input.html?plan_id='+encodeURIComponent(PLAN_ID);
+  } else if(WO_ID){
+    await loadWoContext();
+    $('backLink').href = './work-orders.html';
+  }
+
+  addKyRow(); addKyRow(); addKyRow(); // デフォルト3行
+  addLotoRow(); addLotoRow();         // デフォルト2行
+
+  await loadExistingRecords();
+}
+
+async function loadPlanContext(){
+  try{
+    const rows = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(PLAN_ID)}&select=turbine_id,planned_date,work_type`);
+    const p = rows && rows[0]; if(!p) return;
+    state.turbineId = p.turbine_id;
+    let tno='';
+    try{ const ts=await sb.get(`turbines?id=eq.${encodeURIComponent(p.turbine_id)}&select=turbine_no`); tno=(ts&&ts[0]&&ts[0].turbine_no)||''; }catch(e){}
+    const workDesc = (tno?tno+' ':'')+esc(p.work_type||'点検');
+    $('ky_work').value  = p.work_type||'';
+    $('loto_work').value = p.work_type||'';
+    $('ky_date').value  = p.planned_date||$('ky_date').value;
+    $('loto_date').value = p.planned_date||$('loto_date').value;
+    const banner = $('ctxBanner');
+    banner.style.display='flex';
+    banner.innerHTML = `<span style="color:#7ee787;font-weight:700;">📋 点検計画</span><b style="color:#fff;">${esc(tno)}</b><span style="color:var(--muted);">${esc(p.planned_date||'')}</span><span style="color:var(--muted);">${esc(p.work_type||'')}</span>`;
+  }catch(e){}
+}
+
+async function loadWoContext(){
+  try{
+    const rows = await sb.get(`work_orders?id=eq.${encodeURIComponent(WO_ID)}&select=turbine_id,work_order_no,work_type,anomaly_description`);
+    const w = rows && rows[0]; if(!w) return;
+    state.turbineId = w.turbine_id;
+    let tno='';
+    try{ const ts=await sb.get(`turbines?id=eq.${encodeURIComponent(w.turbine_id)}&select=turbine_no`); tno=(ts&&ts[0]&&ts[0].turbine_no)||''; }catch(e){}
+    const workDesc = w.work_type||w.anomaly_description||'作業';
+    $('ky_work').value  = workDesc;
+    $('loto_work').value = workDesc;
+    const banner = $('ctxBanner');
+    banner.style.display='flex';
+    banner.innerHTML = `<span style="color:#d29922;font-weight:700;">🔧 作業票</span><b style="color:#fff;">${esc(tno)}</b><span style="color:var(--muted);">${esc(w.work_order_no||'')}</span><span style="color:var(--muted);">${esc(workDesc)}</span>`;
+  }catch(e){}
+}
+
+async function loadExistingRecords(){
+  // KY 既存
+  try{
+    let q = 'ky_records?order=created_at.desc&limit=5';
+    if(PLAN_ID) q += `&plan_id=eq.${encodeURIComponent(PLAN_ID)}`;
+    else if(WO_ID) q += `&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
+    else return;
+    const kyRows = await sb.get(q);
+    if(kyRows && kyRows.length){
+      const latest = kyRows[0];
+      state.kyId = latest.id;
+      $('ky_date').value = latest.executed_date||$('ky_date').value;
+      $('ky_work').value = latest.work_description||$('ky_work').value;
+      $('ky_members').value = latest.members||'';
+      $('ky_sign').value = latest.members||'';
+      if(latest.risk_items && Array.isArray(latest.risk_items) && latest.risk_items.length){
+        $('kyBody').innerHTML='';
+        latest.risk_items.forEach(item=>addKyRow(item.risk||'', item.measure||''));
+      }
+      updateKyStatus(latest.status||'draft');
+      renderKyList(kyRows);
+    }
+  }catch(e){}
+
+  // LOTO 既存
+  try{
+    let q2 = 'loto_records?order=created_at.desc&limit=5';
+    if(PLAN_ID) q2 += `&plan_id=eq.${encodeURIComponent(PLAN_ID)}`;
+    else if(WO_ID) q2 += `&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
+    else return;
+    const ltRows = await sb.get(q2);
+    if(ltRows && ltRows.length){
+      const latest = ltRows[0];
+      state.lotoId = latest.id;
+      state.lotoStatus = latest.status||'locked';
+      $('loto_date').value = latest.executed_date||$('loto_date').value;
+      $('loto_work').value = latest.work_description||$('loto_work').value;
+      if(latest.energy_sources && Array.isArray(latest.energy_sources) && latest.energy_sources.length){
+        $('lotoBody').innerHTML='';
+        latest.energy_sources.forEach(s=>addLotoRow(s));
+      }
+      updateLotoStatus(latest.status||'locked');
+      renderLotoList(ltRows);
+    }
+  }catch(e){}
+}
+
+/* ===== KY 行操作 ===== */
+function addKyRow(risk='', measure=''){
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><textarea rows="2" placeholder="例: 高所からの墜落" style="min-height:36px;">${esc(risk)}</textarea></td>
+    <td><textarea rows="2" placeholder="例: 安全帯装着・手すり確認" style="min-height:36px;">${esc(measure)}</textarea></td>
+    <td style="text-align:center;"><button class="del-btn" onclick="this.closest('tr').remove()">削除</button></td>`;
+  $('kyBody').appendChild(tr);
+}
+
+function collectKyItems(){
+  return Array.from($('kyBody').querySelectorAll('tr')).map(tr=>{
+    const ta = tr.querySelectorAll('textarea');
+    return { risk: ta[0]?.value?.trim()||'', measure: ta[1]?.value?.trim()||'' };
+  }).filter(i=>i.risk||i.measure);
+}
+
+async function saveKy(status){
+  const btn = $('kyConfirmBtn');
+  btn.disabled=true;
+  const payload = {
+    plan_id: PLAN_ID||null,
+    work_order_id: WO_ID||null,
+    turbine_id: state.turbineId||null,
+    executed_date: $('ky_date').value,
+    work_description: $('ky_work').value.trim()||null,
+    members: $('ky_members').value.trim()||null,
+    risk_items: collectKyItems(),
+    status: status,
+    confirmed_at: status==='confirmed'?new Date().toISOString():null,
+    updated_at: new Date().toISOString()
+  };
+  try{
+    if(state.kyId){
+      await fetch(`${sb.URL}/rest/v1/ky_records?id=eq.${encodeURIComponent(state.kyId)}`,
+        {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(payload)});
+    } else {
+      const res = await sb.write('POST','ky_records',payload);
+      state.kyId = Array.isArray(res)?res[0].id:res.id;
+    }
+    const msgEl = $('kyMsg');
+    msgEl.className='msg ok';
+    msgEl.textContent = status==='confirmed'?'✅ KY確認済みとして記録しました':'💾 一時保存しました';
+    updateKyStatus(status);
+  }catch(e){ $('kyMsg').className='msg ng'; $('kyMsg').textContent='保存失敗: '+e.message; }
+  finally{ btn.disabled=false; }
+}
+
+function updateKyStatus(s){
+  const el = $('kyStatus');
+  if(s==='confirmed'){ el.textContent='✅ 確認済'; el.className='status-badge badge-confirmed'; }
+  else { el.textContent='未確認'; el.className='status-badge badge-draft'; }
+}
+
+function renderKyList(rows){
+  const list = $('kyList');
+  if(!rows||!rows.length){ list.style.display='none'; return; }
+  list.style.display='block';
+  list.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">📋 過去のKY記録</div>`+
+    rows.map(r=>`<div class="saved-item">
+      <div class="si-head">
+        <span class="status-badge ${r.status==='confirmed'?'badge-confirmed':'badge-draft'}">${r.status==='confirmed'?'✅ 確認済':'未確認'}</span>
+        <span>${esc(r.executed_date||'')}</span>
+        <span>${esc(r.work_description||'')}</span>
+        <span style="color:var(--muted);">${esc(r.members||'')}</span>
+      </div>
+      ${r.risk_items&&r.risk_items.length?`<ul class="risk-preview">${r.risk_items.map(i=>`<li><b>${esc(i.risk||'')}</b> → ${esc(i.measure||'')}</li>`).join('')}</ul>`:''}
+    </div>`).join('');
+}
+
+/* ===== LOTO 行操作 ===== */
+const ENERGY_TYPES = ['電気（主電源）','電気（制御電源）','油圧','空圧','重力（ブレード）','熱エネルギー','その他'];
+
+function addLotoRow(src={}){
+  const tr = document.createElement('tr');
+  const typeOpts = ENERGY_TYPES.map(t=>`<option value="${esc(t)}" ${src.type===t?'selected':''}>${esc(t)}</option>`).join('');
+  tr.innerHTML = `
+    <td><select style="padding:4px 6px;font-size:12px;"><option value="">選択…</option>${typeOpts}</select></td>
+    <td><input type="text" value="${esc(src.location||'')}" placeholder="例: MCC #3" style="padding:4px 6px;font-size:12px;"></td>
+    <td><input type="text" value="${esc(src.locked_by||'')}" placeholder="施錠者名" style="padding:4px 6px;font-size:12px;"></td>
+    <td><input type="text" value="${esc(src.confirmed_by||'')}" placeholder="確認者名" style="padding:4px 6px;font-size:12px;"></td>
+    <td><input type="time" value="${esc(src.locked_at||'')}" style="padding:4px 6px;font-size:12px;"></td>
+    <td style="text-align:center;"><button class="del-btn" onclick="this.closest('tr').remove()">削除</button></td>`;
+  $('lotoBody').appendChild(tr);
+}
+
+function collectLotoSources(){
+  return Array.from($('lotoBody').querySelectorAll('tr')).map(tr=>{
+    const els = tr.querySelectorAll('select,input');
+    return { type:els[0]?.value||'', location:els[1]?.value?.trim()||'',
+             locked_by:els[2]?.value?.trim()||'', confirmed_by:els[3]?.value?.trim()||'',
+             locked_at:els[4]?.value||'' };
+  }).filter(s=>s.type||s.location);
+}
+
+async function saveLoto(){
+  const btn = $('lotoSaveBtn');
+  btn.disabled=true;
+  const payload = {
+    plan_id: PLAN_ID||null,
+    work_order_id: WO_ID||null,
+    turbine_id: state.turbineId||null,
+    executed_date: $('loto_date').value,
+    work_description: $('loto_work').value.trim()||null,
+    energy_sources: collectLotoSources(),
+    status: 'locked',
+    updated_at: new Date().toISOString()
+  };
+  try{
+    if(state.lotoId){
+      await fetch(`${sb.URL}/rest/v1/loto_records?id=eq.${encodeURIComponent(state.lotoId)}`,
+        {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(payload)});
+    } else {
+      const res = await sb.write('POST','loto_records',payload);
+      state.lotoId = Array.isArray(res)?res[0].id:res.id;
+    }
+    state.lotoStatus='locked';
+    $('lotoMsg').className='msg ok'; $('lotoMsg').textContent='🔒 LOTO施錠を記録しました';
+    updateLotoStatus('locked');
+    // 作業票に loto_confirmed を反映
+    if(WO_ID) await fetch(`${sb.URL}/rest/v1/work_orders?id=eq.${encodeURIComponent(WO_ID)}`,
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({loto_confirmed:true})});
+  }catch(e){ $('lotoMsg').className='msg ng'; $('lotoMsg').textContent='保存失敗: '+e.message; }
+  finally{ btn.disabled=false; }
+}
+
+async function unlockLoto(){
+  const chks = ['loto_chk1','loto_chk2','loto_chk3','loto_chk4'];
+  if(!chks.every(id=>$(id)?.checked)){
+    alert('解錠前確認のすべてのチェック項目を確認してください。'); return;
+  }
+  const unlockBy = $('loto_unlock_by').value.trim();
+  if(!unlockBy){ alert('解錠者名を入力してください。'); return; }
+  if(!confirm('LOTOを解錠します。作業完了・人員退避を確認しましたか？')) return;
+  try{
+    await fetch(`${sb.URL}/rest/v1/loto_records?id=eq.${encodeURIComponent(state.lotoId)}`,
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+       body:JSON.stringify({status:'unlocked',unlock_confirmed_at:new Date().toISOString(),unlock_note:$('loto_unlock_note').value.trim()||null})});
+    state.lotoStatus='unlocked';
+    $('lotoMsg').className='msg ok'; $('lotoMsg').textContent='🔓 解錠を記録しました（'+unlockBy+'）';
+    updateLotoStatus('unlocked');
+  }catch(e){ $('lotoMsg').className='msg ng'; $('lotoMsg').textContent='解錠記録失敗: '+e.message; }
+}
+
+function updateLotoStatus(s){
+  const el=$('lotoStatus'), saveBtn=$('lotoSaveBtn'), unlockBtn=$('lotoUnlockBtn');
+  if(s==='unlocked'){
+    el.textContent='🔓 解錠済'; el.className='status-badge badge-unlocked';
+    saveBtn.style.display='none'; unlockBtn.style.display='none';
+  } else {
+    el.textContent='🔒 施錠中'; el.className='status-badge badge-locked';
+    saveBtn.style.display='';
+    if(state.lotoId) unlockBtn.style.display='';
+  }
+}
+
+function renderLotoList(rows){
+  const list=$('lotoList');
+  if(!rows||!rows.length){ list.style.display='none'; return; }
+  list.style.display='block';
+  list.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">📋 過去のLOTO記録</div>`+
+    rows.map(r=>`<div class="saved-item">
+      <div class="si-head">
+        <span class="status-badge ${r.status==='unlocked'?'badge-unlocked':'badge-locked'}">${r.status==='unlocked'?'🔓 解錠済':'🔒 施錠中'}</span>
+        <span>${esc(r.executed_date||'')}</span>
+        <span>${esc(r.work_description||'')}</span>
+      </div>
+      ${r.energy_sources&&r.energy_sources.length?`<ul class="energy-preview">${r.energy_sources.map(s=>`<li>${esc(s.type||'')} — ${esc(s.location||'')} （施錠: ${esc(s.locked_by||'—')} / 確認: ${esc(s.confirmed_by||'—')}）</li>`).join('')}</ul>`:''}
+    </div>`).join('');
+}
+
+sb.requireLogin({ onReady: init });
+</script>
+</body>
+</html>
