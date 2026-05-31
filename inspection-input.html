@@ -1071,7 +1071,7 @@
                   <tbody>${clItems.map(cl => {
                     const jcol = cl.check_result==='ng'?'#ff9a92':cl.check_result==='ok'?'#7ee787':'#788694';
                     const jtxt = cl.check_result==='ng'?'NG':cl.check_result==='ok'?'OK':cl.check_result==='na'?'対象外':'–';
-                    const meas = cl.measured_value!=null ? `${cl.measured_value}${esc(cl.unit||'')}` : (cl.criteria_text?'目視':'–');
+                    const meas = cl.measured_value!=null ? `${cl.measured_value}${esc(cl.unit||'')}` : (cl.measured_text ? esc(cl.measured_text) : (cl.criteria_text?'目視':'–'));
                     const crit = cl.criteria_text ? esc(cl.criteria_text) : (cl.criteria_min!=null ? `${cl.criteria_min}〜${cl.criteria_max} ${esc(cl.unit||'')}` : '–');
                     return `<tr style="${cl.check_result==='ng'?'background:rgba(248,81,73,.06);':''}">
                       <td style="padding:4px 8px;border-bottom:1px solid var(--line);">${esc(cl.check_item||'')}</td>
@@ -2380,7 +2380,7 @@
 
 
         msg.className="msg ok"; msg.textContent="✓ 登録しました（項目 "+rows.length+"件）";
-        if(ngItems.length>0){ msg.innerHTML = '✓ 登録しました（項目 '+rows.length+'件・<b style="color:#f0c674;">異常あり</b>）<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><span style="color:#8b949e;font-size:11.5px;">次のアクション:</span><a href="./defect-rca.html" style="text-decoration:none;font-size:12px;color:#d29922;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:5px 10px;">異常判断へ進む →</a><a href="./work-orders.html?inspection_result_id='+encodeURIComponent(resultId)+'" style="text-decoration:none;font-size:12px;color:#11161d;background:#d29922;font-weight:700;border-radius:6px;padding:5px 10px;">作業票を作成</a></div>'; }
+        if(ngItems.length>0){ msg.innerHTML = '✓ 登録しました（項目 '+rows.length+'件・<b style="color:#f0c674;">異常あり</b>）<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><span style="color:#8b949e;font-size:11.5px;">次のアクション:</span><a href="./defect-rca.html?inspection_result_id='+encodeURIComponent(resultId)+(state.planId?'&plan_id='+encodeURIComponent(state.planId):'')+'}" style="text-decoration:none;font-size:12px;color:#d29922;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:5px 10px;">異常判断へ進む →</a><a href="./work-orders.html?inspection_result_id='+encodeURIComponent(resultId)+'" style="text-decoration:none;font-size:12px;color:#11161d;background:#d29922;font-weight:700;border-radius:6px;padding:5px 10px;">作業票を作成</a></div>'; }
 
 
 
