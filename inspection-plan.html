@@ -404,6 +404,25 @@
       return `<span style="font-size:11px;font-weight:700;color:${d.c};background:${d.bg};border:1px solid ${d.bd};border-radius:6px;padding:3px 9px;white-space:nowrap;">${d.lbl}</span>`;
     }
 
+    function ptwBadge(r){
+      const req = r["ptw_required"];
+      const num = r["ptw番号"]||"";
+      const appSt = r["approval_status"]||"draft";
+      const canAct = (appSt==="draft"||appSt==="returned");
+      if(!req){
+        // PTW不要
+        return '<span style="font-size:11px;color:var(--muted);">不要</span>';
+      }
+      if(num){
+        // PTW要・番号あり
+        return '<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.4);border-radius:5px;padding:2px 7px;white-space:nowrap;">✅ '+esc(num)+'</span>';
+      }
+      // PTW要・番号なし → 申請ボタン
+      const btn = canAct
+        ? '<button onclick="event.stopPropagation();openPtwInput(\''+esc(r["計画id"]||'')+'\')" style="font-size:11px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.10);border:1px solid rgba(219,97,162,.5);border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;">📋 PTW申請</button>'
+        : '<span style="font-size:11px;color:#db61a2;border:1px solid rgba(219,97,162,.4);border-radius:5px;padding:2px 7px;">PTW未取得</span>';
+      return btn;
+    }
     function deadlineBadge(s){
       if(!s || s === '—') return '<span style="color:var(--muted);">—</span>';
       if(s === '🔵 本日') return '<span style="font-size:11px;font-weight:700;color:#58a6ff;border:1px solid rgba(88,166,255,.5);border-radius:5px;padding:2px 7px;">🔵 本日</span>';
@@ -524,7 +543,7 @@
 
 
 
-            <td>${esc(r["ptw番号"]||"—")}</td>
+            <td style="white-space:nowrap;">${ptwBadge(r)}</td>
             <td style="white-space:nowrap;">${planButtons(r)}</td>
 
 
@@ -664,7 +683,19 @@
 
       return b;
     }
-async function submitApproval(id){
+    /* ===== PTW番号 クイック入力 ===== */
+    async function openPtwInput(id){
+      const num = prompt('PTW番号を入力してください（例: PTW-2026-001）:','');
+      if(num === null) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+           body:JSON.stringify({ptw_number:num.trim()||null, ptw_required:true})});
+        location.reload();
+      }catch(e){ alert('PTW番号保存失敗: '+e.message); }
+    }
+
+    async function submitApproval(id){
       if(!confirm('この点検計画を承認申請しますか？承認画面（Step 8）に表示されます。')) return;
       try{
         await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
@@ -739,8 +770,19 @@ async function submitApproval(id){
                 <input id="ep_qual" type="text" value="${esc(d.required_qualification||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
               <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW 要否</label>
+                <div style="display:flex;gap:8px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
+                    <input type="radio" id="ep_ptw_req_y" name="ep_ptw_req" value="1" ${d.ptw_required?'checked':''} ${locked?'disabled':''}> 要
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
+                    <input type="radio" id="ep_ptw_req_n" name="ep_ptw_req" value="0" ${!d.ptw_required?'checked':''} ${locked?'disabled':''}> 不要
+                  </label>
+                </div>
+              </div>
+              <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW番号</label>
-                <input id="ep_ptw" type="text" value="${esc(d.ptw_number||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+                <input id="ep_ptw" type="text" value="${esc(d.ptw_number||'')}" ${locked?'disabled':''} placeholder="PTW-2026-001" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
             </div>
             <div style="margin-bottom:14px;">
@@ -775,6 +817,7 @@ async function submitApproval(id){
         time_end:              document.getElementById('ep_tend')?.value   || null,
         worker_count:          document.getElementById('ep_workers')?.value ? Number(document.getElementById('ep_workers').value) : null,
         required_qualification:document.getElementById('ep_qual')?.value   || null,
+        ptw_required:          document.getElementById('ep_ptw_req_y')?.checked ?? false,
         ptw_number:            document.getElementById('ep_ptw')?.value    || null,
         notes:                 document.getElementById('ep_notes')?.value  || null,
         updated_at:            new Date().toISOString(),
