@@ -1248,7 +1248,9 @@
 
 
 
-    // ===== 組込みカタログ（点検項目マスタ。後でSupabaseに移行可）=====
+    // ===== チェックリストマスタ（DBから読み込む） =====
+    // CATALOG は互換用に残す（古い参照が残っている箇所のフォールバック）
+    const CATALOG = {}; // 廃止 → DB マスタに移行済み
 
 
 
@@ -1362,7 +1364,13 @@
     const SOURCE_LABEL = {manual:'現場判断',scada:'SCADA異常',alarm:'アラーム発報',weather:'天候後確認',recovery:'復旧確認',chief_instruction:'主任技術者指示'};
     // 作業種別表示（一覧用）— 起点に応じて「臨時/緊急」か「臨時」に分類
     const SOURCE_KIND  = {manual:'臨時',scada:'臨時/緊急',alarm:'臨時/緊急',weather:'臨時',recovery:'臨時',chief_instruction:'臨時'};
-    const state = { turbines:[], userId:null, weather:"", sev:"", set:"", items:{}, submitting:false, adhocMode:false };
+    const state = {
+      turbines:[], userId:null, weather:"", sev:"", set:"", items:{},
+      submitting:false, adhocMode:false,
+      dbTemplates:[],   // inspection_checklist_templates
+      dbItems:[],       // 現在選択中テンプレートの items（UI形式に変換済み）
+      templateId:null   // 現在選択中テンプレートのUUID
+    };
 
 
 
@@ -1371,23 +1379,17 @@
 
 
 
+
+    /* DB アイテムを UI 形式に変換 */
+    function dbItemToUiItem(d){
+      const isVisual = (d.input_type==='visual'||d.input_type==='boolean'||d.input_type==='text');
+      if(isVisual) return { k:d.item_code, n:d.item_name, visual:true, crit:d.criteria_text||'確認', dbId:d.id };
+      return { k:d.item_code, n:d.item_name, unit:d.unit||'', min:Number(d.criteria_min)||0, max:Number(d.criteria_max)||9999, dbId:d.id };
+    }
 
     function curItems(){
-
-
-
-
-      if(state.set==="drive")  return CATALOG.drive.items;
-
-
-
-
-      if(state.set==="visual") return CATALOG.visual.items;
-
-
-
-
-      if(state.set==="both")   return CATALOG.drive.items.concat(CATALOG.visual.items);
+      // DBマスタ読込後はそちらを使う
+      if(state.dbItems && state.dbItems.length) return state.dbItems;
 
 
 
@@ -1822,31 +1824,47 @@
 
 
 
+    /* ===== DBテンプレートからセット選択UIを動的生成 ===== */
+    async function loadAndRenderTemplateSets(){
+      try{
+        const temps = await sb.get('inspection_checklist_templates?is_active=eq.true&order=sort_order.asc');
+        state.dbTemplates = temps || [];
+        const setsEl = $('sets');
+        if(!setsEl) return;
+        setsEl.innerHTML = state.dbTemplates.map(t =>
+          `<button type="button" data-s="${esc(t.template_code)}" data-tid="${esc(t.id)}">${esc(t.template_name)}</button>`
+        ).join('');
+        // イベント再バインド
+        setsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', onSetClick));
+      }catch(e){ console.warn('テンプレート読込失敗:', e.message); }
+    }
+
+    async function onSetClick(){
+      const b = this;
+      $("sets").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      const code = b.dataset.s;
+      const tid  = b.dataset.tid;
+      state.set = code; state.items = {}; state.dbItems = []; state.templateId = tid;
+      $("e_set").classList.remove("show");
+      // DBからチェック項目を読み込む
+      try{
+        const dbRows = await sb.get(`inspection_check_items?template_id=eq.${encodeURIComponent(tid)}&is_active=eq.true&order=sort_order.asc`);
+        state.dbItems = (dbRows||[]).map(dbItemToUiItem);
+        state.templateId = tid;
+      }catch(e){ console.warn('項目読込失敗:', e.message); state.dbItems=[]; }
+      renderChecklist(); validate();
+    }
+
     $("sets").querySelectorAll("button").forEach(b=>
+      b.addEventListener("click", onSetClick));
 
-
-
-
+    // ダミーイベント（既存コードとの互換用 — 実際は loadAndRenderTemplateSets で上書き）
+    $("sets").querySelectorAll("button").forEach(b=>
       b.addEventListener("click", ()=>{
-
-
-
-
         $("sets").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
-
-
-
-
         b.classList.add("on");
-
-
-
-
-        state.set = b.dataset.s; state.items = {};   // セット変更で項目リセット
-
-
-
-
+        state.set = b.dataset.s; state.items = {};
         renderChecklist(); validate();
 
 
@@ -2202,7 +2220,7 @@
 
 
 
-        <div class="crow"><div class="ck">点検セット</div><div class="cv">${esc(state.set==='drive'?CATALOG.drive.label:state.set==='visual'?CATALOG.visual.label:'両方（全項目）')}</div></div>
+        <div class="crow"><div class="ck">点検セット</div><div class="cv">${esc((state.dbTemplates.find(t=>t.template_code===state.set)||{}).template_name||state.set||'—')}</div></div>
 
 
 
@@ -2467,7 +2485,11 @@
 
 
 
-          return { result_id:resultId, check_item:it.n, check_result:j,
+          return { result_id:resultId,
+            check_item:it.n,
+            check_item_id: it.dbId || null,
+            checklist_template_id: state.templateId || null,
+            check_result:j,
 
 
 
@@ -2749,6 +2771,8 @@
 
 
         state.turbines=await sb.get("turbines?select=id,turbine_no&order=turbine_no.asc");
+        // DBテンプレートを読み込んでセット選択UIを更新
+        await loadAndRenderTemplateSets();
 
 
 
