@@ -1039,15 +1039,45 @@
     /* ===== 結果閲覧モード（readonly=1 で遷移した場合）===== */
     async function enterReadonly(){
       const pid = new URLSearchParams(location.search).get('plan_id');
+      const rid = new URLSearchParams(location.search).get('result_id');
       document.title = '点検結果（閲覧） — 阿武隈風力発電';
       document.querySelector('.topbar h1').textContent = '点検結果（閲覧モード）';
-      document.querySelector('.topbar .sub').textContent = '完了済み点検計画の結果を表示しています（入力・登録不可）';
+      document.querySelector('.topbar .sub').textContent = '点検結果を表示しています（入力・登録不可）';
       const allCards = document.querySelectorAll('.wrap .card');
       allCards[0].style.display = 'none';
       allCards[1].querySelector('h2').textContent = '📋 点検結果（閲覧モード）';
       const body = $('listBody');
+
+      // ── 臨時点検（result_id 直接指定）──
+      if(!pid && rid){
+        try{
+          const [irRows, clRows] = await Promise.all([
+            sb.get(`inspection_results?id=eq.${encodeURIComponent(rid)}&select=*`),
+            sb.get(`result_checklist?result_id=eq.${encodeURIComponent(rid)}&order=created_at.asc`)
+          ]);
+          const ir = irRows && irRows[0];
+          if(!ir){ body.innerHTML='<div class="err">点検結果が見つかりません。</div>'; return; }
+          const tno2 = (state.turbines.find(t=>t.id===ir.turbine_id)||{}).turbine_no||'–';
+          const SEV_JA={low:'低',medium:'中',high:'高',critical:'重大'};
+          const sev = ir.severity?(SEV_JA[ir.severity]||ir.severity):'–';
+          const isNg = ir.result_status==='ng'||ir.has_anomaly;
+          const kindLbl = ir.source_type ? (SOURCE_LABEL[ir.source_type]||ir.source_type) : '臨時点検';
+          let html = `<div style="margin-bottom:12px;padding:10px 14px;border:1px solid rgba(219,97,162,.4);border-radius:9px;background:rgba(219,97,162,.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;">
+            <span style="color:#db61a2;font-weight:700;">🔴 臨時点検</span>
+            <b style="color:#fff;">${esc(tno2)}</b>
+            <span style="color:var(--muted);">実施日: ${esc(ir.executed_date||'–')}</span>
+            <span style="color:var(--muted);">起点: ${esc(kindLbl)}</span>
+            ${ir.source_reason?`<span style="color:var(--muted);">理由: ${esc(ir.source_reason)}</span>`:''}
+            <a href="./inspection-input.html" style="margin-left:auto;font-size:12px;color:#58a6ff;">← 点検実施一覧へ</a>
+          </div>`;
+          html += renderResultCard(ir, tno2, sev, isNg, clRows||[], pid);
+          body.innerHTML = html;
+        }catch(e){ body.innerHTML=`<div class="err">取得エラー: ${esc(e.message)}</div>`; }
+        return;
+      }
+
       if(!pid){
-        body.innerHTML = '<div class="err">plan_id が指定されていません。<a href="./inspection-plan.html">← 点検計画一覧へ</a></div>';
+        body.innerHTML = '<div class="err">表示する点検結果が指定されていません。<a href="./inspection-input.html">← 点検実施一覧へ</a></div>';
         return;
       }
       try{
@@ -1147,6 +1177,45 @@
 
 
 
+
+    /* ===== 結果カード共通レンダラー ===== */
+    function renderResultCard(r, tno2, sev, isNg, clItems, pid){
+      const overall = isNg ? '<b style="color:#ff9a92;">🔴 NG（異常あり）</b>' : '<b style="color:#7ee787;">🟢 OK</b>';
+      const ngCnt = clItems.filter(c=>c.check_result==='ng').length;
+      const clDetail = clItems.length ? `<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;color:#9fb0bd;list-style:none;padding:4px 0;display:flex;align-items:center;gap:8px;"><span>▶ 点検項目詳細</span><span style="background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:10.5px;">${clItems.length}件</span>${ngCnt>0?`<span style="color:#ff9a92;font-size:10.5px;font-weight:700;">NG ${ngCnt}件</span>`:''}</summary>
+        <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11.5px;"><thead><tr>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">項目</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">判定</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">測定値</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">基準</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">コメント</th>
+        </tr></thead><tbody>${clItems.map(cl=>{
+          const jcol=cl.check_result==='ng'?'#ff9a92':cl.check_result==='ok'?'#7ee787':'#788694';
+          const jtxt=cl.check_result==='ng'?'NG':cl.check_result==='ok'?'OK':cl.check_result==='na'?'対象外':'–';
+          const meas=cl.measured_value!=null?`${cl.measured_value}${esc(cl.unit||'')}`:cl.measured_text?esc(cl.measured_text):'–';
+          const crit=cl.criteria_text?esc(cl.criteria_text):(cl.criteria_min!=null?`${cl.criteria_min}〜${cl.criteria_max} ${esc(cl.unit||'')}`:'–');
+          return `<tr style="${cl.check_result==='ng'?'background:rgba(248,81,73,.06);':''}"><td style="padding:4px 8px;border-bottom:1px solid var(--line);">${esc(cl.check_item||'')}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);color:${jcol};font-weight:700;">${jtxt}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);">${meas}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;">${crit}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);">${esc(cl.comment||'')}</td></tr>`;
+        }).join('')}</tbody></table></details>` : '';
+      return `<div data-result-id="${r.id}" style="border:1px solid ${isNg?'rgba(248,81,73,.4)':'var(--line)'};border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${isNg?'rgba(248,81,73,.04)':'var(--panel2)'};">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <span style="font-size:12px;color:var(--muted);">${esc(r.executed_date||'–')}</span>
+          <b style="color:#fff;">${esc(tno2)}</b>
+          ${overall}
+          ${sev!=='–'?`<span style="font-size:11.5px;color:var(--muted);">深刻度: ${esc(sev)}</span>`:''}
+          <span style="font-size:11.5px;color:var(--muted);">天候: ${esc(r.weather||'–')}</span>
+          ${r.approval_status==='approved'?'<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">🔒 承認済</span>':r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">⏳ 承認待ち</span>':r.approval_status==='returned'?'<span style="font-size:11px;color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">↩ 差戻し</span>':''}
+        </div>
+        ${r.anomaly_description?`<div style="margin-top:6px;font-size:12px;color:#ff9a92;">異常内容: ${esc(r.anomaly_description)}</div>`:''}
+        ${r.comments?`<div style="margin-top:4px;font-size:12px;color:var(--muted);">${esc(r.comments)}</div>`:''}
+        ${clDetail}
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="openResultEdit('${r.id}')" style="font-size:11.5px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:5px 10px;cursor:pointer;">✏ 編集</button>`:''}
+          ${isNg?`<a href="./defect-rca.html?inspection_result_id=${encodeURIComponent(r.id)}${pid?'&plan_id='+encodeURIComponent(pid):''}" style="display:inline-block;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">⚠ 異常判断へ進む →</a>`:`<span style="font-size:12px;color:#7ee787;">✓ 記録済み</span>`}
+          ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="submitResultApproval('${r.id}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;cursor:pointer;">📨 承認申請</button>`:''}
+          ${r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;">⏳ 承認待ち</span>':''}
+        </div>
+      </div>`;
+    }
 
     const $ = id => document.getElementById(id);
 
@@ -2880,21 +2949,28 @@
           const rid = r.latest_result_id ? encodeURIComponent(r.latest_result_id) : '';
           const st  = r.execution_status || 'not_started';
           const badge = ST_BADGE[st] || ST_BADGE.not_started;
-          const time = (r.time_start_fmt||'') + (r.time_end_fmt ? '〜'+r.time_end_fmt : '');
-          // 臨時点検バッジ
-          const kindBadge = isAdhoc
-            ? '<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.10);border:1px solid rgba(219,97,162,.4);border-radius:4px;padding:1px 6px;margin-left:4px;">臨時</span>'
-            : '';
-          // 作業種別の表示
+
+          // 作業種別と起点の表示（臨時: 「臨時」or「臨時/緊急」＋起点を小さく）
           const srcType   = r.source_type||'manual';
           const workLabel = isAdhoc
-            ? (SOURCE_KIND[srcType]||'臨時')  // 作業種別は「臨時」or「臨時/緊急」
+            ? (SOURCE_KIND[srcType]||'臨時')
             : esc(r.work_type||'');
-          const srcNote   = isAdhoc ? '<div style="font-size:10px;color:var(--muted);margin-top:1px;">'+esc(SOURCE_LABEL[srcType]||srcType)+'</div>' : '';
+          const srcSubLabel = isAdhoc
+            ? '<div style="font-size:10px;color:#db61a2;margin-top:1px;">'+(SOURCE_LABEL[srcType]||srcType)+'</div>'
+            : '';
+
+          // 時間 or 理由
+          const timeOrReason = isAdhoc
+            ? (r.source_reason
+                ? '<span style="font-size:11px;color:var(--muted);max-width:180px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(r.source_reason||'')+'">'+esc(r.source_reason)+'</span>'
+                : '<span style="color:var(--muted);font-size:11px;">—</span>')
+            : esc((r.time_start_fmt||'')+(r.time_end_fmt?'〜'+r.time_end_fmt:''));
+
           // ナビ先
           let navUrl = '';
           if(isAdhoc && rid) navUrl = './inspection-input.html?readonly=1&result_id='+rid;
           else if(pid) navUrl = './inspection-input.html?plan_id='+pid+(st==='done'||st==='done_anomaly'?'&readonly=1':'');
+
           // アクションボタン
           let action = '';
           if(isAdhoc){
@@ -2908,18 +2984,18 @@
           const holdBtn = (!isAdhoc && (st==='not_started'||st==='in_progress'))
             ? '<button onclick="setOnHold(event,\''+r.plan_id+'\')" style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;background:transparent;cursor:pointer;margin-left:4px;">⏸ 保留</button>'
             : (!isAdhoc && st==='on_hold' ? '<button onclick="setResume(event,\''+r.plan_id+'\')" style="font-size:11px;color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;background:transparent;cursor:pointer;margin-left:4px;">▶ 再開</button>' : '');
-          const note = isAdhoc && r.source_reason ? '<div style="font-size:10px;color:var(--muted);margin-top:2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(r.source_reason||'')+'">'+esc(r.source_reason||'')+'</div>' : '';
+
           return '<tr style="cursor:pointer;'+(isAdhoc?'background:rgba(219,97,162,.04);':'')+'" onclick="if(!event.defaultPrevented&&\''+navUrl+'\')location.href=\''+navUrl+'\'">'+
             '<td style="white-space:nowrap;color:var(--muted);">'+esc(r.planned_date||'')+'</td>'+
             '<td><b style="color:#fff;font-family:monospace;">'+esc(r.turbine_no||'')+'</b></td>'+
-            '<td>'+workLabel+kindBadge+srcNote+note+'</td>'+
-            '<td>'+esc(time)+'</td>'+
+            '<td>'+workLabel+srcSubLabel+'</td>'+
+            '<td>'+timeOrReason+'</td>'+
             '<td>'+badge+'</td>'+
             '<td style="white-space:nowrap;">'+action+holdBtn+'</td>'+
             '</tr>';
         }).join('');
         body.innerHTML = '<table><thead><tr>'+
-          ['計画日','号機','作業種別','時間','実施ステータス','操作'].map(h=>'<th>'+h+'</th>').join('')+
+          ['計画日','号機','作業種別','時間 / 理由','実施ステータス','操作'].map(h=>'<th>'+h+'</th>').join('')+
           '</tr></thead><tbody>'+trs+'</tbody></table>';
       }catch(e){
         const body = document.getElementById('execListBody');
