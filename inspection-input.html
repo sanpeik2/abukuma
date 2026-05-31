@@ -860,6 +860,19 @@
 
 
 
+        <!-- PTW セクション -->
+        <div class="full" id="ptwSection">
+          <label>PTW（作業許可書）</label>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+            <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="f_ptw_req_n" name="f_ptw_req" value="0" checked onchange="togglePtwNumber()"> 不要</label>
+            <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="f_ptw_req_y" name="f_ptw_req" value="1" onchange="togglePtwNumber()"> 要（番号を入力）</label>
+            <a href="./permits.html" target="_blank" style="font-size:11.5px;color:#58a6ff;margin-left:4px;">📋 デジタルPTWを申請 →</a>
+          </div>
+          <div id="ptwNumberWrap" style="display:none;">
+            <input type="text" id="f_ptw_number" placeholder="例: PTW-2026-001（取得済みPTW番号を記録）" style="width:100%;background:#0d1117;border:1px solid rgba(219,97,162,.5);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;">
+            <div style="font-size:11px;color:#e3b341;margin-top:4px;">口頭・紙で取得済みの場合も番号を記録してください。後から permits.html で正式登録も可能です。</div>
+          </div>
+        </div>
         <div class="full"><label>全体コメント<span class="opt">任意</span></label><textarea id="f_comment" placeholder="所見・備考（異常なしでも気づきがあれば）"></textarea></div>
 
 
@@ -2320,6 +2333,8 @@
           plan_id:state.planId||null,
           source_type: state.adhocMode ? ($('f_source_type')?.value||'manual') : 'planned',
           source_reason: state.adhocMode ? ($('f_source_reason')?.value?.trim()||null) : null,
+          ptw_required: document.getElementById('f_ptw_req_y')?.checked ?? false,
+          ptw_number:   document.getElementById('f_ptw_req_y')?.checked ? (document.getElementById('f_ptw_number')?.value?.trim()||null) : null,
 
 
 
@@ -2903,6 +2918,15 @@
         const body = document.getElementById('execListBody');
         if(body) body.innerHTML = '<div class="err">取得エラー: '+esc(e.message)+'</div>';
       }
+    }
+
+    function togglePtwNumber(){
+      const req = document.getElementById('f_ptw_req_y')?.checked;
+      const wrap = document.getElementById('ptwNumberWrap');
+      if(wrap) wrap.style.display = req ? 'block' : 'none';
+      // 臨時点検時は PTW セクションをピンクで強調
+      const sec = document.getElementById('ptwSection');
+      if(sec) sec.style.border = req ? '1px solid rgba(219,97,162,.4)' : '';
     }
 
     function activateAdhocMode(){
