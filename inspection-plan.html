@@ -427,6 +427,14 @@
       return `<span style="font-size:11px;font-weight:700;color:${d.c};background:${d.bg};border:1px solid ${d.bd};border-radius:6px;padding:3px 9px;white-space:nowrap;">${d.lbl}</span>`;
     }
 
+    function deadlineBadge(s){
+      if(!s || s === '—') return '<span style="color:var(--muted);">—</span>';
+      if(s === '🔵 本日') return '<span style="font-size:11px;font-weight:700;color:#58a6ff;border:1px solid rgba(88,166,255,.5);border-radius:5px;padding:2px 7px;">🔵 本日</span>';
+      if(s === '⚪ 予定') return '<span style="font-size:11px;color:var(--muted);">⚪ 予定</span>';
+      // 警告系（⚠ から始まる）
+      const label = s.replace(/^⚠\s*/,'');
+      return '<span style="font-size:11px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:5px;padding:2px 7px;white-space:nowrap;">⚠ '+label+'</span>';
+    }
     function planApprovalBadge(s){
       const lbl={draft:'📋 計画中',pending:'⏳ 承認待ち',approved:'✅ 承認済',returned:'↩ 差戻し'};
       const col={draft:'#8b949e',pending:'#e3b341',approved:'#7ee787',returned:'#ff9a92'};
@@ -539,7 +547,7 @@
 
 
 
-            <td>${esc(r["期限表示"]||"")}</td>
+            <td>${deadlineBadge(r["期限表示"]||"")}</td>
 
 
 
