@@ -1004,11 +1004,9 @@
     /* ===== 結果閲覧モード（readonly=1 で遷移した場合）===== */
     async function enterReadonly(){
       const pid = new URLSearchParams(location.search).get('plan_id');
-      // タイトル・見出し変更
       document.title = '点検結果（閲覧） — 阿武隈風力発電';
       document.querySelector('.topbar h1').textContent = '点検結果（閲覧モード）';
       document.querySelector('.topbar .sub').textContent = '完了済み点検計画の結果を表示しています（入力・登録不可）';
-      // 登録フォームカードを非表示
       const allCards = document.querySelectorAll('.wrap .card');
       allCards[0].style.display = 'none';
       allCards[1].querySelector('h2').textContent = '📋 点検結果（閲覧モード）';
@@ -1035,30 +1033,69 @@
             <a href="./inspection-plan.html" style="margin-left:auto;font-size:12px;color:#58a6ff;text-decoration:none;">← 点検計画一覧へ戻る</a>
           </div>`;
         }
-        // 結果テーブル
         const SEV_JA = {low:'低', medium:'中', high:'高', critical:'重大'};
         if(!irRows || !irRows.length){
           html += '<div style="color:var(--muted);padding:12px 0;">この計画の点検結果はまだ登録されていません。</div>';
         } else {
-          const trs = irRows.map(r => {
+          // チェックリスト一括取得（全 result_id を IN で）
+          const idList = irRows.map(r => encodeURIComponent(r.id)).join(',');
+          let clMap = {};
+          try{
+            const clRows = await sb.get(`result_checklist?result_id=in.(${irRows.map(r=>r.id).join(',')})&order=result_id.asc`);
+            (clRows||[]).forEach(c => { if(!clMap[c.result_id]) clMap[c.result_id]=[]; clMap[c.result_id].push(c); });
+          }catch(e2){ /* チェックリスト取得失敗は表示を続行 */ }
+
+          html += irRows.map(r => {
             const tno2 = (state.turbines.find(t => t.id === r.turbine_id)||{}).turbine_no || '–';
-            const overall = (r.result_status === 'ng' || r.has_anomaly)
-              ? '<b style="color:#ff9a92;">🔴 NG（異常あり）</b>'
-              : '<b style="color:#7ee787;">🟢 OK</b>';
-            const sev = r.severity ? (SEV_JA[r.severity] || r.severity) : '–';
-            return `<tr class="${r.has_anomaly ? 'anom' : ''}">
-              <td style="white-space:nowrap">${esc(r.executed_date || '–')}</td>
-              <td><b style="color:#fff">${esc(tno2)}</b></td>
-              <td>${overall}</td>
-              <td>${esc(r.anomaly_description || '–')}</td>
-              <td style="white-space:nowrap">${esc(sev)}</td>
-              <td style="color:var(--muted)">${esc(r.weather || '–')}</td>
-              <td style="color:var(--muted)">${esc(r.comments || '–')}</td>
-            </tr>`;
+            const isNg = r.result_status === 'ng' || r.has_anomaly;
+            const overall = isNg ? '<b style="color:#ff9a92;">🔴 NG（異常あり）</b>' : '<b style="color:#7ee787;">🟢 OK</b>';
+            const sev = r.severity ? (SEV_JA[r.severity]||r.severity) : '–';
+            // チェックリスト折りたたみ
+            const clItems = clMap[r.id] || [];
+            const ngCnt = clItems.filter(c => c.check_result==='ng').length;
+            const clDetail = clItems.length ? `
+              <details style="margin-top:10px;">
+                <summary style="cursor:pointer;font-size:12px;color:#9fb0bd;list-style:none;padding:4px 0;display:flex;align-items:center;gap:8px;">
+                  <span>▶ 点検項目詳細</span>
+                  <span style="background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:10.5px;">${clItems.length}件</span>
+                  ${ngCnt>0?`<span style="color:#ff9a92;font-size:10.5px;font-weight:700;">NG ${ngCnt}件</span>`:''}
+                </summary>
+                <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11.5px;">
+                  <thead><tr>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">点検項目</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">判定</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">測定値</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">基準</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">コメント</th>
+                  </tr></thead>
+                  <tbody>${clItems.map(cl => {
+                    const jcol = cl.check_result==='ng'?'#ff9a92':cl.check_result==='ok'?'#7ee787':'#788694';
+                    const jtxt = cl.check_result==='ng'?'NG':cl.check_result==='ok'?'OK':cl.check_result==='na'?'対象外':'–';
+                    const meas = cl.measured_value!=null ? `${cl.measured_value}${esc(cl.unit||'')}` : (cl.criteria_text?'目視':'–');
+                    const crit = cl.criteria_text ? esc(cl.criteria_text) : (cl.criteria_min!=null ? `${cl.criteria_min}〜${cl.criteria_max} ${esc(cl.unit||'')}` : '–');
+                    return `<tr style="${cl.check_result==='ng'?'background:rgba(248,81,73,.06);':''}">
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);">${esc(cl.check_item||'')}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);color:${jcol};font-weight:700;">${jtxt}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);">${meas}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;">${crit}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);">${esc(cl.comment||'')}</td>
+                    </tr>`;
+                  }).join('')}</tbody>
+                </table>
+              </details>` : '';
+            return `<div style="border:1px solid ${isNg?'rgba(248,81,73,.4)':'var(--line)'};border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${isNg?'rgba(248,81,73,.04)':'var(--panel2)'};">
+              <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+                <span style="font-size:12px;color:var(--muted);">${esc(r.executed_date||'–')}</span>
+                <b style="color:#fff;">${esc(tno2)}</b>
+                ${overall}
+                ${sev!=='–'?`<span style="font-size:11.5px;color:var(--muted);">深刻度: ${esc(sev)}</span>`:''}
+                <span style="font-size:11.5px;color:var(--muted);">天候: ${esc(r.weather||'–')}</span>
+              </div>
+              ${r.anomaly_description?`<div style="margin-top:6px;font-size:12px;color:#ff9a92;">異常内容: ${esc(r.anomaly_description)}</div>`:''}
+              ${r.comments?`<div style="margin-top:4px;font-size:12px;color:var(--muted);">${esc(r.comments)}</div>`:''}
+              ${clDetail}
+            </div>`;
           }).join('');
-          html += `<table><thead><tr>
-            <th>実施日</th><th>号機</th><th>判定</th><th>異常内容</th><th>深刻度</th><th>天候</th><th>コメント</th>
-          </tr></thead><tbody>${trs}</tbody></table>`;
         }
         body.innerHTML = html;
       }catch(e){
