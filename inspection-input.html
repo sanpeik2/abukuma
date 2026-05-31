@@ -1040,9 +1040,6 @@
 
 
       <div id="listBody" class="loading">読み込み中…</div>
-      <div style="margin-top:14px">
-        <button onclick="activateAdhocMode()" style="background:rgba(219,97,162,.15);color:#db61a2;border:1px solid rgba(219,97,162,.45);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;">＋ 🔴 臨時点検を記録</button>
-      </div>
 
 
 
@@ -2925,7 +2922,10 @@
           <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">＋ 臨時点検を記録</button>
         </div>
         <div id="execKpi" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
-        <div id="execListBody" class="loading">読み込み中…</div>`;
+        <div id="execListBody" class="loading">読み込み中…</div>
+        <div style="margin-top:14px;padding-bottom:4px;">
+          <button onclick="activateAdhocMode()" style="background:rgba(219,97,162,.15);color:#db61a2;border:1px solid rgba(219,97,162,.45);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;">＋ 🔴 臨時点検を記録</button>
+        </div>\`;
       wrap.insertAdjacentElement('afterbegin', card);
       try{
         const rows = await sb.get('v_inspection_execution_list?order=planned_date.asc');
