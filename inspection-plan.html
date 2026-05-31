@@ -447,6 +447,27 @@
       return `<span style="font-size:11px;font-weight:700;color:${d.c};background:${d.bg};border:1px solid ${d.bd};border-radius:6px;padding:3px 9px;white-space:nowrap;">${d.lbl}</span>`;
     }
 
+    function planApprovalBadge(s){
+      const lbl={draft:'📋 計画中',pending:'⏳ 承認待ち',approved:'✅ 承認済',returned:'↩ 差戻し'};
+      const col={draft:'#8b949e',pending:'#e3b341',approved:'#7ee787',returned:'#ff9a92'};
+      const bg ={draft:'rgba(139,148,158,.10)',pending:'rgba(210,153,34,.12)',approved:'rgba(63,185,80,.12)',returned:'rgba(248,81,73,.10)'};
+      const bd ={draft:'#30363d',pending:'rgba(210,153,34,.5)',approved:'rgba(63,185,80,.5)',returned:'rgba(248,81,73,.5)'};
+      const k=s||'draft';
+      return '<span style="font-size:11px;font-weight:700;color:'+(col[k]||col.draft)+';background:'+(bg[k]||bg.draft)+';border:1px solid '+(bd[k]||bd.draft)+';border-radius:6px;padding:3px 9px;white-space:nowrap;">'+(lbl[k]||lbl.draft)+'</span>';
+    }
+    function execMiniTag(us){
+      const T={
+        ready:          '<span style="font-size:10px;color:var(--muted);margin-left:5px;">/ 未実施</span>',
+        inspecting:     '<span style="font-size:10px;color:#9cd2ff;margin-left:5px;">/ 実施中</span>',
+        result_recorded:'<span style="font-size:10px;color:#c9d1d9;margin-left:5px;">/ 完了</span>',
+        result_pending: '<span style="font-size:10px;color:#e3b341;margin-left:5px;">/ 結果承認待ち</span>',
+        result_approved:'<span style="font-size:10px;color:#7ee787;margin-left:5px;">/ 結果承認済</span>',
+        anomaly_open:   '<span style="font-size:10px;color:#ff9a92;margin-left:5px;">/ ⚠ 異常あり</span>',
+        anomaly_approved:'<span style="font-size:10px;color:#ff7b72;margin-left:5px;">/ 異常・承認済</span>',
+        work_ordered:   '<span style="font-size:10px;color:#d29922;margin-left:5px;">/ 作業票化</span>'
+      };
+      return T[us]||'';
+    }
     function render(){
 
 
@@ -542,7 +563,7 @@
 
 
 
-            ${unifiedStatusBadge(r["unified_status"]||"planning")}</td
+            ${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]===="approved"?execMiniTag(r["unified_status"]||"ready"):""}</td
 
 
 
