@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 
 
@@ -501,6 +501,9 @@
 
 
 
+
+    <!-- 点検計画から遷移した場合のコンテキストバナー -->
+    <div id="planBanner" style="display:none;margin-bottom:12px;"></div>
 
     <div class="kpis" id="kpis"></div>
 
@@ -1562,6 +1565,7 @@
 
 
     async function loadAll(){
+      const _planId = new URLSearchParams(location.search).get('plan_id');
 
 
 
@@ -1622,6 +1626,7 @@
 
 
         renderKpis();
+        if(_planId) showPlanBanner(_planId);
 
 
 
@@ -1656,6 +1661,39 @@
 
 
 
+
+    /* ===== 点検計画バナー（plan_id パラメータがある場合） ===== */
+    async function showPlanBanner(pid){
+      const bannerEl = document.getElementById('planBanner');
+      if(!bannerEl) return;
+      try{
+        const [planRows, irRows] = await Promise.all([
+          sb.get(`inspection_plans?id=eq.${encodeURIComponent(pid)}&select=turbine_id,planned_date,work_type,status`),
+          sb.get(`inspection_results?plan_id=eq.${encodeURIComponent(pid)}&order=submitted_at.desc`)
+        ]);
+        const plan = planRows && planRows[0];
+        if(!plan){ bannerEl.style.display='none'; return; }
+        // 号機取得
+        let tno='';
+        try{ const ts=await sb.get(`turbines?id=eq.${encodeURIComponent(plan.turbine_id)}&select=turbine_no`); tno=(ts&&ts[0]&&ts[0].turbine_no)||''; }catch(e2){}
+        const ngResults=(irRows||[]).filter(r=>r.has_anomaly||r.result_status==='ng');
+        const total=(irRows||[]).length;
+        bannerEl.innerHTML=`<div style="padding:10px 14px;border:1px solid rgba(63,185,80,.4);border-radius:9px;background:rgba(63,185,80,.08);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;">
+          <span style="color:#7ee787;font-weight:700;">📋 点検計画から遷移</span>
+          ${tno?`<b style="color:#fff;">${esc(tno)}</b>`:''}
+          ${plan.planned_date?`<span style="color:var(--muted);">予定日: ${esc(plan.planned_date)}</span>`:''}
+          ${plan.work_type?`<span style="color:var(--muted);">${esc(plan.work_type)}</span>`:''}
+          ${total>0?`<span style="color:var(--muted);">点検 ${total}件実施</span>`:''}
+          ${ngResults.length>0
+            ?`<span style="color:#ff9a92;font-weight:700;">異常 ${ngResults.length}件検出</span>`
+            :'<span style="color:#7ee787;">点検では異常なし</span>'}
+          <span style="color:var(--muted);font-size:11px;">（下の一覧は全案件を表示しています）</span>
+          <a href="./inspection-input.html?plan_id=${encodeURIComponent(pid)}&readonly=1"
+             style="margin-left:auto;color:#58a6ff;font-size:12px;text-decoration:none;white-space:nowrap;">点検結果を見る →</a>
+        </div>`;
+        bannerEl.style.display='block';
+      }catch(e){ bannerEl.style.display='none'; }
+    }
 
     sb.requireLogin({ onReady: loadAll });
 
