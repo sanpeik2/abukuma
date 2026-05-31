@@ -498,7 +498,7 @@
 
 
 
-          return `<tr class="${cls}">
+          return `<tr class="${cls}" data-plan-id="${esc(r["計画id"]||"")}">
 
 
 
@@ -669,47 +669,60 @@
       planWo:   'text-decoration:none;display:inline-block;font-size:11px;font-weight:700;color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
       approve: 'display:inline-block;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
       revise:  'display:inline-block;font-size:11px;color:#e3b341;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
+      edit:    'display:inline-block;font-size:11px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
+      locked:  'display:inline-block;font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
     };
     // 補修・停止が事前に決まっている計画のキーワード判定
     const REPAIR_KW = ['補修','停止','修理','交換','清掃作業'];
 
     function planButtons(r){
-      const st  = r["状態"] || "";
-      const pid = encodeURIComponent(r["計画id"] || "");
-      const rawId = r["計画id"] || "";
-      const hasAnomaly  = !!(r["異常件数"] && r["異常件数"] > 0);
-      const isRepair    = REPAIR_KW.some(k => (r["作業種別"] || "").includes(k));
+      const st   = r["状態"] || "";
+      const appSt= r["approval_status"] || "draft";
+      const pid  = encodeURIComponent(r["計画id"] || "");
+      const rawId= r["計画id"] || "";
+      const hasAnomaly = !!(r["異常件数"] && r["異常件数"] > 0);
+      const isRepair   = REPAIR_KW.some(k => (r["作業種別"]||"").includes(k));
+      const canEdit    = (appSt === "draft" || appSt === "returned");
       let b = "";
-      if(st === "planned" || st === "returned"){
-        const lbl = st==="returned" ? "✏ 修正・再開" : "点検を開始";
-        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">${lbl}</a>`;
+
+      // 業務アクションボタン
+      if(st === "planned" || st === "in_progress"){
+        const lbl = st === "in_progress" ? "点検を続ける" : "点検を開始";
+        const btnSt = st === "in_progress" ? BTN.cont : BTN.start;
+        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${btnSt}">${lbl}</a>`;
         if(isRepair) b += `<a href="./work-orders.html?inspection_plan_id=${pid}" style="${BTN.planWo}">計画作業票</a>`;
-        if(st === "returned") b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 再申請</button>`;
-      } else if(st === "in_progress"){
-        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.cont}">点検を続ける</a>`;
       } else if(st === "completed" || st === "done"){
         if(hasAnomaly){
           b += `<a href="./defect-rca.html?plan_id=${pid}" style="${BTN.anomaly}">異常判断へ</a>`;
           b += `<a href="./work-orders.html?inspection_plan_id=${pid}" style="${BTN.wo}">作業票を作成</a>`;
-        } else {
-          b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${BTN.view}">結果を見る</a>`;
         }
-        b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 承認申請</button>`;
-      } else if(st === "approved"){
         b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${BTN.view}">結果を見る</a>`;
-        b += `<span style="${BTN.view};color:#7ee787;border-color:rgba(63,185,80,.5);">🔒 承認済</span>`;
-        b += `<button onclick="requestRevision('${esc(rawId)}')" style="${BTN.revise}">↩ 差戻し申請</button>`;
       } else {
         b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">点検を開始</a>`;
       }
+
+      // 編集ボタン（draft/returned のみ）
+      if(canEdit){
+        b += `<button onclick="openEditPanel('${esc(rawId)}')" style="${BTN.edit}">✏ 編集</button>`;
+      }
+
+      // 承認フロー
+      if(appSt === "draft" || appSt === "returned"){
+        b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 承認申請</button>`;
+      } else if(appSt === "pending"){
+        b += `<span style="${BTN.view}">⏳ 承認待ち</span>`;
+      } else if(appSt === "approved"){
+        b += `<span style="${BTN.locked}">🔒 承認済</span>`;
+        b += `<button onclick="requestRevision('${esc(rawId)}')" style="${BTN.revise}">↩ 差戻し申請</button>`;
+      }
+
       return b;
     }
-
-    async function submitApproval(id){
-      if(!confirm('この点検計画を承認申請しますか？承認画面に表示されます。')) return;
+async function submitApproval(id){
+      if(!confirm('この点検計画を承認申請しますか？承認画面（Step 8）に表示されます。')) return;
       try{
         await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
-          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({status:'completed'})});
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'pending'})});
         alert('承認申請しました。承認画面（Step 8）で承認してください。');
         location.reload();
       }catch(e){ alert('申請失敗: '+e.message); }
@@ -720,10 +733,125 @@
       if(reason === null) return;
       try{
         await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
-          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({status:'returned'})});
-        alert('差戻し完了。計画担当者が修正後、再申請できます。');
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'returned'})});
+        alert('差戻し完了。担当者が修正後、再申請できます。');
         location.reload();
       }catch(e){ alert('差戻し失敗: '+e.message); }
+    }
+
+    /* ===== インライン編集パネル ===== */
+    let _editPanel = null;
+
+    async function openEditPanel(id){
+      if(_editPanel === id){ closeEditPanel(); return; }
+      _editPanel = id;
+      // 対象行の直後に編集パネルを挿入
+      const allRows = document.querySelectorAll('tr[data-plan-id]');
+      let targetRow = null;
+      allRows.forEach(tr => { if(tr.dataset.planId === id) targetRow = tr; });
+      if(!targetRow) return;
+      // 既存パネルを閉じる
+      document.querySelectorAll('.edit-panel-row').forEach(el => el.remove());
+      // データ取得
+      try{
+        const rows = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=*`);
+        const d = rows && rows[0];
+        if(!d) return;
+        const locked = d.approval_status === 'approved' || d.approval_status === 'pending';
+        const panel = document.createElement('tr');
+        panel.className = 'edit-panel-row';
+        const colCount = targetRow.children.length;
+        panel.innerHTML = `<td colspan="${colCount}" style="padding:0;background:var(--panel2);border-bottom:2px solid rgba(88,166,255,.4);">
+          <div style="padding:16px 20px;">
+            <div style="font-size:13px;font-weight:700;color:#9cd2ff;margin-bottom:12px;">
+              ✏ 点検計画を編集
+              ${locked ? '<span style="margin-left:8px;font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:4px;padding:1px 6px;">'+d.approval_status==='pending'?'⏳ 承認待ち（編集不可）':'🔒 承認済（編集不可）'+'</span>' : ''}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px;">
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">予定日</label>
+                <input id="ep_date" type="date" value="${esc(d.planned_date||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">作業種別</label>
+                <input id="ep_wtype" type="text" value="${esc(d.work_type||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">開始時刻</label>
+                <input id="ep_tstart" type="time" value="${esc((d.time_start||'').substring(0,5))}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">終了時刻</label>
+                <input id="ep_tend" type="time" value="${esc((d.time_end||'').substring(0,5))}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">作業人数</label>
+                <input id="ep_workers" type="number" min="1" max="20" value="${d.worker_count||''}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">必要資格</label>
+                <input id="ep_qual" type="text" value="${esc(d.required_qualification||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW番号</label>
+                <input id="ep_ptw" type="text" value="${esc(d.ptw_number||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">備考</label>
+              <textarea id="ep_notes" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.notes||'')}</textarea>
+            </div>
+            <div id="ep_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              ${!locked ? `<button id="ep_save" onclick="saveEditPanel('${esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>` : ''}
+              <button onclick="closeEditPanel()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 閉じる</button>
+              ${!locked ? `<span style="font-size:11px;color:var(--muted);">revision_no: ${d.revision_no||1}</span>` : ''}
+            </div>
+          </div>
+        </td>`;
+        targetRow.insertAdjacentElement('afterend', panel);
+      }catch(e){ alert('データ取得失敗: '+e.message); }
+    }
+
+    function closeEditPanel(){
+      document.querySelectorAll('.edit-panel-row').forEach(el => el.remove());
+      _editPanel = null;
+    }
+
+    async function saveEditPanel(id){
+      const btn = document.getElementById('ep_save');
+      const msgEl = document.getElementById('ep_msg');
+      if(btn) btn.disabled = true;
+      const patch = {
+        planned_date:          document.getElementById('ep_date')?.value   || null,
+        work_type:             document.getElementById('ep_wtype')?.value  || null,
+        time_start:            document.getElementById('ep_tstart')?.value || null,
+        time_end:              document.getElementById('ep_tend')?.value   || null,
+        worker_count:          document.getElementById('ep_workers')?.value ? Number(document.getElementById('ep_workers').value) : null,
+        required_qualification:document.getElementById('ep_qual')?.value   || null,
+        ptw_number:            document.getElementById('ep_ptw')?.value    || null,
+        notes:                 document.getElementById('ep_notes')?.value  || null,
+        updated_at:            new Date().toISOString(),
+        revision_no:           999  // actual increment done via DB or just update
+      };
+      // revision_no は現在値+1 に（取得済みなら使う）
+      try{
+        const cur = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=revision_no,approval_status`);
+        const d = cur && cur[0];
+        if(d && (d.approval_status === 'approved' || d.approval_status === 'pending')){
+          if(msgEl){ msgEl.textContent = 'このレコードは ' + d.approval_status + ' のため編集できません。'; msgEl.style.display='block'; }
+          if(btn) btn.disabled = false;
+          return;
+        }
+        patch.revision_no = (d?.revision_no || 1);
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
+        closeEditPanel();
+        location.reload();
+      }catch(e){
+        if(msgEl){ msgEl.textContent = '保存失敗: ' + (e.message||String(e)); msgEl.style.display='block'; }
+        if(btn) btn.disabled = false;
+      }
     }
 sb.requireLogin({ onReady: loadAll });
 
