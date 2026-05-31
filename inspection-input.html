@@ -138,12 +138,16 @@
 
 
 
-  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit}
+  /* ログインオーバーレイ内のinputは除外してスコープを絞る */
+  .wrap input,.wrap select,.wrap textarea,
+  .drawer-body input,.drawer-body select,.drawer-body textarea{
+    width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;display:block;}
 
 
 
 
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--master)}
+  .wrap input:focus,.wrap select:focus,.wrap textarea:focus,
+  .drawer-body input:focus,.drawer-body select:focus,.drawer-body textarea:focus{outline:none;border-color:var(--master)}
 
 
 
@@ -895,10 +899,10 @@
         <!-- PTW セクション -->
         <div class="full" id="ptwSection">
           <label>PTW（作業許可書）</label>
-          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
-            <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="f_ptw_req_n" name="f_ptw_req" value="0" checked onchange="togglePtwNumber()"> 不要</label>
-            <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="f_ptw_req_y" name="f_ptw_req" value="1" onchange="togglePtwNumber()"> 要（番号を入力）</label>
-            <a href="./permits.html" target="_blank" style="font-size:11.5px;color:#58a6ff;margin-left:4px;">📋 デジタルPTWを申請 →</a>
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:nowrap;margin-bottom:6px;">
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;"><input type="radio" id="f_ptw_req_n" name="f_ptw_req" value="0" checked onchange="togglePtwNumber()" style="width:auto;display:inline;"> 不要</label>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;"><input type="radio" id="f_ptw_req_y" name="f_ptw_req" value="1" onchange="togglePtwNumber()" style="width:auto;display:inline;"> 要（番号を入力）</label>
+            <a href="./permits.html" target="_blank" style="font-size:11.5px;color:#58a6ff;white-space:nowrap;">📋 デジタルPTWを申請 →</a>
           </div>
           <div id="ptwNumberWrap" style="display:none;">
             <input type="text" id="f_ptw_number" placeholder="例: PTW-2026-001（取得済みPTW番号を記録）" style="width:100%;background:#0d1117;border:1px solid rgba(219,97,162,.5);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;">
