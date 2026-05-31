@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 点検ルールマスタ</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d;
+    --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --work:#d29922; --defect:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+
+  .wrap{padding:18px 22px 60px;max-width:1200px;margin:0 auto}
+  .note{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7}
+
+  /* ルールカード */
+  .rule-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:28px}
+  .rule-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;cursor:pointer;transition:border-color .15s}
+  .rule-card:hover{border-color:var(--master)}
+  .rule-card.active{border-color:var(--insp);background:rgba(63,185,80,.05)}
+  .rule-card .rc-code{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.07em;margin-bottom:4px}
+  .rule-card .rc-name{font-size:16px;font-weight:800;color:#fff;margin-bottom:6px}
+  .rule-card .rc-meta{font-size:12px;color:var(--muted)}
+  .rule-card .rc-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;border:1px solid;margin-right:4px}
+  .badge-legal{color:#ff9a92;border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
+  .badge-cycle{color:#9cd2ff;border-color:rgba(88,166,255,.4);background:rgba(88,166,255,.08)}
+
+  /* 一括生成パネル */
+  #genPanel{display:none;background:var(--panel2);border:1px solid rgba(63,185,80,.45);border-radius:12px;padding:20px 24px;margin-bottom:24px}
+  #genPanel h2{font-size:15px;font-weight:700;color:#7ee787;margin-bottom:4px}
+  #genPanel .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+  .fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
+  .fld input,.fld select,.fld textarea{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box}
+
+  /* 号機チェックボックスグリッド */
+  .wtg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;padding:10px;background:#0d1117;border:1px solid var(--line);border-radius:8px;max-height:280px;overflow-y:auto}
+  .wtg-cb{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px 6px;border-radius:5px;transition:background .1s}
+  .wtg-cb:hover{background:rgba(88,166,255,.08)}
+  .wtg-cb input{width:14px;height:14px;cursor:pointer;accent-color:#3fb950;flex-shrink:0}
+  .wtg-cb.checked-style{background:rgba(63,185,80,.07);color:#7ee787}
+
+  /* プログレス */
+  .prog-wrap{display:none;margin:12px 0}
+  .prog-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:5px}
+  .prog-fill{height:100%;width:0%;background:#3fb950;border-radius:3px;transition:width .2s}
+  .prog-label{font-size:12px;color:var(--muted)}
+
+  /* 安全要件 */
+  .safety-row{display:flex;gap:20px;flex-wrap:wrap;padding:10px 14px;border:1px solid rgba(210,153,34,.3);border-radius:8px;background:rgba(210,153,34,.04);margin-bottom:14px}
+  .safety-row label{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+  .safety-row label input{width:14px;height:14px}
+
+  /* 既存計画一覧 */
+  .existing-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+  .existing-table th,.existing-table td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left}
+  .existing-table th{color:var(--muted);font-size:10.5px;font-weight:700}
+
+  .btn-primary{background:#238636;color:#fff;font-weight:700;border:none;padding:9px 22px;border-radius:8px;font-size:13px;cursor:pointer}
+  .btn-primary:disabled{opacity:.45;cursor:default}
+  .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--muted);padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer}
+
+  .loading,.empty{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark">AW</div>
+  <div>
+    <h1>点検ルールマスタ</h1>
+    <div class="sub">阿武隈OS — 定期・年次点検ルールの管理と一括計画生成</div>
+  </div>
+  <a class="back" href="./inspection-plan.html">← 点検計画へ</a>
+</div>
+
+<div class="wrap">
+
+  <div class="note">
+    登録済みの点検ルールから、対象号機・計画日を選択して点検計画を一括生成できます。<br>
+    生成された計画は <b>下書き(draft)</b> で保存されます。その後、点検計画画面から承認申請してください。
+  </div>
+
+  <!-- ルールカード一覧 -->
+  <div class="rule-cards" id="ruleCards">
+    <div class="loading">読み込み中…</div>
+  </div>
+
+  <!-- 一括生成パネル -->
+  <div id="genPanel">
+    <h2 id="genTitle">一括生成</h2>
+    <div class="sub" id="genSub"></div>
+
+    <div class="form-grid">
+      <div class="fld">
+        <label>計画日 <span style="color:#f85149">*</span></label>
+        <input type="date" id="genDate">
+      </div>
+      <div class="fld">
+        <label>作業開始時刻</label>
+        <input type="time" id="genStart">
+      </div>
+      <div class="fld">
+        <label>作業終了時刻</label>
+        <input type="time" id="genEnd">
+      </div>
+      <div class="fld">
+        <label>作業人数</label>
+        <input type="number" id="genWorkers" min="1" max="30" placeholder="例: 2">
+      </div>
+      <div class="fld">
+        <label>必要資格</label>
+        <input type="text" id="genQual" placeholder="例: 電気主任技術者">
+      </div>
+    </div>
+
+    <div class="safety-row">
+      <label><input type="checkbox" id="genPtw"> PTW（作業許可証）要</label>
+      <label><input type="checkbox" id="genKy" checked> KY（危険予知）要</label>
+      <label><input type="checkbox" id="genLoto"> LOTO（施錠・タグアウト）要</label>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:12px;font-weight:700;color:#9cd2ff;">対象号機を選択</span>
+        <button onclick="selectAllWtg(true)"  style="font-size:11px;color:#3fb950;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.4);border-radius:5px;padding:3px 10px;cursor:pointer;">全選択</button>
+        <button onclick="selectAllWtg(false)" style="font-size:11px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:3px 10px;cursor:pointer;">全解除</button>
+        <span id="genWtgCount" style="font-size:11px;color:var(--muted);">0台選択中</span>
+      </div>
+      <div class="wtg-grid" id="wtgGrid">読み込み中…</div>
+    </div>
+
+    <div class="prog-wrap" id="genProg">
+      <div class="prog-bar"><div class="prog-fill" id="genFill"></div></div>
+      <div class="prog-label" id="genProgLabel"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+      <button class="btn-primary" id="genBtn" onclick="generatePlans()">✅ 一括生成する</button>
+      <button class="btn-secondary" onclick="closeGenPanel()">キャンセル</button>
+      <span id="genMsg" style="font-size:12px;color:var(--muted);"></span>
+    </div>
+  </div>
+
+  <!-- 既存計画リスト（このルールで生成済み） -->
+  <div id="existingSection" style="display:none;">
+    <div style="font-size:13px;font-weight:700;color:#9cd2ff;margin-bottom:10px;" id="existingTitle"></div>
+    <div id="existingList"></div>
+  </div>
+
+</div>
+
+<script src="./lib/supabase.js"></script>
+<script>
+const esc = sb.esc;
+
+let RULES    = [];
+let TURBINES = [];
+let activeRule = null;
+
+const CYCLE_LABEL = {
+  yearly:    '年1回',
+  monthly:   v => v===6 ? '年2回（半期）' : (v===1 ? '月1回' : `${v}ヶ月毎`),
+  quarterly: '年4回（四半期）',
+};
+function cycleLabel(r){
+  if(r.cycle_type === 'yearly')    return '年1回';
+  if(r.cycle_type === 'quarterly') return '年4回（四半期）';
+  if(r.cycle_type === 'monthly'){
+    if(r.cycle_value === 1)  return '月1回';
+    if(r.cycle_value === 6)  return '年2回（半期）';
+    return `${r.cycle_value}ヶ月毎`;
+  }
+  return r.cycle_type;
+}
+function cycleColor(r){
+  if(r.cycle_type==='yearly')    return '#ff9a92';
+  if(r.cycle_type==='quarterly') return '#9cd2ff';
+  if(r.cycle_type==='monthly' && r.cycle_value===6) return '#f0c674';
+  return '#3fb950';
+}
+
+/* ===== 初期ロード ===== */
+async function loadAll(){
+  try{
+    const [rules, turbines] = await Promise.all([
+      sb.get('inspection_rules?order=cycle_value.desc&is_active=eq.true'),
+      sb.get('turbines?select=id,turbine_no&order=turbine_no')
+    ]);
+    RULES    = rules    || [];
+    TURBINES = turbines || [];
+    renderRuleCards();
+    renderWtgGrid();
+  }catch(e){
+    document.getElementById('ruleCards').innerHTML = `<div class="err">読み込みエラー: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ===== ルールカード ===== */
+function renderRuleCards(){
+  const el = document.getElementById('ruleCards');
+  if(!RULES.length){ el.innerHTML='<div class="empty">ルールが登録されていません</div>'; return; }
+  el.innerHTML = RULES.map(r => `
+    <div class="rule-card" id="rc_${esc(r.id)}" onclick="selectRule('${esc(r.id)}')">
+      <div class="rc-code">${esc(r.rule_code)}</div>
+      <div class="rc-name">${esc(r.inspection_name)}</div>
+      <div class="rc-meta" style="margin-bottom:8px;">
+        <span class="rc-badge badge-cycle" style="color:${cycleColor(r)};border-color:${cycleColor(r)}44;background:${cycleColor(r)}15;">${cycleLabel(r)}</span>
+        ${r.legal_required ? '<span class="rc-badge badge-legal">法的義務</span>' : ''}
+      </div>
+      <div style="font-size:11px;color:#3fb950;font-weight:700;">▶ このルールで一括生成</div>
+    </div>`).join('');
+}
+
+/* ===== 号機グリッド ===== */
+function renderWtgGrid(){
+  const grid = document.getElementById('wtgGrid');
+  if(!TURBINES.length){ grid.innerHTML='読み込み中…'; return; }
+  grid.innerHTML = TURBINES.map(t => `
+    <label class="wtg-cb" id="wcb_${esc(t.id)}">
+      <input type="checkbox" class="wtg-check" value="${esc(t.id)}" data-no="${esc(t.turbine_no)}" onchange="updateWtgCount()">
+      ${esc(t.turbine_no)}
+    </label>`).join('');
+}
+
+function selectAllWtg(flag){
+  document.querySelectorAll('.wtg-check').forEach(cb => {
+    cb.checked = flag;
+    cb.closest('.wtg-cb').classList.toggle('checked-style', flag);
+  });
+  updateWtgCount();
+}
+
+function updateWtgCount(){
+  const cnt = document.querySelectorAll('.wtg-check:checked').length;
+  document.getElementById('genWtgCount').textContent = cnt + '台選択中';
+  document.querySelectorAll('.wtg-check').forEach(cb => {
+    cb.closest('.wtg-cb').classList.toggle('checked-style', cb.checked);
+  });
+}
+
+/* ===== ルール選択 → 生成パネル ===== */
+async function selectRule(ruleId){
+  // カードのアクティブ切り替え
+  document.querySelectorAll('.rule-card').forEach(el => el.classList.remove('active'));
+  const card = document.getElementById('rc_' + ruleId);
+  if(card) card.classList.add('active');
+
+  activeRule = RULES.find(r => r.id === ruleId);
+  if(!activeRule) return;
+
+  // パネル更新
+  document.getElementById('genTitle').textContent = `📋 ${activeRule.inspection_name} — 一括生成`;
+  document.getElementById('genSub').textContent =
+    `${cycleLabel(activeRule)}　→　計画日と対象号機を選んで一括登録します（下書き保存）`;
+  document.getElementById('genPanel').style.display = 'block';
+  document.getElementById('genPanel').scrollIntoView({behavior:'smooth', block:'start'});
+
+  // 全選択をデフォルトに
+  selectAllWtg(true);
+
+  // 既存計画を表示
+  await loadExistingPlans(ruleId);
+}
+
+function closeGenPanel(){
+  document.getElementById('genPanel').style.display = 'none';
+  document.getElementById('existingSection').style.display = 'none';
+  document.querySelectorAll('.rule-card').forEach(el => el.classList.remove('active'));
+  activeRule = null;
+}
+
+/* ===== 既存計画（このルールで生成済み）===== */
+async function loadExistingPlans(ruleId){
+  const sec  = document.getElementById('existingSection');
+  const list = document.getElementById('existingList');
+  const ttl  = document.getElementById('existingTitle');
+  sec.style.display  = 'block';
+  list.innerHTML = '<div class="loading">読み込み中…</div>';
+  ttl.textContent = activeRule.inspection_name + ' — 生成済み計画';
+  try{
+    const rows = await sb.get(`v_inspection_plan_list?order=計画日.desc`);
+    // work_type で絞り込み（rule_id が一致するレコード）
+    const matched = (rows||[]).filter(r =>
+      (r['作業種別']||'').includes(activeRule.inspection_name) ||
+      (r['作業種別']||'').includes(activeRule.rule_code)
+    );
+    if(!matched.length){
+      list.innerHTML = '<div class="empty" style="font-size:12px;">まだ計画はありません</div>'; return;
+    }
+    const stCls = {draft:'color:#8b949e',pending:'color:#e3b341',approved:'color:#7ee787',returned:'color:#ff9a92'};
+    const stLbl = {draft:'下書き',pending:'申請中',approved:'承認済',returned:'差戻し'};
+    list.innerHTML = `<table class="existing-table">
+      <thead><tr><th>計画番号</th><th>号機</th><th>計画日</th><th>ステータス</th></tr></thead>
+      <tbody>${matched.slice(0,20).map(r=>`<tr>
+        <td style="font-family:monospace;font-size:11px;color:#58a6ff;">${esc(r['plan_no']||'—')}</td>
+        <td style="font-weight:700;color:#fff;">${esc(r['号機']||'')}</td>
+        <td>${esc(r['計画日']||'')}</td>
+        <td style="${stCls[r['approval_status']||'draft']}">${stLbl[r['approval_status']||'draft']}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    ${matched.length>20?`<div style="font-size:11px;color:var(--muted);padding:6px 0;">他 ${matched.length-20}件…</div>`:''}`;
+  }catch(e){
+    list.innerHTML = `<div style="font-size:12px;color:#ff9a92;">取得エラー: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ===== 一括生成 ===== */
+async function generatePlans(){
+  if(!activeRule){ alert('ルールを選択してください'); return; }
+
+  const planned_date = document.getElementById('genDate').value;
+  if(!planned_date){ document.getElementById('genMsg').style.color='#f85149'; document.getElementById('genMsg').textContent='計画日は必須です'; return; }
+
+  const checked = [...document.querySelectorAll('.wtg-check:checked')];
+  if(!checked.length){ document.getElementById('genMsg').style.color='#f85149'; document.getElementById('genMsg').textContent='号機を1台以上選択してください'; return; }
+
+  const btn  = document.getElementById('genBtn');
+  const msg  = document.getElementById('genMsg');
+  const prog = document.getElementById('genProg');
+  const fill = document.getElementById('genFill');
+  const lbl  = document.getElementById('genProgLabel');
+
+  btn.disabled=true;
+  prog.style.display='block';
+  msg.style.color='#8b949e'; msg.textContent='生成中…';
+
+  const base = {
+    rule_id:                activeRule.id,
+    work_type:              activeRule.inspection_name,
+    planned_date,
+    time_start:             document.getElementById('genStart').value  || null,
+    time_end:               document.getElementById('genEnd').value    || null,
+    worker_count:           document.getElementById('genWorkers').value ? Number(document.getElementById('genWorkers').value) : null,
+    required_qualification: document.getElementById('genQual').value   || null,
+    ptw_required:           document.getElementById('genPtw').checked,
+    ky_required:            document.getElementById('genKy').checked,
+    loto_required:          document.getElementById('genLoto').checked,
+    source_type:            'periodic',
+    status:                 'planned',
+    approval_status:        'draft',
+    updated_at:             new Date().toISOString(),
+    created_at:             new Date().toISOString()
+  };
+
+  let ok=0, ng=0;
+  for(let i=0; i<checked.length; i++){
+    fill.style.width  = Math.round((i+1)/checked.length*100)+'%';
+    lbl.textContent   = `登録中… ${i+1}/${checked.length}（成功:${ok} 失敗:${ng}）`;
+    try{
+      await sb.write('POST','inspection_plans', { ...base, turbine_id: checked[i].value });
+      ok++;
+    }catch(e){
+      ng++;
+      console.warn('生成失敗:', checked[i].dataset.no, e.message);
+    }
+  }
+
+  fill.style.width='100%';
+  lbl.textContent = `完了: 成功 ${ok}件 / 失敗 ${ng}件`;
+  msg.style.color  = ng>0?'#e3b341':'#7ee787';
+  msg.textContent  = `✔ ${ok}件の計画を生成しました${ng>0?' ('+ng+'件失敗)':''}`;
+  btn.disabled=false;
+
+  // 既存一覧を更新
+  if(activeRule) await loadExistingPlans(activeRule.id);
+}
+
+sb.requireLogin({ onReady: loadAll });
+</script>
+</body>
+</html>
