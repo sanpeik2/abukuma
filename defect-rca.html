@@ -1636,6 +1636,7 @@
 
 
         render();
+        if(_resultId && rows.length === 0) showCreateDefectCta(_resultId);
 
 
 
@@ -1734,6 +1735,67 @@
         </div>`;
         bannerEl.style.display='block';
       }catch(e){ bannerEl.style.display='none'; }
+    }
+
+    /* ===== 異常判断レコード未作成時 CTA ===== */
+    async function showCreateDefectCta(rid){
+      const body = document.getElementById('body');
+      try{
+        const [irRows, clRows] = await Promise.all([
+          sb.get(`inspection_results?id=eq.${encodeURIComponent(rid)}&select=turbine_id,plan_id,executed_date,severity,anomaly_description`),
+          sb.get(`result_checklist?result_id=eq.${encodeURIComponent(rid)}&check_result=eq.ng&order=created_at.asc`)
+        ]);
+        const ir = irRows && irRows[0];
+        if(!ir) return;
+        let tno='';
+        try{ const ts=await sb.get(`turbines?id=eq.${encodeURIComponent(ir.turbine_id)}&select=turbine_no`); tno=(ts&&ts[0]&&ts[0].turbine_no)||''; }catch(e2){}
+        const ngItems = clRows||[];
+        const defaultTitle = ngItems.length
+          ? ngItems.map(c=>c.check_item).join(' / ')
+          : (ir.anomaly_description||'点検NG');
+        const dtDefault = ir.executed_date ? ir.executed_date+'T09:00' : '';
+        body.innerHTML = `<div id="cdf_wrap" style="padding:16px;border:1px solid rgba(210,153,34,.5);border-radius:10px;background:rgba(210,153,34,.07);">
+          <div style="color:#e3b341;font-weight:700;font-size:13px;margin-bottom:6px;">⚠ この点検結果に紐づく異常判断レコードがまだありません</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">点検NG ${ngItems.length}件。以下の内容で異常判断レコードを作成してください。</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">異常タイトル <span style="color:#ff9a92">*</span></label>
+              <input id="cdf_title" type="text" value="${esc(defaultTitle)}" style="width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:8px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">発見日時</label>
+              <input id="cdf_dt" type="datetime-local" value="${esc(dtDefault)}" style="width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:8px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+          </div>
+          <div id="cdf_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button id="cdf_btn" style="background:#d29922;color:#11161d;font-weight:700;border:none;padding:9px 18px;border-radius:8px;font-size:13px;cursor:pointer;">📝 異常判断レコードを作成</button>
+            <span style="font-size:11.5px;color:var(--muted);">号機: ${esc(tno)} ／ 点検日: ${esc(ir.executed_date||'–')}</span>
+          </div>
+        </div>`;
+        document.getElementById('cdf_btn').addEventListener('click', async ()=>{
+          const btn=document.getElementById('cdf_btn'), msgEl=document.getElementById('cdf_msg');
+          const title=(document.getElementById('cdf_title')?.value||'').trim();
+          const dtRaw=document.getElementById('cdf_dt')?.value;
+          if(!title){ msgEl.textContent='異常タイトルを入力してください。'; msgEl.style.display='block'; return; }
+          btn.disabled=true; btn.textContent='作成中…';
+          try{
+            await sb.write('POST','defect_findings',{
+              turbine_id: ir.turbine_id||null,
+              source_type: 'inspection',
+              source_id: rid,
+              finding_title: title,
+              detected_at: dtRaw ? new Date(dtRaw).toISOString() : new Date().toISOString(),
+              status: 'open'
+            });
+            location.reload();
+          }catch(e){
+            msgEl.textContent='作成失敗: '+e.message;
+            msgEl.style.display='block';
+            btn.disabled=false; btn.textContent='📝 異常判断レコードを作成';
+          }
+        });
+      }catch(e){ body.innerHTML='<div class="err">データ取得エラー: '+esc(e.message)+'</div>'; }
     }
     sb.requireLogin({ onReady: loadAll });
 
