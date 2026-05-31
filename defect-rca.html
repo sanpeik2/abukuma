@@ -1124,7 +1124,14 @@
 
 
 
-      </div>${woCta(r)}</td></tr>`;
+</div>
+      ${woCta(r)}
+      ${(r["approval_status"]==="draft"||r["approval_status"]==="returned"||!r["approval_status"])?`
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+        <button onclick="openFindingEdit('${esc(r["故障id"])}')" style="font-size:12px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:6px 12px;cursor:pointer;">✏ 異常判断を編集</button>
+        <span style="font-size:11px;color:var(--muted);">承認前は内容を修正できます</span>
+      </div>`:''}
+      </td></tr>`;
 
 
 
@@ -1825,6 +1832,120 @@ const createBtn = !isLocked
       }catch(e){ body.innerHTML='<div class="err">データ取得エラー: '+esc(e.message)+'</div>'; }
     }
 
+
+    /* ===== 異常判断インライン編集 ===== */
+    let _editFindingId = null;
+
+    async function openFindingEdit(id){
+      if(_editFindingId === id){ closeFindingEdit(); return; }
+      _editFindingId = id;
+      document.querySelectorAll('.finding-edit-panel').forEach(el => el.remove());
+      // 対象の detail row を探す
+      const rows = document.querySelectorAll('tr.detail');
+      let target = null;
+      rows.forEach(tr => {
+        if(tr.querySelector(`[onclick*="${id}"]`) || tr.innerHTML.includes(id)) target = tr;
+      });
+      if(!target) return;
+      try{
+        const rows2 = await sb.get(`defect_findings?id=eq.${encodeURIComponent(id)}&select=*`);
+        const d = rows2 && rows2[0];
+        if(!d) return;
+        const locked = d.approval_status==='approved'||d.approval_status==='pending';
+        const panel = document.createElement('tr');
+        panel.className = 'finding-edit-panel';
+        panel.innerHTML = `<td colspan="100" style="padding:0;background:rgba(88,166,255,.04);border:2px solid rgba(88,166,255,.4);">
+          <div style="padding:16px 20px;">
+            <div style="font-size:13px;font-weight:700;color:#9cd2ff;margin-bottom:12px;">✏ 異常判断を編集 ${locked?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:4px;padding:1px 6px;">'+d.approval_status+'</span>':''}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div style="grid-column:span 2">
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">異常タイトル *</label>
+                <input id="fe_title" type="text" value="${esc(d.finding_title||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div style="grid-column:span 2">
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">異常詳細</label>
+                <textarea id="fe_detail" rows="3" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.finding_detail||'')}</textarea>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">安全影響</label>
+                <select id="fe_safety" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 8px;border-radius:7px;font-size:13px;">
+                  <option value="">—</option>
+                  <option value="low"    ${d.safety_impact==='low'   ?'selected':''}>低</option>
+                  <option value="medium" ${d.safety_impact==='medium'?'selected':''}>中</option>
+                  <option value="high"   ${d.safety_impact==='high'  ?'selected':''}>高</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">原因明確度</label>
+                <select id="fe_clarity" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 8px;border-radius:7px;font-size:13px;">
+                  <option value="">—</option>
+                  <option value="clear"   ${d.cause_clarity==='clear'  ?'selected':''}>明確</option>
+                  <option value="assumed" ${d.cause_clarity==='assumed'?'selected':''}>推定</option>
+                  <option value="unknown" ${d.cause_clarity==='unknown'?'selected':''}>不明</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">再発性</label>
+                <select id="fe_recur" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 8px;border-radius:7px;font-size:13px;">
+                  <option value="">—</option>
+                  <option value="first"     ${d.recurrence_type==='first'    ?'selected':''}>初発</option>
+                  <option value="recurrent" ${d.recurrence_type==='recurrent'?'selected':''}>再発</option>
+                  <option value="frequent"  ${d.recurrence_type==='frequent' ?'selected':''}>頻発</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">一次判定</label>
+                <select id="fe_judge" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 8px;border-radius:7px;font-size:13px;">
+                  <option value="">—</option>
+                  <option value="minor_repair"     ${d.initial_judgement==='minor_repair'    ?'selected':''}>軽微補修</option>
+                  <option value="part_replacement" ${d.initial_judgement==='part_replacement'?'selected':''}>部品交換</option>
+                  <option value="rca"              ${d.initial_judgement==='rca'             ?'selected':''}>RCA</option>
+                  <option value="record_only"      ${d.initial_judgement==='record_only'     ?'selected':''}>記録のみ</option>
+                  <option value="tbd"              ${d.initial_judgement==='tbd'             ?'selected':''}>保留</option>
+                </select>
+              </div>
+            </div>
+            <div id="fe_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
+            <div style="display:flex;gap:8px;">
+              ${!locked?`<button id="fe_save" onclick="saveFindingEdit('${esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>`:''}
+              <button onclick="closeFindingEdit()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 閉じる</button>
+            </div>
+          </div>
+        </td>`;
+        target.insertAdjacentElement('afterend', panel);
+      }catch(e){ alert('取得失敗: '+e.message); }
+    }
+
+    function closeFindingEdit(){
+      document.querySelectorAll('.finding-edit-panel').forEach(el => el.remove());
+      _editFindingId = null;
+    }
+
+    async function saveFindingEdit(id){
+      const btn = document.getElementById('fe_save');
+      const msgEl = document.getElementById('fe_msg');
+      if(btn) btn.disabled = true;
+      const patch = {
+        finding_title:   document.getElementById('fe_title')?.value?.trim()  || null,
+        finding_detail:  document.getElementById('fe_detail')?.value?.trim() || null,
+        safety_impact:   document.getElementById('fe_safety')?.value         || null,
+        cause_clarity:   document.getElementById('fe_clarity')?.value        || null,
+        recurrence_type: document.getElementById('fe_recur')?.value          || null,
+        initial_judgement:document.getElementById('fe_judge')?.value         || null,
+        updated_at:      new Date().toISOString()
+      };
+      if(!patch.finding_title){ if(msgEl){msgEl.textContent='異常タイトルは必須です。';msgEl.style.display='block';} if(btn) btn.disabled=false; return; }
+      try{
+        await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
+        closeFindingEdit();
+        loadAll();
+      }catch(e){
+        const msg = e.message||String(e);
+        if(msgEl){msgEl.textContent=msg.includes('record_locked')?'承認済みのため編集できません。差戻しが必要です。':'保存失敗: '+msg;msgEl.style.display='block';}
+        if(btn) btn.disabled=false;
+      }
+    }
     async function submitDefectApproval(id){
       if(!confirm('この異常判断を承認申請しますか？')) return;
       try{
