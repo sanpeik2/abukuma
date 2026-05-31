@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 
 
@@ -1094,6 +1094,9 @@
               ${r.anomaly_description?`<div style="margin-top:6px;font-size:12px;color:#ff9a92;">異常内容: ${esc(r.anomaly_description)}</div>`:''}
               ${r.comments?`<div style="margin-top:4px;font-size:12px;color:var(--muted);">${esc(r.comments)}</div>`:''}
               ${clDetail}
+              ${isNg
+                ?`<div style="margin-top:10px;display:flex;justify-content:flex-end;"><a href="./defect-rca.html?inspection_result_id=${encodeURIComponent(r.id)}${pid?'&plan_id='+encodeURIComponent(pid):''}" style="display:inline-block;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">⚠ 異常判断へ進む →</a></div>`
+                :`<div style="margin-top:8px;font-size:12px;color:#7ee787;">✓ 記録済み・クローズ</div>`}
             </div>`;
           }).join('');
         }
