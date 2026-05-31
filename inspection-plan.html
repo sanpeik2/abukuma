@@ -492,7 +492,7 @@
 
 
 
-        ['計画日','号機','作業種別','区分','点検ステータス','期限','時間','必要資格','人数','PTW','詳細'].map(h=>`<th>${h}</th>`).join('') +
+        ['申請日','号機','作業種別','区分','点検ステータス','計画日','期限','時間','必要資格','人数','PTW','詳細'].map(h=>`<th>${h}</th>`).join('') +
 
 
 
@@ -522,31 +522,12 @@
 
 
 
-            <td>${esc(r["計画日"]||"")}</td>
-
-
-
-
+            <td style="color:var(--muted);white-space:nowrap;">${r["申請日"] ? esc(r["申請日"]) : "—"}</td>
             <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
-
-
-
-
             <td>${esc(r["作業種別"]||"")}</td>
-
-
-
-
             <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
-
-
-
-
             <td style="white-space:nowrap;">${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]==="approved"?execMiniTag(r["unified_status"]||"ready"):""}${(r["approval_status"]==="draft"||r["approval_status"]==="returned")?`<button onclick="event.stopPropagation();submitApproval('${esc(r["計画id"]||"")}')" style="margin-left:6px;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;">${r["approval_status"]==="returned"?"📨 再申請":"📨 承認申請"}</button>`:""}</td>
-
-
-
-
+            <td style="white-space:nowrap;">${esc(r["計画日"]||"")}</td>
             <td>${deadlineBadge(r["期限表示"]||"")}</td>
 
 
