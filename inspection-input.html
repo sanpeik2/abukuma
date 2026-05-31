@@ -1090,13 +1090,14 @@
                 ${overall}
                 ${sev!=='–'?`<span style="font-size:11.5px;color:var(--muted);">深刻度: ${esc(sev)}</span>`:''}
                 <span style="font-size:11.5px;color:var(--muted);">天候: ${esc(r.weather||'–')}</span>
+                ${r.approval_status==='approved'?'<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">🔒 承認済</span>':r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">⏳ 承認待ち</span>':r.approval_status==='returned'?'<span style="font-size:11px;color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">↩ 差戻し</span>':''}
               </div>
               ${r.anomaly_description?`<div style="margin-top:6px;font-size:12px;color:#ff9a92;">異常内容: ${esc(r.anomaly_description)}</div>`:''}
               ${r.comments?`<div style="margin-top:4px;font-size:12px;color:var(--muted);">${esc(r.comments)}</div>`:''}
               ${clDetail}
               ${isNg
                 ?`<div style="margin-top:10px;display:flex;justify-content:flex-end;"><a href="./defect-rca.html?inspection_result_id=${encodeURIComponent(r.id)}${pid?'&plan_id='+encodeURIComponent(pid):''}" style="display:inline-block;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">⚠ 異常判断へ進む →</a></div>`
-                :`<div style="margin-top:8px;font-size:12px;color:#7ee787;">✓ 記録済み・クローズ</div>`}
+                :`<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><span style="font-size:12px;color:#7ee787;">✓ 記録済み</span>${r.approval_status!=='approved'&&r.approval_status!=='pending'?`<button onclick="submitResultApproval('${r.id}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;cursor:pointer;">📨 承認申請</button>`:''}${r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;">⏳ 承認待ち</span>':''}</div>`}
             </div>`;
           }).join('');
         }
@@ -2380,7 +2381,7 @@
 
 
         msg.className="msg ok"; msg.textContent="✓ 登録しました（項目 "+rows.length+"件）";
-        if(ngItems.length>0){ msg.innerHTML = '✓ 登録しました（項目 '+rows.length+'件・<b style="color:#f0c674;">異常あり</b>）<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><span style="color:#8b949e;font-size:11.5px;">次のアクション:</span><a href="./defect-rca.html?inspection_result_id='+encodeURIComponent(resultId)+(state.planId?'&plan_id='+encodeURIComponent(state.planId):'')+'}" style="text-decoration:none;font-size:12px;color:#d29922;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:5px 10px;">異常判断へ進む →</a><a href="./work-orders.html?inspection_result_id='+encodeURIComponent(resultId)+'" style="text-decoration:none;font-size:12px;color:#11161d;background:#d29922;font-weight:700;border-radius:6px;padding:5px 10px;">作業票を作成</a></div>'; }
+        if(ngItems.length>0){ msg.innerHTML = '✓ 登録しました（項目 '+rows.length+'件・<b style="color:#f0c674;">異常あり</b>）<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><span style="color:#8b949e;font-size:11.5px;">次のアクション:</span><a href="./defect-rca.html?inspection_result_id='+encodeURIComponent(resultId)+(state.planId?'&plan_id='+encodeURIComponent(state.planId):'')+'" style="text-decoration:none;font-size:12px;color:#d29922;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:5px 10px;">異常判断へ進む →</a><a href="./work-orders.html?inspection_result_id='+encodeURIComponent(resultId)+'" style="text-decoration:none;font-size:12px;color:#11161d;background:#d29922;font-weight:700;border-radius:6px;padding:5px 10px;">作業票を作成</a></div>'; }
 
 
 
@@ -2670,6 +2671,16 @@
 
 
 
+
+    async function submitResultApproval(id){
+      if(!confirm('この点検結果を承認申請しますか？')) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_results?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'pending'})});
+        alert('承認申請しました。承認画面（Step 8）で確認してください。');
+        location.reload();
+      }catch(e){ alert('申請失敗: '+e.message); }
+    }
     sb.requireLogin({ onReady: loadAll });
 
 
