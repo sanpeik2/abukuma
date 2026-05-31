@@ -9,567 +9,423 @@
   --bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;
   --txt:#c9d1d9;--muted:#8b949e;
   --blue:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;
-  --pink:#db61a2;--purple:#bc8cff;--cyan:#39d353;
+  --pink:#db61a2;--purple:#bc8cff;--orange:#ff7b72;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.5;padding:24px}
-h1{font-size:18px;color:#fff;font-weight:800;margin-bottom:6px}
-.sub{font-size:12px;color:var(--muted);margin-bottom:28px}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.5;padding:28px 24px 80px}
 
-/* ── レイアウト ── */
-.diagram{display:grid;grid-template-columns:1fr 40px 1fr;gap:0;max-width:980px;margin:0 auto}
-.col{display:flex;flex-direction:column;gap:0}
-.divider{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:80px}
-.divider-line{width:2px;flex:1;background:var(--line)}
+/* ヘッダー */
+.page-title{font-size:20px;color:#fff;font-weight:800;margin-bottom:4px}
+.page-sub{font-size:12px;color:var(--muted);margin-bottom:28px}
 
-/* ── フェーズラベル ── */
-.phase-label{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding:4px 0 8px;text-align:center}
+/* ロール凡例 */
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:32px;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.lg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
-/* ── ボックス ── */
-.box{border-radius:10px;border:1px solid var(--line);padding:14px 16px;margin:0 0 4px;position:relative}
-.box-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.box-title .icon{font-size:16px}
-.box-desc{font-size:11.5px;color:var(--muted);line-height:1.55}
-.box-tags{margin-top:8px;display:flex;flex-wrap:wrap;gap:4px}
-.tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid;white-space:nowrap}
+/* フロー全体 */
+.flow{max-width:740px;margin:0 auto;display:flex;flex-direction:column;align-items:center}
 
-/* ── 色テーマ ── */
-.c-blue  {background:rgba(88,166,255,.07); border-color:rgba(88,166,255,.3)}
-.c-green {background:rgba(63,185,80,.07);  border-color:rgba(63,185,80,.3)}
-.c-yellow{background:rgba(210,153,34,.07); border-color:rgba(210,153,34,.3)}
-.c-red   {background:rgba(248,81,73,.07);  border-color:rgba(248,81,73,.3)}
-.c-pink  {background:rgba(219,97,162,.07); border-color:rgba(219,97,162,.3)}
-.c-purple{background:rgba(188,140,255,.07);border-color:rgba(188,140,255,.3)}
-.c-cyan  {background:rgba(57,211,83,.07);  border-color:rgba(57,211,83,.3)}
-.c-gray  {background:rgba(139,148,158,.07);border-color:rgba(139,148,158,.3)}
+/* ステップカード */
+.step{width:100%;display:grid;grid-template-columns:60px 1fr;gap:0;position:relative}
+
+/* 左側：番号＋縦線 */
+.step-left{display:flex;flex-direction:column;align-items:center;padding-top:4px}
+.step-num{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;border:2px solid;z-index:1}
+.step-line{width:2px;flex:1;min-height:20px}
+
+/* 右側：カード */
+.step-card{margin-left:12px;margin-bottom:0;padding-bottom:24px}
+.step-role{font-size:10px;font-weight:800;letter-spacing:.06em;margin-bottom:6px;text-transform:uppercase}
+.step-box{border-radius:10px;border:1px solid;padding:14px 18px}
+.step-title{font-size:14px;font-weight:800;color:#fff;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.step-desc{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6}
+.step-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+
+/* 分岐 */
+.branch-wrap{width:100%;margin-bottom:24px}
+.branch-box{background:rgba(210,153,34,.08);border:1.5px dashed rgba(210,153,34,.5);border-radius:10px;padding:12px 16px;text-align:center}
+.branch-label{font-size:12px;font-weight:800;color:var(--yellow);margin-bottom:10px}
+.branch-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.branch-opt{border-radius:8px;padding:10px 12px;font-size:12px;font-weight:700;border:1px solid}
+
+/* 矢印 */
+.arrow-down{font-size:22px;color:var(--line);text-align:center;line-height:1;margin:0 auto;width:40px}
+
+/* 色テーマ */
+.num-blue  {background:rgba(88,166,255,.15);border-color:var(--blue);color:var(--blue)}
+.num-yellow{background:rgba(210,153,34,.15);border-color:var(--yellow);color:var(--yellow)}
+.num-green {background:rgba(63,185,80,.15); border-color:var(--green);color:var(--green)}
+.num-red   {background:rgba(248,81,73,.15); border-color:var(--red);color:var(--red)}
+.num-pink  {background:rgba(219,97,162,.15);border-color:var(--pink);color:var(--pink)}
+.num-purple{background:rgba(188,140,255,.15);border-color:var(--purple);color:var(--purple)}
+
+.line-blue  {background:rgba(88,166,255,.25)}
+.line-yellow{background:rgba(210,153,34,.25)}
+.line-green {background:rgba(63,185,80,.25)}
+.line-red   {background:rgba(248,81,73,.25)}
+.line-pink  {background:rgba(219,97,162,.25)}
+.line-purple{background:rgba(188,140,255,.25)}
+
+.box-blue  {background:rgba(88,166,255,.05); border-color:rgba(88,166,255,.35)}
+.box-yellow{background:rgba(210,153,34,.05); border-color:rgba(210,153,34,.35)}
+.box-green {background:rgba(63,185,80,.05);  border-color:rgba(63,185,80,.35)}
+.box-red   {background:rgba(248,81,73,.05);  border-color:rgba(248,81,73,.35)}
+.box-pink  {background:rgba(219,97,162,.05); border-color:rgba(219,97,162,.35)}
+.box-purple{background:rgba(188,140,255,.05);border-color:rgba(188,140,255,.35)}
+
+.role-blue  {color:var(--blue)}
+.role-yellow{color:var(--yellow)}
+.role-green {color:var(--green)}
 
 .t-blue  {color:var(--blue);  border-color:rgba(88,166,255,.4)}
-.t-green {color:var(--green); border-color:rgba(63,185,80,.4)}
 .t-yellow{color:var(--yellow);border-color:rgba(210,153,34,.4)}
+.t-green {color:var(--green); border-color:rgba(63,185,80,.4)}
 .t-red   {color:var(--red);   border-color:rgba(248,81,73,.4)}
 .t-pink  {color:var(--pink);  border-color:rgba(219,97,162,.4)}
 .t-purple{color:var(--purple);border-color:rgba(188,140,255,.4)}
 .t-muted {color:var(--muted); border-color:var(--line)}
 
-/* ── 矢印 ── */
-.arrow{text-align:center;font-size:18px;color:var(--line);padding:2px 0;line-height:1}
-.arrow.split{display:flex;justify-content:space-around;font-size:14px;color:var(--muted);padding:4px 0}
-
-/* ── 分岐ボックス ── */
-.branch{border:1.5px dashed var(--yellow);border-radius:10px;padding:10px 14px;margin:4px 0;font-size:12px;font-weight:700;color:var(--yellow);text-align:center}
-
-/* ── 安全コントロール帯 ── */
-.safety-band{border:1.5px solid rgba(248,81,73,.4);border-radius:10px;padding:12px 14px;margin:4px 0;background:rgba(248,81,73,.04)}
-.safety-band .sb-title{font-size:11px;font-weight:800;color:var(--red);letter-spacing:.05em;margin-bottom:8px}
-.safety-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:12px}
-.safety-item:last-child{margin-bottom:0}
-.si-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0;margin-top:1px}
-
-/* ── 凡例 ── */
-.legend{max-width:980px;margin:32px auto 0;display:flex;flex-wrap:wrap;gap:10px;padding-top:20px;border-top:1px solid var(--line)}
-.lg-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
-.lg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-
-/* ── 橋渡しライン ── */
-.bridge{display:flex;align-items:center;margin:8px 0}
-.bridge-line{height:2px;flex:1;background:var(--line);opacity:.4}
-.bridge-label{font-size:10px;color:var(--muted);padding:0 8px;white-space:nowrap}
-
-/* ── 中央ブリッジ（横スパン） ── */
-.span-box{grid-column:1/-1;margin:8px 0}
-.span-inner{border:1px dashed rgba(88,166,255,.3);border-radius:10px;padding:10px 16px;background:rgba(88,166,255,.04);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.span-inner .si-label{font-size:12px;font-weight:700;color:var(--blue)}
-.span-inner .si-desc{font-size:11.5px;color:var(--muted)}
-
-  /* ── 法令バッジ ── */
-  .law-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;
-    padding:2px 8px;border-radius:999px;background:rgba(188,140,255,.15);
-    color:#bc8cff;border:1px solid rgba(188,140,255,.45);white-space:nowrap;letter-spacing:.03em}
-  .law-ref{font-size:10px;color:rgba(188,140,255,.7);margin-left:4px;font-weight:400}
-
+/* スクリーンリンク風タグ */
+.screen-tag{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:6px;border:1px solid;white-space:nowrap;font-family:monospace}
+.law-tag{font-size:10px;font-weight:800;padding:2px 9px;border-radius:999px;background:rgba(188,140,255,.12);color:var(--purple);border:1px solid rgba(188,140,255,.4);white-space:nowrap}
 </style>
 </head>
 <body>
 
-<h1>⚙ 阿武隈OS — 業務フロー全体図</h1>
-<div class="sub">点検 → 異常判断 → 作業 → 復旧 の全体像と、各安全コントロール（PTW / KY / LOTO）の位置づけ</div>
+<div class="page-title">⚙ 阿武隈OS — 業務フロー全体図</div>
+<div class="page-sub">風力発電所 O&amp;M の 11 ステップを上から下に整理</div>
 
-<div class="diagram">
-
-  <!-- ===== 左列：点検フロー ===== -->
-  <div class="col">
-
-    <div class="phase-label">── 点検フェーズ ──</div>
-
-    <div class="box c-blue">
-      <div class="box-title"><span class="icon">📋</span>点検計画（inspection_plans）</div>
-      <div class="box-desc">作業種別・号機・計画日・担当者・PTW要否・KY要否・LOTO要否を事前登録。承認フローあり。</div>
-      <div class="box-tags">
-        <span class="tag t-muted">定期点検</span>
-        <span class="tag t-muted">臨時点検</span>
-        <span class="tag t-blue">計画番号 PN-YYYY-MMDD-NN</span>
-        <span class="tag t-yellow">承認申請 → 承認済</span>
-        <span class="law-badge">⚖ 法令対応<span class="law-ref">電気事業法 第39条／保安規程</span></span>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <!-- 安全コントロール（点検前） -->
-    <div class="safety-band">
-      <div class="sb-title">🛡 現場作業前 安全コントロール</div>
-      <div class="safety-item">
-        <span class="si-badge" style="background:rgba(219,97,162,.15);color:#db61a2;border:1px solid rgba(219,97,162,.4)">PTW</span>
-        <div><b style="color:#fff">作業許可証</b>（高所・電気・火気・閉所など）<br><span style="color:var(--muted);font-size:11px">事前に申請・承認が必要。承認済みは変更不可。</span><br><span class="law-badge" style="margin-top:4px">⚖ 法令対応<span class="law-ref">労働安全衛生法 第59条／特別教育</span></span></div>
-      </div>
-      <div class="safety-item">
-        <span class="si-badge" style="background:rgba(255,123,114,.15);color:#ff7b72;border:1px solid rgba(255,123,114,.4)">KY</span>
-        <div><b style="color:#fff">危険予知チェック</b>（全現場作業で必須）<br><span style="color:var(--muted);font-size:11px">リスク項目・対策・担当者を記録。</span><br><span class="law-badge" style="margin-top:4px">⚖ 法令対応<span class="law-ref">労働安全衛生法 第28条の2／危険性評価</span></span></div>
-      </div>
-      <div class="safety-item">
-        <span class="si-badge" style="background:rgba(210,153,34,.15);color:#d29922;border:1px solid rgba(210,153,34,.4)">LOTO</span>
-        <div><b style="color:#fff">ロックアウト/タグアウト</b>（エネルギー機器のみ）<br><span style="color:var(--muted);font-size:11px">エネルギー源を隔離・施錠。4確認項目が必須。</span><br><span class="law-badge" style="margin-top:4px">⚖ 法令対応<span class="law-ref">労働安全衛生規則 第107条／停止措置</span></span></div>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <div class="box c-green">
-      <div class="box-title"><span class="icon">🔍</span>点検実施（inspection_results）</div>
-      <div class="box-desc">チェックリストに沿って実施。定期・臨時の区別あり。結果を記録し承認申請。</div>
-      <div class="box-tags">
-        <span class="tag t-green">チェックリストマスタ対応</span>
-        <span class="tag t-muted">KY確認済 / LOTO確認済</span>
-        <span class="tag t-yellow">承認フローあり</span>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <div class="branch">⚠ 異常あり？</div>
-
-    <div class="arrow split">
-      <span>↙ NO</span>
-      <span>YES ↘</span>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="box c-gray">
-        <div class="box-title" style="font-size:12px"><span class="icon">✅</span>点検完了</div>
-        <div class="box-desc" style="font-size:11px">LOTO解除→<br>運転継続</div>
-      </div>
-      <div class="box c-red">
-        <div class="box-title" style="font-size:12px"><span class="icon">🔴</span>異常判断へ</div>
-        <div class="box-desc" style="font-size:11px">右フローへ<br>引き継ぎ</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ===== 中央仕切り ===== -->
-  <div class="divider">
-    <div class="divider-line"></div>
-  </div>
-
-  <!-- ===== 右列：異常〜作業フロー ===== -->
-  <div class="col">
-
-    <div class="phase-label">── 異常〜作業フェーズ ──</div>
-
-    <div class="box c-red">
-      <div class="box-title"><span class="icon">🔴</span>異常判断 / RCA（defect_findings）</div>
-      <div class="box-desc">点検結果の異常から不具合を起票。根本原因・影響範囲・対応優先度を分析。承認フローあり。</div>
-      <div class="box-tags">
-        <span class="tag t-red">点検結果IDと紐づき</span>
-        <span class="tag t-yellow">承認フローあり</span>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <div class="box c-yellow">
-      <div class="box-title"><span class="icon">📝</span>作業票（work_orders）</div>
-      <div class="box-desc">不具合から作業を起票。作業種別・担当・期限・PTW要否・KY要否・LOTO要否を設定。</div>
-      <div class="box-tags">
-        <span class="tag t-yellow">不具合IDと紐づき</span>
-        <span class="tag t-muted">KY要否 / LOTO要否</span>
-        <span class="tag t-yellow">承認フローあり</span>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <!-- 安全コントロール（作業前） -->
-    <div class="safety-band">
-      <div class="sb-title">🛡 作業実施前 安全コントロール（再確認）</div>
-      <div class="safety-item">
-        <span class="si-badge" style="background:rgba(219,97,162,.15);color:#db61a2;border:1px solid rgba(219,97,162,.4)">PTW</span>
-        <div><b style="color:#fff">作業許可証</b>（保全・修理の場合）<br><span style="color:var(--muted);font-size:11px">点検時と別に作業用PTWが必要な場合あり。</span></div>
-      </div>
-      <div class="safety-item">
-        <span class="si-badge" style="background:rgba(255,123,114,.15);color:#ff7b72;border:1px solid rgba(255,123,114,.4)">KY</span>
-        <div><b style="color:#fff">危険予知チェック</b>（作業前に毎回）</div>
-      </div>
-      <div class="safety-item">
-        <span class="si-badge" style="background:rgba(210,153,34,.15);color:#d29922;border:1px solid rgba(210,153,34,.4)">LOTO</span>
-        <div><b style="color:#fff">ロックアウト/タグアウト</b>（電気・機械作業）</div>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <div class="box c-purple">
-      <div class="box-title"><span class="icon">🔧</span>保全・修理作業の実施</div>
-      <div class="box-desc">作業票に基づき現場作業を実施。完了後にLOTO解除・結果記録。</div>
-      <div class="box-tags">
-        <span class="tag t-purple">LOTO解除手順あり</span>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <div class="box c-cyan">
-      <div class="box-title"><span class="icon">▶</span>運転許可（復旧確認）</div>
-      <div class="box-desc">修理完了後、風車の再起動・運転再開前に管理者が復旧を確認・承認する。</div>
-      <div class="box-tags">
-        <span class="tag t-green">運転再開OK</span>
-        <span class="tag t-yellow">承認フローあり</span>
-        <span class="law-badge">⚖ 法令対応<span class="law-ref">電気事業法 第42条／保安管理</span></span>
-      </div>
-    </div>
-
-  </div>
-
-</div><!-- /diagram -->
-
-<!-- ===== 承認フロー（全体共通） ===== -->
-<div style="max-width:980px;margin:28px auto 0">
-  <div class="phase-label" style="text-align:left;margin-bottom:10px">── 承認フロー（すべてのドキュメントに共通） ──</div>
-  <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap">
-    <div class="box c-gray" style="flex:1;min-width:120px;margin:0 4px 0 0;text-align:center">
-      <div style="font-size:11px;font-weight:700;color:var(--muted)">📋 計画中 / 下書き</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">編集可能</div>
-    </div>
-    <div style="font-size:20px;color:var(--line);padding:0 4px">→</div>
-    <div class="box c-pink" style="flex:1;min-width:120px;margin:0 4px;text-align:center">
-      <div style="font-size:11px;font-weight:700;color:var(--pink)">📤 申請中</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">承認者が審査</div>
-    </div>
-    <div style="font-size:20px;color:var(--line);padding:0 4px">→</div>
-    <div class="box c-green" style="flex:1;min-width:120px;margin:0 4px;text-align:center">
-      <div style="font-size:11px;font-weight:700;color:var(--green)">✅ 承認済み</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">🔒 編集不可</div>
-    </div>
-    <div style="font-size:20px;color:var(--line);padding:0 4px">⇄</div>
-    <div class="box c-yellow" style="flex:1;min-width:120px;margin:0 0 0 4px;text-align:center">
-      <div style="font-size:11px;font-weight:700;color:var(--yellow)">↩ 差戻し</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">再編集 → 再申請</div>
-    </div>
-  </div>
+<div class="legend">
+  <div class="lg"><span class="lg-dot" style="background:#58a6ff"></span>担当者（現場）</div>
+  <div class="lg"><span class="lg-dot" style="background:#d29922"></span>主任・管理者（承認者）</div>
+  <div class="lg"><span class="lg-dot" style="background:#3fb950"></span>システム自動処理</div>
+  <div class="lg"><span class="lg-dot" style="background:#bc8cff"></span>法令対応</div>
+  <div class="lg"><span class="lg-dot" style="background:#db61a2"></span>安全コントロール</div>
 </div>
 
-<!-- ===== 用語整理 ===== -->
-<div style="max-width:980px;margin:28px auto 0">
-  <div class="phase-label" style="text-align:left;margin-bottom:10px">── 安全コントロールの使い分け ──</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+<div class="flow">
 
-    <div class="box c-pink">
-      <div class="box-title"><span class="icon">📄</span>PTW（作業許可証）</div>
-      <div class="box-desc">
-        <b style="color:#fff">何：</b>高リスク作業の事前許可<br>
-        <b style="color:#fff">誰が：</b>担当者が申請 → 管理者が承認<br>
-        <b style="color:#fff">いつ：</b>現場入る前に承認済みであること<br>
-        <b style="color:#fff">対象：</b>電気・高所・火気・閉所・揚重
-      </div>
+  <!-- ① 今日の管制塔 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-blue">1</div>
+      <div class="step-line line-blue"></div>
     </div>
-
-    <div class="box c-red">
-      <div class="box-title"><span class="icon">⚡</span>KY（危険予知）</div>
-      <div class="box-desc">
-        <b style="color:#fff">何：</b>その日・その場所のリスク洗い出し<br>
-        <b style="color:#fff">誰が：</b>作業チーム全員で実施<br>
-        <b style="color:#fff">いつ：</b>毎回・作業直前（必須）<br>
-        <b style="color:#fff">対象：</b>すべての現場作業
-      </div>
-    </div>
-
-    <div class="box c-yellow">
-      <div class="box-title"><span class="icon">🔒</span>LOTO（ロックアウト）</div>
-      <div class="box-desc">
-        <b style="color:#fff">何：</b>エネルギー源の物理的隔離・施錠<br>
-        <b style="color:#fff">誰が：</b>作業者が施錠、管理者が確認<br>
-        <b style="color:#fff">いつ：</b>機器に触れる前に実施<br>
-        <b style="color:#fff">対象：</b>電気・油圧・回転機器
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ===== 画面対応表 ===== -->
-<div style="max-width:980px;margin:28px auto 0;padding-bottom:60px">
-  <div class="phase-label" style="text-align:left;margin-bottom:10px">── このシステムの画面対応 ──</div>
-  <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-    <thead>
-      <tr>
-        <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px">画面名</th>
-        <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px">DB テーブル</th>
-        <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px">役割</th>
-        <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px">承認</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)">📋 点検管理 <span class="law-badge">⚖ 法令</span></td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:monospace;font-size:11px">inspection_plans</td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">点検計画の作成・承認申請</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--green)">✅ あり</td></tr>
-      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)">🔍 点検実施</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:monospace;font-size:11px">inspection_results</td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">点検チェックリスト入力・KY/LOTO確認</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--green)">✅ あり</td></tr>
-      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)">🔴 異常判断</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:monospace;font-size:11px">defect_findings</td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">不具合起票・RCA・対応優先度</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--green)">✅ あり</td></tr>
-      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)">📝 作業票</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:monospace;font-size:11px">work_orders</td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">修理・保全作業の起票・管理</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--green)">✅ あり</td></tr>
-      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)">📄 PTW <span class="law-badge">⚖ 法令</span></td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:monospace;font-size:11px">work_permits</td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">作業許可証の申請・承認・参照</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--green)">✅ あり</td></tr>
-      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)">🛡 KY・LOTO <span class="law-badge">⚖ 法令</span></td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:monospace;font-size:11px">ky_records / loto_records</td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">危険予知・エネルギー隔離の記録</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted)">— (確認のみ)</td></tr>
-      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)">✏ 承認一覧</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:monospace;font-size:11px">v_approvals_pending_all</td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">全ドキュメントの承認待ち一元管理</td><td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--green)">✅ 承認者用</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- ===================================================
-     システム業務フロー図
-     =================================================== -->
-<div style="max-width:980px;margin:48px auto 0;padding-bottom:80px">
-
-  <div style="border-top:2px solid var(--line);padding-top:32px;margin-bottom:24px">
-    <h2 style="font-size:16px;color:#fff;font-weight:800;margin-bottom:4px">⚙ システム業務フロー図</h2>
-    <div style="font-size:12px;color:var(--muted)">各画面・DB・承認の流れを操作単位で整理したシステム視点の図</div>
-  </div>
-
-  <!-- ロール凡例 -->
-  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
-    <div style="display:flex;align-items:center;gap:6px;font-size:11.5px"><span style="width:10px;height:10px;border-radius:2px;background:#58a6ff;display:inline-block"></span>担当者（現場）</div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:11.5px"><span style="width:10px;height:10px;border-radius:2px;background:#d29922;display:inline-block"></span>主任・管理者（承認者）</div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:11.5px"><span style="width:10px;height:10px;border-radius:2px;background:#3fb950;display:inline-block"></span>自動処理（DB/システム）</div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:11.5px"><span style="width:10px;height:10px;border-radius:2px;background:#bc8cff;display:inline-block"></span>法令対応</div>
-  </div>
-
-  <!-- フロー本体 -->
-  <div style="display:flex;flex-direction:column;gap:0">
-
-    <!-- STEP 1 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#58a6ff;color:#04101f;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:6px">担当者 ／ 点検管理画面（inspection-plan.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(88,166,255,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">📋 点検計画を作成・申請</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">号機・作業種別・計画日・PTW/KY/LOTO要否を入力。計画番号（PN-YYYY-MMDD-NN）が自動発番。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:6px;padding:3px 8px;color:#58a6ff">DB: inspection_plans</div>
-            <div style="font-size:11px;background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.3);border-radius:6px;padding:3px 8px;color:#d29922">→ 承認申請ボタン → 申請中へ</div>
-            <div style="font-size:11px;background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.3);border-radius:6px;padding:3px 8px;color:#bc8cff">⚖ 電気事業法第39条</div>
-          </div>
+    <div class="step-card">
+      <div class="step-role role-yellow">主任・担当者</div>
+      <div class="step-box box-blue">
+        <div class="step-title">🏠 今日の管制塔</div>
+        <div class="step-desc">その日の点検予定・異常アラート・未承認件数・作業状況をダッシュボードで一覧確認。業務の起点となる画面。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-blue">index.html</span>
+          <span class="tag t-muted">KPI表示</span>
+          <span class="tag t-muted">今日の予定確認</span>
         </div>
       </div>
-    </div>
-
-    <!-- STEP 2 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#d29922;color:#11161d;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#d29922;font-weight:700;margin-bottom:6px">主任・管理者 ／ 承認一覧画面（approvals.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(210,153,34,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">✅ 点検計画を承認 または ↩ 差戻し</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">申請中のドキュメントを一覧表示。承認でロック、差戻しで担当者に返却（再申請可）。<b style="color:#f85149">承認済みへの差戻し不可。</b></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:3px 8px;color:#3fb950">承認 → approval_status: approved + DBロック</div>
-            <div style="font-size:11px;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:3px 8px;color:#f85149">差戻し → approval_status: returned（申請中のみ）</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 3 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#58a6ff;color:#04101f;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:6px">担当者 ／ KY・LOTOシート（ky-loto.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(248,81,73,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">⚡ KY実施 ＋ 🔒 LOTO施錠（点検前）</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">計画番号リンクから遷移。リスク項目を列挙・対策を記録してKY確認。エネルギー機器はLOTO施錠後に点検へ。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:6px;padding:3px 8px;color:#58a6ff">DB: ky_records / loto_records</div>
-            <div style="font-size:11px;background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.3);border-radius:6px;padding:3px 8px;color:#bc8cff">⚖ 労働安全衛生法</div>
-            <div style="font-size:11px;background:rgba(219,97,162,.1);border:1px solid rgba(219,97,162,.3);border-radius:6px;padding:3px 8px;color:#db61a2">PTW承認済みが前提</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 4 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#58a6ff;color:#04101f;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:6px">担当者 ／ 点検実施画面（inspection-input.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(63,185,80,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">🔍 点検チェックリスト入力・結果記録</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">承認済み計画をもとに点検を実施。チェックリストマスタから項目を読込み、OK/NG/備考を記録。完了後に承認申請。臨時点検も同画面から起票。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:3px 8px;color:#3fb950">DB: inspection_results + result_checklist</div>
-            <div style="font-size:11px;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:6px;padding:3px 8px;color:#58a6ff">チェックリストマスタ: inspection_checklist_templates</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 5: 分岐 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#d29922;color:#11161d;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#d29922;font-weight:700;margin-bottom:6px">主任・管理者 ／ 承認一覧 → 点検結果の承認</div>
-        <div style="background:var(--panel);border:1px solid rgba(210,153,34,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">✅ 点検結果を承認</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">承認後、異常ありの場合は自動的に異常判断フェーズへ移行。異常なしは完了。</div>
-          <div style="display:flex;gap:12px">
-            <div style="flex:1;background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.25);border-radius:8px;padding:10px;font-size:11.5px">
-              <div style="color:#3fb950;font-weight:700;margin-bottom:4px">✅ 異常なし → 完了</div>
-              <div style="color:var(--muted)">LOTO解除 → 運転継続</div>
-            </div>
-            <div style="flex:1;background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.25);border-radius:8px;padding:10px;font-size:11.5px">
-              <div style="color:#f85149;font-weight:700;margin-bottom:4px">🔴 異常あり → STEP 6へ</div>
-              <div style="color:var(--muted)">異常判断画面で不具合を起票</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 6 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#f85149;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">6</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#f85149;font-weight:700;margin-bottom:6px">担当者 ／ 異常判断画面（defect-rca.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(248,81,73,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">🔴 不具合を起票・根本原因を分析（RCA）</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">点検結果IDと紐づいた不具合を起票。根本原因・影響範囲・対応優先度を入力し承認申請。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:3px 8px;color:#f85149">DB: defect_findings</div>
-            <div style="font-size:11px;background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.3);border-radius:6px;padding:3px 8px;color:#d29922">→ 承認後に作業票へ</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 7 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#d29922;color:#11161d;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">7</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#d29922;font-weight:700;margin-bottom:6px">担当者 ／ 作業票画面（work-orders.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(210,153,34,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">📝 作業票を起票・承認申請</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">不具合IDから作業を起票。作業種別・担当者・期限・KY/LOTO要否を設定。PTW必要な場合はPTW申請へ。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.3);border-radius:6px;padding:3px 8px;color:#d29922">DB: work_orders</div>
-            <div style="font-size:11px;background:rgba(219,97,162,.1);border:1px solid rgba(219,97,162,.3);border-radius:6px;padding:3px 8px;color:#db61a2">PTW必要 → permits.html へ</div>
-            <div style="font-size:11px;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:3px 8px;color:#f85149">KY/LOTO要 → ky-loto.html へ</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 8 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#db61a2;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">8</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#db61a2;font-weight:700;margin-bottom:6px">担当者 ／ PTW画面（permits.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(219,97,162,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">📄 作業許可証（PTW）を申請・承認待ち</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">PTW番号（PTW-YYYY-MMDD-NN）が自動発番。承認後はロック・参照のみ。承認者が approvals.html から承認。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(219,97,162,.1);border:1px solid rgba(219,97,162,.3);border-radius:6px;padding:3px 8px;color:#db61a2">DB: work_permits</div>
-            <div style="font-size:11px;background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.3);border-radius:6px;padding:3px 8px;color:#bc8cff">⚖ 労働安全衛生法第59条</div>
-            <div style="font-size:11px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:3px 8px;color:#3fb950">承認済み → ドロワーで参照のみ</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 9 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:stretch">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#58a6ff;color:#04101f;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">9</div>
-        <div style="width:2px;flex:1;background:var(--line);margin:4px 0"></div>
-      </div>
-      <div style="padding-bottom:16px">
-        <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:6px">担当者 ／ KY・LOTOシート（ky-loto.html）</div>
-        <div style="background:var(--panel);border:1px solid rgba(248,81,73,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">⚡ KY実施 ＋ 🔒 LOTO施錠（作業前）</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">作業票リンクから遷移。作業用KY・LOTO記録を残す。LOTO解除は作業完了後に実施。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:6px;padding:3px 8px;color:#58a6ff">DB: ky_records / loto_records</div>
-            <div style="font-size:11px;background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.3);border-radius:6px;padding:3px 8px;color:#bc8cff">⚖ 労働安全衛生規則第107条</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 10 -->
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:12px">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:36px;height:36px;border-radius:50%;background:#3fb950;color:#04210d;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">10</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:#3fb950;font-weight:700;margin-bottom:6px">主任・管理者 ／ 復旧確認・運転許可</div>
-        <div style="background:var(--panel);border:1px solid rgba(63,185,80,.3);border-radius:10px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">▶ LOTO解除 → 運転再開承認</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">作業完了・LOTO解除確認後、管理者が運転再開を承認。不具合をクローズ。</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div style="font-size:11px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:3px 8px;color:#3fb950">defect_findings → closed</div>
-            <div style="font-size:11px;background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.3);border-radius:6px;padding:3px 8px;color:#bc8cff">⚖ 電気事業法第42条</div>
-            <div style="font-size:11px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:3px 8px;color:#3fb950">→ 運転継続 ✅</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /フロー本体 -->
-
-  <!-- 承認フロー図（再掲・コンパクト版） -->
-  <div style="margin-top:36px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px">
-    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;letter-spacing:.05em">承認ステータス遷移（全ドキュメント共通）</div>
-    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px">
-      <div style="padding:5px 14px;border-radius:8px;background:rgba(139,148,158,.12);border:1px solid rgba(139,148,158,.3);color:var(--muted);font-weight:700">📋 下書き<br><span style="font-size:10px;font-weight:400">編集自由</span></div>
-      <div style="color:var(--muted);font-size:18px">→</div>
-      <div style="padding:5px 14px;border-radius:8px;background:rgba(219,97,162,.1);border:1px solid rgba(219,97,162,.4);color:#db61a2;font-weight:700">📤 申請中<br><span style="font-size:10px;font-weight:400">承認者が審査</span></div>
-      <div style="color:var(--muted);font-size:18px">→</div>
-      <div style="padding:5px 14px;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.4);color:#3fb950;font-weight:700">✅ 承認済み<br><span style="font-size:10px;font-weight:400">🔒 編集不可</span></div>
-      <div style="margin:0 8px;color:var(--line);font-size:20px">｜</div>
-      <div style="color:var(--muted);font-size:12px">申請中のみ↓</div>
-      <div style="color:var(--muted);font-size:18px">→</div>
-      <div style="padding:5px 14px;border-radius:8px;background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.4);color:#d29922;font-weight:700">↩ 差戻し<br><span style="font-size:10px;font-weight:400">再編集→再申請</span></div>
-      <div style="margin-left:16px;font-size:11px;color:#f85149;padding:4px 10px;border-radius:6px;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3)">⚠ 承認済みからの差戻し不可</div>
     </div>
   </div>
 
+  <!-- ② 監視 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-blue">2</div>
+      <div class="step-line line-blue"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-blue">担当者</div>
+      <div class="step-box box-blue">
+        <div class="step-title">📡 監視（ライブボード）</div>
+        <div class="step-desc">各風車のリアルタイムデータ（発電量・風速・異常アラーム）をモニタリング。アラームが鳴ったらSTEP 3または5へ。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-blue">live-board.html</span>
+          <span class="tag t-muted">センサーデータ</span>
+          <span class="tag t-red">アラーム検知</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 点検計画 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-blue">3</div>
+      <div class="step-line line-blue"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-blue">担当者</div>
+      <div class="step-box box-blue">
+        <div class="step-title">📋 点検計画を作成・承認申請</div>
+        <div class="step-desc">号機・作業種別・計画日・PTW/KY/LOTO要否を登録。計画番号（PN-YYYY-MMDD-NN）が自動発番。完了後に承認申請。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-blue">inspection-plan.html</span>
+          <span class="tag t-blue">DB: inspection_plans</span>
+          <span class="tag t-yellow">→ 承認申請 → 申請中</span>
+          <span class="law-tag">⚖ 電気事業法 第39条</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 承認ブロック① -->
+  <div class="branch-wrap">
+    <div class="branch-box" style="border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.06)">
+      <div class="branch-label">🔐 承認フロー（主任・管理者）— approvals.html</div>
+      <div class="branch-options">
+        <div class="branch-opt" style="background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.4);color:#3fb950">
+          ✅ 承認<br><span style="font-size:11px;color:var(--muted);font-weight:400">→ 承認済み・DBロック<br>STEP 4へ進む</span>
+        </div>
+        <div class="branch-opt" style="background:rgba(210,153,34,.08);border-color:rgba(210,153,34,.4);color:#d29922">
+          ↩ 差戻し（申請中のみ）<br><span style="font-size:11px;color:var(--muted);font-weight:400">→ 担当者が修正・再申請<br>承認済みへの差戻し不可</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 点検実施 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-green">4</div>
+      <div class="step-line line-green"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-blue">担当者</div>
+      <div class="step-box box-green">
+        <div class="step-title">🔍 点検実施（KY・LOTO → チェックリスト入力）</div>
+        <div class="step-desc">承認済み計画をもとに現場へ。事前にKY実施・LOTO施錠を確認してから点検開始。チェックリストマスタから項目を読込んでOK/NG記録。臨時点検も同画面から起票可能。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-green">inspection-input.html</span>
+          <span class="screen-tag t-red">ky-loto.html</span>
+          <span class="tag t-green">DB: inspection_results</span>
+          <span class="tag t-green">DB: result_checklist</span>
+          <span class="tag t-pink">KY確認 / LOTO確認</span>
+          <span class="law-tag">⚖ 労働安全衛生法</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 異常判断 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-red">5</div>
+      <div class="step-line line-red"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-blue">担当者</div>
+      <div class="step-box box-red">
+        <div class="step-title">🔴 異常判断・不具合起票（RCA）</div>
+        <div class="step-desc">点検でNGが出た場合、または監視でアラームが発生した場合に不具合を起票。根本原因・影響範囲・対応優先度を分析して承認申請。点検結果IDと自動紐づけ。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-red">defect-rca.html</span>
+          <span class="tag t-red">DB: defect_findings</span>
+          <span class="tag t-yellow">→ 承認申請</span>
+          <span class="tag t-muted">点検結果IDと紐づき</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分岐：異常あり/なし -->
+  <div class="branch-wrap">
+    <div class="branch-box">
+      <div class="branch-label">⚠ 分岐：異常あり / なし</div>
+      <div class="branch-options">
+        <div class="branch-opt" style="background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.4);color:#3fb950">
+          ✅ 異常なし<br><span style="font-size:11px;color:var(--muted);font-weight:400">LOTO解除 → 運転継続<br>→ STEP 11クローズへ</span>
+        </div>
+        <div class="branch-opt" style="background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.4);color:#f85149">
+          🔴 異常あり<br><span style="font-size:11px;color:var(--muted);font-weight:400">不具合起票 → 承認後<br>→ STEP 6作業票へ</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 作業票 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-yellow">6</div>
+      <div class="step-line line-yellow"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-blue">担当者</div>
+      <div class="step-box box-yellow">
+        <div class="step-title">📝 作業票を起票・承認申請</div>
+        <div class="step-desc">不具合IDから修理・保全作業を起票。作業種別・担当者・期限・KY/LOTO要否を設定。高リスク作業はPTW申請も必要。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-yellow">work-orders.html</span>
+          <span class="tag t-yellow">DB: work_orders</span>
+          <span class="tag t-pink">PTW必要 → STEP 7へ</span>
+          <span class="tag t-yellow">→ 承認申請</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ PTW・KY・LOTO -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-pink">7</div>
+      <div class="step-line line-pink"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-blue">担当者</div>
+      <div class="step-box box-pink">
+        <div class="step-title">🛡 PTW申請 ／ KY・LOTO実施（作業前）</div>
+        <div class="step-desc">高所・電気・火気などはPTWを事前申請。PTW番号（PTW-YYYY-MMDD-NN）が自動発番。承認後、全作業でKY実施・エネルギー機器はLOTO施錠してから作業開始。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-pink">permits.html</span>
+          <span class="screen-tag t-red">ky-loto.html</span>
+          <span class="tag t-pink">DB: work_permits</span>
+          <span class="tag t-red">DB: ky_records / loto_records</span>
+          <span class="law-tag">⚖ 労働安全衛生法 第59条</span>
+          <span class="law-tag">⚖ 安衛則 第107条（LOTO）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 承認ブロック② -->
+  <div class="branch-wrap">
+    <div class="branch-box" style="border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.06)">
+      <div class="branch-label">🔐 承認フロー（主任・管理者）— approvals.html</div>
+      <div class="branch-options">
+        <div class="branch-opt" style="background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.4);color:#3fb950">
+          ✅ 作業票・PTW を承認<br><span style="font-size:11px;color:var(--muted);font-weight:400">→ 承認済み・DBロック<br>STEP 9へ進む</span>
+        </div>
+        <div class="branch-opt" style="background:rgba(210,153,34,.08);border-color:rgba(210,153,34,.4);color:#d29922">
+          ↩ 差戻し（申請中のみ）<br><span style="font-size:11px;color:var(--muted);font-weight:400">→ 担当者が修正・再申請<br>承認済みへの差戻し不可</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧ 承認（統合） -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-yellow">8</div>
+      <div class="step-line line-yellow"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-yellow">主任・管理者</div>
+      <div class="step-box box-yellow">
+        <div class="step-title">✅ 承認一覧（全ドキュメント統合管理）</div>
+        <div class="step-desc">点検計画・点検結果・不具合・作業票・PTWの承認待ちを一画面で管理。申請中のみ差戻し可。承認済みへの差戻しは不可。承認するとDBロックがかかり編集不可になる。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-yellow">approvals.html</span>
+          <span class="tag t-green">承認 → DBロック（approval_status: approved）</span>
+          <span class="tag t-yellow">差戻し → 申請中のみ（returned）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑨ 作業実施 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-purple">9</div>
+      <div class="step-line line-purple"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-blue">担当者</div>
+      <div class="step-box box-purple">
+        <div class="step-title">🔧 作業実施（修理・保全）</div>
+        <div class="step-desc">作業票・PTW・KY・LOTOが全て揃った状態で作業開始。作業完了後、LOTO解除を実施してから結果を記録。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-yellow">work-orders.html</span>
+          <span class="tag t-yellow">status: in_progress → completed</span>
+          <span class="tag t-red">LOTO解除フロー</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑩ 復旧確認 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-green">10</div>
+      <div class="step-line line-green"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-yellow">主任・管理者</div>
+      <div class="step-box box-green">
+        <div class="step-title">▶ 復旧確認・運転許可</div>
+        <div class="step-desc">修理完了・LOTO解除確認後、管理者が風車の再起動・運転再開を承認。不具合ステータスをクローズに更新。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-red">defect-rca.html</span>
+          <span class="tag t-green">defect_findings → closed</span>
+          <span class="tag t-green">→ 運転再開 ✅</span>
+          <span class="law-tag">⚖ 電気事業法 第42条</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑪ クローズ・報告 -->
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num num-green">11</div>
+      <div class="step-line" style="display:none"></div>
+    </div>
+    <div class="step-card">
+      <div class="step-role role-yellow">主任・管理者</div>
+      <div class="step-box box-green">
+        <div class="step-title">📊 クローズ・報告確認</div>
+        <div class="step-desc">一連の業務をクローズ。報告書候補を確認し、法令に基づく定期報告・事故報告の作成へ。全体の証跡（点検記録・不具合・作業・承認履歴）がトレース可能な状態で保存される。</div>
+        <div class="step-tags">
+          <span class="screen-tag t-green">report-candidates.html</span>
+          <span class="tag t-green">全証跡DBに保存</span>
+          <span class="law-tag">⚖ 電気事業法 定期報告</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ゴール -->
+  <div style="width:100%;margin-top:4px">
+    <div style="background:rgba(63,185,80,.08);border:1.5px solid rgba(63,185,80,.4);border-radius:12px;padding:16px 20px;text-align:center">
+      <div style="font-size:20px;margin-bottom:6px">🏁</div>
+      <div style="font-size:14px;font-weight:800;color:#3fb950">業務完了・次サイクルへ</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">全ドキュメントが承認・証跡として保存され、次の定期点検計画作成（STEP 3）へ戻る</div>
+    </div>
+  </div>
+
+</div><!-- /flow -->
+
+<!-- 承認フロー共通ルール -->
+<div style="max-width:740px;margin:40px auto 0">
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;letter-spacing:.05em">🔐 承認ステータス遷移（全ドキュメント共通）</div>
+    <div style="display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto">
+
+      <div style="flex:1;min-width:90px;padding:10px;text-align:center;background:rgba(139,148,158,.08);border:1px solid var(--line);border-radius:8px 0 0 8px">
+        <div style="font-size:11px;font-weight:800;color:var(--muted)">📋 下書き</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">編集自由</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 6px;color:var(--line);font-size:18px">→</div>
+      <div style="flex:1;min-width:90px;padding:10px;text-align:center;background:rgba(219,97,162,.08);border:1px solid rgba(219,97,162,.4);border-radius:0">
+        <div style="font-size:11px;font-weight:800;color:var(--pink)">📤 申請中</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">承認者が審査</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 6px;color:var(--line);font-size:18px">→</div>
+      <div style="flex:1;min-width:90px;padding:10px;text-align:center;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);border-radius:0 8px 8px 0">
+        <div style="font-size:11px;font-weight:800;color:var(--green)">✅ 承認済み</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">🔒 編集不可</div>
+      </div>
+
+      <div style="display:flex;align-items:center;padding:0 14px;color:var(--line);font-size:20px">｜</div>
+
+      <div style="flex:1;min-width:110px;padding:10px;text-align:center;background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.4);border-radius:8px">
+        <div style="font-size:11px;font-weight:800;color:var(--yellow)">↩ 差戻し</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">申請中→のみ可<br>再編集→再申請</div>
+      </div>
+
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--red);padding:6px 10px;background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.25);border-radius:6px">
+      ⚠ 承認済みへの差戻しは不可。変更が必要な場合は管理者権限での特別対応が必要。
+    </div>
+  </div>
 </div>
 
 </body>
