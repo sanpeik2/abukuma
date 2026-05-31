@@ -2943,35 +2943,55 @@
           work_ordered:'<span style="font-size:11px;font-weight:700;color:#d29922;background:rgba(210,153,34,.15);border:1px solid rgba(210,153,34,.6);border-radius:5px;padding:2px 8px;">🔧 作業票化</span>',
           cancelled:   '<span style="font-size:11px;color:var(--muted);border:1px solid #30363d;border-radius:5px;padding:2px 8px;">✖ 中止</span>'
         };
-        const trs = rows.map(r => {
+        // 分類ごとにグループ化
+        const planned = rows.filter(r => r.inspection_kind === 'planned');
+        const adhoc   = rows.filter(r => r.inspection_kind === 'adhoc');
+
+        // 点検種別バッジ（計画点検用）
+        function planKindBadge(wt){
+          const t = wt||'';
+          if(t.includes('年次'))  return '<span style="font-size:10px;font-weight:700;color:#9cd2ff;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);border-radius:4px;padding:1px 7px;">年次</span>';
+          if(t.includes('定期'))  return '<span style="font-size:10px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:4px;padding:1px 7px;">定期</span>';
+          if(t.includes('緊急')||t.includes('異常')||t.includes('臨時')) return '<span style="font-size:10px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:4px;padding:1px 7px;">緊急</span>';
+          return '<span style="font-size:10px;color:var(--muted);border:1px solid #30363d;border-radius:4px;padding:1px 7px;">その他</span>';
+        }
+        // 起点バッジ（臨時点検用）
+        function srcBadge(st){
+          const B = {
+            scada:            ['#ff9a92','rgba(248,81,73,.10)','rgba(248,81,73,.4)','SCADA異常'],
+            alarm:            ['#ff9a92','rgba(248,81,73,.10)','rgba(248,81,73,.4)','アラーム'],
+            manual:           ['#e3b341','rgba(210,153,34,.10)','rgba(210,153,34,.4)','現場判断'],
+            chief_instruction:['#db61a2','rgba(219,97,162,.10)','rgba(219,97,162,.4)','主任指示'],
+            weather:          ['#9cd2ff','rgba(88,166,255,.10)','rgba(88,166,255,.4)','天候後'],
+            recovery:         ['#7ee787','rgba(63,185,80,.10)','rgba(63,185,80,.4)','復旧確認']
+          };
+          const b = B[st]||['#8b949e','transparent','#30363d',st||'臨時'];
+          return `<span style="font-size:10px;font-weight:700;color:${b[0]};background:${b[1]};border:1px solid ${b[2]};border-radius:4px;padding:1px 7px;white-space:nowrap;">${b[3]}</span>`;
+        }
+
+        function makeRow(r){
           const isAdhoc = r.inspection_kind === 'adhoc';
           const pid = r.plan_id ? encodeURIComponent(r.plan_id) : '';
           const rid = r.latest_result_id ? encodeURIComponent(r.latest_result_id) : '';
           const st  = r.execution_status || 'not_started';
           const badge = ST_BADGE[st] || ST_BADGE.not_started;
 
-          // 作業種別と起点の表示（臨時: 「臨時」or「臨時/緊急」＋起点を小さく）
-          const srcType   = r.source_type||'manual';
-          const workLabel = isAdhoc
-            ? (SOURCE_KIND[srcType]||'臨時')
-            : esc(r.work_type||'');
-          const srcSubLabel = isAdhoc
-            ? '<div style="font-size:10px;color:#db61a2;margin-top:1px;">'+(SOURCE_LABEL[srcType]||srcType)+'</div>'
-            : '';
-
-          // 時間 or 理由
-          const timeOrReason = isAdhoc
+          const srcType = r.source_type||'manual';
+          // 種別バッジ
+          const kindBadgeHtml = isAdhoc ? srcBadge(srcType) : planKindBadge(r.work_type||'');
+          // 作業種別 or 理由
+          const workCol = isAdhoc
             ? (r.source_reason
-                ? '<span style="font-size:11px;color:var(--muted);max-width:180px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(r.source_reason||'')+'">'+esc(r.source_reason)+'</span>'
-                : '<span style="color:var(--muted);font-size:11px;">—</span>')
-            : esc((r.time_start_fmt||'')+(r.time_end_fmt?'〜'+r.time_end_fmt:''));
+                ? '<span style="font-size:11.5px;color:var(--txt);">'+esc(r.source_reason.length>40?r.source_reason.slice(0,40)+'…':r.source_reason)+'</span>'
+                : '<span style="color:var(--muted);">—</span>')
+            : '<span style="font-size:12px;">'+esc(r.work_type||'')+'</span>';
+          // 時間（計画のみ）
+          const timeCol = isAdhoc ? '' : esc((r.time_start_fmt||'')+(r.time_end_fmt?'〜'+r.time_end_fmt:''));
 
-          // ナビ先
           let navUrl = '';
           if(isAdhoc && rid) navUrl = './inspection-input.html?readonly=1&result_id='+rid;
           else if(pid) navUrl = './inspection-input.html?plan_id='+pid+(st==='done'||st==='done_anomaly'?'&readonly=1':'');
 
-          // アクションボタン
           let action = '';
           if(isAdhoc){
             action = rid ? '<a href="./inspection-input.html?readonly=1&result_id='+rid+'" style="font-size:12px;color:#58a6ff;padding:5px 8px;text-decoration:none;white-space:nowrap;">結果を見る</a>' : '';
@@ -2985,17 +3005,26 @@
             ? '<button onclick="setOnHold(event,\''+r.plan_id+'\')" style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;background:transparent;cursor:pointer;margin-left:4px;">⏸ 保留</button>'
             : (!isAdhoc && st==='on_hold' ? '<button onclick="setResume(event,\''+r.plan_id+'\')" style="font-size:11px;color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;background:transparent;cursor:pointer;margin-left:4px;">▶ 再開</button>' : '');
 
-          return '<tr style="cursor:pointer;'+(isAdhoc?'background:rgba(219,97,162,.04);':'')+'" onclick="if(!event.defaultPrevented&&\''+navUrl+'\')location.href=\''+navUrl+'\'">'+
+          return '<tr style="cursor:pointer;'+(isAdhoc?'background:rgba(219,97,162,.03);':'')+'" onclick="if(!event.defaultPrevented&&\''+navUrl+'\')location.href=\''+navUrl+'\'">'+
             '<td style="white-space:nowrap;color:var(--muted);">'+esc(r.planned_date||'')+'</td>'+
             '<td><b style="color:#fff;font-family:monospace;">'+esc(r.turbine_no||'')+'</b></td>'+
-            '<td>'+workLabel+srcSubLabel+'</td>'+
-            '<td>'+timeOrReason+'</td>'+
+            '<td style="white-space:nowrap;">'+kindBadgeHtml+'</td>'+
+            '<td>'+workCol+'</td>'+
+            '<td style="white-space:nowrap;color:var(--muted);">'+timeCol+'</td>'+
             '<td>'+badge+'</td>'+
             '<td style="white-space:nowrap;">'+action+holdBtn+'</td>'+
             '</tr>';
-        }).join('');
+        } // end makeRow
+
+        // セクション区切りを含む HTML 生成
+        const SECTION_HDR = (label, cnt, color) =>
+          `<tr><td colspan="7" style="padding:10px 10px 4px;font-size:11px;font-weight:700;color:${color};letter-spacing:.04em;border-top:1px solid var(--line);background:var(--bg);">${label} <span style="color:var(--muted);font-weight:400;">(${cnt}件)</span></td></tr>`;
+
+        const trs =
+          (planned.length ? SECTION_HDR('📋 計画点検（承認済み）', planned.length, '#7ee787') + planned.map(makeRow).join('') : '') +
+          (adhoc.length   ? SECTION_HDR('🔴 臨時点検',             adhoc.length,   '#db61a2') + adhoc.map(makeRow).join('')   : '');
         body.innerHTML = '<table><thead><tr>'+
-          ['計画日','号機','作業種別','時間 / 理由','実施ステータス','操作'].map(h=>'<th>'+h+'</th>').join('')+
+          ['日付','号機','種別','作業種別 / 理由','時間','実施ステータス','操作'].map(h=>'<th>'+h+'</th>').join('')+
           '</tr></thead><tbody>'+trs+'</tbody></table>';
       }catch(e){
         const body = document.getElementById('execListBody');
