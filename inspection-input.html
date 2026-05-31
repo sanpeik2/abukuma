@@ -553,7 +553,29 @@
 
 
 
-      <h2>📝 新規 点検実績を登録</h2>
+      <h2 id="formTitle">📝 新規 点検実績を登録</h2>
+      <!-- 臨時点検モード時のみ表示 -->
+      <div id="adhocFields" style="display:none;margin-bottom:18px;padding:12px 14px;border:1px solid rgba(219,97,162,.4);border-radius:9px;background:rgba(219,97,162,.06);">
+        <div style="font-size:12.5px;font-weight:700;color:#db61a2;margin-bottom:10px;">🔴 臨時点検 — 起点と理由を入力してください（監査証跡として必須）</div>
+        <div class="form-grid">
+          <div>
+            <label>起点<span class="req">*</span><span class="help">なぜこの点検を実施したか</span></label>
+            <select id="f_source_type" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;">
+              <option value="manual">現場判断</option>
+              <option value="scada">SCADA異常</option>
+              <option value="alarm">アラーム発報</option>
+              <option value="weather">天候後確認</option>
+              <option value="recovery">復旧確認</option>
+              <option value="chief_instruction">主任技術者指示</option>
+            </select>
+          </div>
+          <div class="full">
+            <label>理由・状況<span class="req">*</span><span class="help">例: WTG-07 ギアボックス温度上昇 85℃ / SCADA アラーム発報 10:32</span></label>
+            <textarea id="f_source_reason" placeholder="点検に至った経緯・状況を記録してください" style="min-height:50px;width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+            <div class="ferr" id="e_source_reason">臨時点検の理由は必須です。</div>
+          </div>
+        </div>
+      </div>
 
 
 
@@ -1238,7 +1260,8 @@
 
 
 
-    const state = { turbines:[], userId:null, weather:"", sev:"", set:"", items:{}, submitting:false };
+    const SOURCE_LABEL = {planned:'計画点検',manual:'現場判断',scada:'SCADA異常',alarm:'アラーム発報',weather:'天候後確認',recovery:'復旧確認',chief_instruction:'主任技術者指示'};
+    const state = { turbines:[], userId:null, weather:"", sev:"", set:"", items:{}, submitting:false, adhocMode:false };
 
 
 
@@ -2293,7 +2316,10 @@
 
 
 
-          turbine_id:d.wtg, executed_date:d.date, executed_by:state.userId, plan_id:state.planId||null,
+          turbine_id:d.wtg, executed_date:d.date, executed_by:state.userId,
+          plan_id:state.planId||null,
+          source_type: state.adhocMode ? ($('f_source_type')?.value||'manual') : 'planned',
+          source_reason: state.adhocMode ? ($('f_source_reason')?.value?.trim()||null) : null,
 
 
 
@@ -2812,7 +2838,7 @@
       const card = document.createElement('div');
       card.id = 'execListCard';
       card.className = 'card';
-      card.innerHTML = '<h2>📋 点検実施一覧（承認済み計画）</h2><div class="hint">承認済みの点検計画を表示しています。行をクリックすると点検実施画面に移動します。</div><div id="execListBody" class="loading">読み込み中…</div>';
+      card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;"><h2 style="margin:0;">📋 点検実施一覧</h2><button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">＋ 臨時点検を記録</button></div><div class="hint">承認済み計画と臨時点検の実施状況を表示します。行をクリックすると詳細へ移動します。</div><div id="execListBody" class="loading">読み込み中…</div>';
       wrap.insertAdjacentElement('afterbegin', card);
       try{
         const rows = await sb.get('v_inspection_execution_list?order=planned_date.asc');
@@ -2831,21 +2857,40 @@
           cancelled:   '<span style="font-size:11px;color:var(--muted);border:1px solid #30363d;border-radius:5px;padding:2px 8px;">✖ 中止</span>'
         };
         const trs = rows.map(r => {
-          const pid = encodeURIComponent(r.plan_id);
+          const isAdhoc = r.inspection_kind === 'adhoc';
+          const pid = r.plan_id ? encodeURIComponent(r.plan_id) : '';
+          const rid = r.latest_result_id ? encodeURIComponent(r.latest_result_id) : '';
           const st  = r.execution_status || 'not_started';
           const badge = ST_BADGE[st] || ST_BADGE.not_started;
           const time = (r.time_start_fmt||'') + (r.time_end_fmt ? '〜'+r.time_end_fmt : '');
-          const canStart = (st === 'not_started' || st === 'in_progress');
-          const action = canStart
-            ? '<a href="./inspection-input.html?plan_id='+pid+'" style="font-size:12px;font-weight:700;background:#238636;color:#fff;padding:5px 11px;border-radius:7px;text-decoration:none;white-space:nowrap;">'+(st==='not_started'?'点検を開始':'続きから')+'</a>'
-            : '<a href="./inspection-input.html?plan_id='+pid+'&readonly=1" style="font-size:12px;color:#58a6ff;padding:5px 8px;text-decoration:none;white-space:nowrap;">結果を見る</a>';
-          const holdBtn = (st === 'not_started' || st === 'in_progress')
+          // 臨時点検バッジ
+          const kindBadge = isAdhoc
+            ? '<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.10);border:1px solid rgba(219,97,162,.4);border-radius:4px;padding:1px 6px;margin-left:4px;">臨時</span>'
+            : '';
+          // 作業種別の表示
+          const workLabel = isAdhoc ? (SOURCE_LABEL[r.source_type]||r.source_type||'臨時点検') : esc(r.work_type||'');
+          // ナビ先
+          let navUrl = '';
+          if(isAdhoc && rid) navUrl = './inspection-input.html?readonly=1&result_id='+rid;
+          else if(pid) navUrl = './inspection-input.html?plan_id='+pid+(st==='done'||st==='done_anomaly'?'&readonly=1':'');
+          // アクションボタン
+          let action = '';
+          if(isAdhoc){
+            action = rid ? '<a href="./inspection-input.html?readonly=1&result_id='+rid+'" style="font-size:12px;color:#58a6ff;padding:5px 8px;text-decoration:none;white-space:nowrap;">結果を見る</a>' : '';
+          } else {
+            const canStart = (st==='not_started'||st==='in_progress');
+            action = canStart
+              ? '<a href="./inspection-input.html?plan_id='+pid+'" style="font-size:12px;font-weight:700;background:#238636;color:#fff;padding:5px 11px;border-radius:7px;text-decoration:none;white-space:nowrap;">'+(st==='not_started'?'点検を開始':'続きから')+'</a>'
+              : '<a href="./inspection-input.html?plan_id='+pid+'&readonly=1" style="font-size:12px;color:#58a6ff;padding:5px 8px;text-decoration:none;white-space:nowrap;">結果を見る</a>';
+          }
+          const holdBtn = (!isAdhoc && (st==='not_started'||st==='in_progress'))
             ? '<button onclick="setOnHold(event,\''+r.plan_id+'\')" style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;background:transparent;cursor:pointer;margin-left:4px;">⏸ 保留</button>'
-            : (st === 'on_hold' ? '<button onclick="setResume(event,\''+r.plan_id+'\')" style="font-size:11px;color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;background:transparent;cursor:pointer;margin-left:4px;">▶ 再開</button>' : '');
-          return '<tr style="cursor:pointer;" onclick="if(!event.defaultPrevented)location.href=\'./inspection-input.html?plan_id='+pid+(st==='done'||st==='done_anomaly'?'&readonly=1':'')+'\'">'+
+            : (!isAdhoc && st==='on_hold' ? '<button onclick="setResume(event,\''+r.plan_id+'\')" style="font-size:11px;color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;background:transparent;cursor:pointer;margin-left:4px;">▶ 再開</button>' : '');
+          const note = isAdhoc && r.source_reason ? '<div style="font-size:10px;color:var(--muted);margin-top:2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(r.source_reason||'')+'">'+esc(r.source_reason||'')+'</div>' : '';
+          return '<tr style="cursor:pointer;'+(isAdhoc?'background:rgba(219,97,162,.04);':'')+'" onclick="if(!event.defaultPrevented&&\''+navUrl+'\')location.href=\''+navUrl+'\'">'+
             '<td style="white-space:nowrap;color:var(--muted);">'+esc(r.planned_date||'')+'</td>'+
             '<td><b style="color:#fff;font-family:monospace;">'+esc(r.turbine_no||'')+'</b></td>'+
-            '<td>'+esc(r.work_type||'')+'</td>'+
+            '<td>'+workLabel+kindBadge+note+'</td>'+
             '<td>'+esc(time)+'</td>'+
             '<td>'+badge+'</td>'+
             '<td style="white-space:nowrap;">'+action+holdBtn+'</td>'+
@@ -2858,6 +2903,17 @@
         const body = document.getElementById('execListBody');
         if(body) body.innerHTML = '<div class="err">取得エラー: '+esc(e.message)+'</div>';
       }
+    }
+
+    function activateAdhocMode(){
+      state.adhocMode = true;
+      const title = document.getElementById('formTitle');
+      const adhoc = document.getElementById('adhocFields');
+      if(title) title.textContent = '🔴 臨時点検を記録';
+      if(adhoc) adhoc.style.display = 'block';
+      // フォームカードまでスクロール
+      const formCard = document.querySelector('.wrap .card');
+      if(formCard) formCard.scrollIntoView({behavior:'smooth', block:'start'});
     }
 
     async function setOnHold(ev, planId){
