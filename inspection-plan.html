@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 
 
@@ -667,6 +667,8 @@
       anomaly:  'text-decoration:none;display:inline-block;font-size:11px;font-weight:700;color:#f0c674;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
       wo:       'text-decoration:none;display:inline-block;font-size:11px;color:#8b949e;border:1px solid var(--line);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
       planWo:   'text-decoration:none;display:inline-block;font-size:11px;font-weight:700;color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+      approve: 'display:inline-block;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
+      revise:  'display:inline-block;font-size:11px;color:#e3b341;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
     };
     // 補修・停止が事前に決まっている計画のキーワード判定
     const REPAIR_KW = ['補修','停止','修理','交換','清掃作業'];
@@ -674,14 +676,15 @@
     function planButtons(r){
       const st  = r["状態"] || "";
       const pid = encodeURIComponent(r["計画id"] || "");
+      const rawId = r["計画id"] || "";
       const hasAnomaly  = !!(r["異常件数"] && r["異常件数"] > 0);
       const isRepair    = REPAIR_KW.some(k => (r["作業種別"] || "").includes(k));
       let b = "";
-
-      if(st === "planned"){
-        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">点検を開始</a>`;
-        if(isRepair)
-          b += `<a href="./work-orders.html?inspection_plan_id=${pid}" style="${BTN.planWo}">計画作業票を作成</a>`;
+      if(st === "planned" || st === "returned"){
+        const lbl = st==="returned" ? "✏ 修正・再開" : "点検を開始";
+        b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">${lbl}</a>`;
+        if(isRepair) b += `<a href="./work-orders.html?inspection_plan_id=${pid}" style="${BTN.planWo}">計画作業票</a>`;
+        if(st === "returned") b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 再申請</button>`;
       } else if(st === "in_progress"){
         b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.cont}">点検を続ける</a>`;
       } else if(st === "completed" || st === "done"){
@@ -691,13 +694,38 @@
         } else {
           b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${BTN.view}">結果を見る</a>`;
         }
+        b += `<button onclick="submitApproval('${esc(rawId)}')" style="${BTN.approve}">📨 承認申請</button>`;
+      } else if(st === "approved"){
+        b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${BTN.view}">結果を見る</a>`;
+        b += `<span style="${BTN.view};color:#7ee787;border-color:rgba(63,185,80,.5);">🔒 承認済</span>`;
+        b += `<button onclick="requestRevision('${esc(rawId)}')" style="${BTN.revise}">↩ 差戻し申請</button>`;
       } else {
         b += `<a href="./inspection-input.html?plan_id=${pid}" style="${BTN.start}">点検を開始</a>`;
       }
       return b;
     }
 
-    sb.requireLogin({ onReady: loadAll });
+    async function submitApproval(id){
+      if(!confirm('この点検計画を承認申請しますか？承認画面に表示されます。')) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({status:'completed'})});
+        alert('承認申請しました。承認画面（Step 8）で承認してください。');
+        location.reload();
+      }catch(e){ alert('申請失敗: '+e.message); }
+    }
+
+    async function requestRevision(id){
+      const reason = prompt('差戻し理由を入力してください（証跡として保存されます）:','');
+      if(reason === null) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({status:'returned'})});
+        alert('差戻し完了。計画担当者が修正後、再申請できます。');
+        location.reload();
+      }catch(e){ alert('差戻し失敗: '+e.message); }
+    }
+sb.requireLogin({ onReady: loadAll });
 
 
 
