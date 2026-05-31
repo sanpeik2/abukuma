@@ -596,6 +596,7 @@
 
 
     <div id="body" class="loading">読み込み中…</div>
+    <button onclick="openNewRca()" style="margin-top:12px;background:rgba(248,81,73,.15);color:#f85149;border:1px solid rgba(248,81,73,.4);font-weight:700;font-size:13px;padding:9px 20px;border-radius:8px;cursor:pointer;">＋ 新規・異常判断起票</button>
 
 
 
@@ -769,7 +770,7 @@
 
 
 
-      if(r._pipe && r._pipe["次アクション"]) return r._pipe["次アクション"];
+      if(r._pipe && r._pipe["次アクシ,'操作'ョン"]) return r._pipe["次アクション"];
 
 
 
@@ -1419,11 +1420,15 @@ const createBtn = !isLocked
 
 
             <td><span class="next-a">${esc(nextAction(r))}</span></td>
-
-
-
-
-
+            <td style="white-space:nowrap">${
+              (['draft','returned'].includes(r['approval_status']||'draft'))
+                ? `<button onclick="event.stopPropagation();submitDefectApproval('${esc(id)}')" style="font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:3px 8px;cursor:pointer;white-space:nowrap;">${(r['approval_status']==='returned')?'📨 再申請':'📨 承認申請'}</button>`
+                : (r['approval_status']==='pending'
+                    ? '<span style="font-size:11px;color:#db61a2;font-weight:700;">⏳ 申請中</span>'
+                    : (r['approval_status']==='approved'
+                        ? '<span style="font-size:11px;color:#3fb950;font-weight:700;">✅ 承認済</span>'
+                        : ''))
+            }</td>
           </tr>`;
 
 
@@ -1591,6 +1596,58 @@ const createBtn = !isLocked
 
 
 
+
+    
+    /* ── 新規異常判断起票 ── */
+    function openNewRca() {
+      // 号機リスト読込
+      const sel = document.getElementById('nr_turbine');
+      if(sel && sel.options.length <= 1) {
+        sb.get('turbines?select=id,turbine_no&order=turbine_no').then(rows => {
+          rows.forEach(t => {
+            const o = document.createElement('option');
+            o.value = t.id; o.textContent = t.turbine_no;
+            sel.appendChild(o);
+          });
+        }).catch(()=>{});
+      }
+      // 発見日時を現在時刻でセット
+      const now = new Date();
+      const pad = n => String(n).padStart(2,'0');
+      document.getElementById('nr_found_at').value =
+        `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      document.getElementById('newRcaOverlay').style.display = 'block';
+      document.getElementById('newRcaPanel').style.transform = 'translateX(0)';
+    }
+    function closeNewRca() {
+      document.getElementById('newRcaOverlay').style.display = 'none';
+      document.getElementById('newRcaPanel').style.transform = 'translateX(100%)';
+    }
+    async function saveNewRca() {
+      const title = document.getElementById('nr_title').value.trim();
+      if(!title){ alert('異常タイトルは必須です'); return; }
+      const btn = document.getElementById('newRcaSaveBtn');
+      btn.disabled = true; btn.textContent = '保存中…';
+      try {
+        const body = {
+          turbine_id:    document.getElementById('nr_turbine').value || null,
+          finding_title: title,
+          finding_detail: document.getElementById('nr_detail').value || null,
+          safety_impact: document.getElementById('nr_safety').value,
+          first_judgment: document.getElementById('nr_judge').value,
+          source_type:   document.getElementById('nr_source').value,
+          found_at:      document.getElementById('nr_found_at').value ? new Date(document.getElementById('nr_found_at').value).toISOString() : null,
+          status:        'open',
+          approval_status: 'draft'
+        };
+        await sb.write('POST', 'defect_findings', body);
+        closeNewRca();
+        await loadAll();
+      } catch(e) {
+        alert('保存エラー: ' + e.message);
+        btn.disabled = false; btn.textContent = '💾 下書き保存';
+      }
+    }
 
     async function loadAll(){
       const _planId = new URLSearchParams(location.search).get('plan_id');
@@ -1977,6 +2034,53 @@ const createBtn = !isLocked
 
 
 
+
+
+  <!-- 新規異常判断起票ドロワー -->
+  <div class="drawer-overlay" id="newRcaOverlay" onclick="closeNewRca()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none"></div>
+  <div id="newRcaPanel" style="position:fixed;top:0;right:0;width:460px;max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-shrink:0">
+      <h3 style="font-size:14px;color:#fff;font-weight:700;flex:1">🔴 新規・異常判断起票</h3>
+      <button onclick="closeNewRca()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:18px" id="newRcaBody">
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">号機</label>
+        <select id="nr_turbine" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+          <option value="">— 選択 —</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">異常タイトル <span style="color:#f85149">*</span></label>
+        <input id="nr_title" type="text" placeholder="例: WT-01 ギア異音" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">発見日時</label>
+        <input id="nr_found_at" type="datetime-local" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">発見元</label>
+        <select id="nr_source" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+          <option value="点検">点検</option><option value="監視">監視アラーム</option>
+          <option value="目視">目視巡回</option><option value="その他">その他</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">安全影響</label>
+        <select id="nr_safety" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+          <option value="low">低</option><option value="medium">中</option><option value="high">高</option><option value="critical">重大</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">一次判定</label>
+        <select id="nr_judge" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+          <option value="A">A: 即時停止・修理</option><option value="B">B: 計画修理</option>
+          <option value="C">C: 経過観察</option><option value="D">D: 記録のみ</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">詳細・備考</label>
+        <textarea id="nr_detail" rows="3" placeholder="状況の詳細を記入" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0">
+      <button id="newRcaSaveBtn" onclick="saveNewRca()" style="flex:1;background:#238636;color:#fff;border:none;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-size:13px">💾 下書き保存</button>
+      <button onclick="closeNewRca()" style="background:var(--panel2);color:var(--muted);border:1px solid var(--line);font-weight:700;padding:9px 16px;border-radius:6px;cursor:pointer;font-size:13px">閉じる</button>
+    </div>
+  </div>
 
 </body>
 
