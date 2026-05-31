@@ -1803,7 +1803,7 @@ const createBtn = !isLocked
             const SEV_MAP={'low':'low','medium':'medium','high':'high','critical':'high'};
             const detail = ngItems.map(c=>{
               const v=c.measured_value!=null?`${c.measured_value}${c.unit||''}`:c.measured_text||'';
-              return c.check_item+(v?`：${v}`:'')+（c.comment?`（${c.comment}）`:'');
+              return c.check_item + (v ? `：${v}` : '') + (c.comment ? `（${c.comment}）` : '');
             }).join(' / ');
             await sb.write('POST','defect_findings',{
               turbine_id: ir.turbine_id||null,
