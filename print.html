@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>帳票印刷 — 阿武隈OS</title>
+<style>
+  /* ===== 画面用 ===== */
+  body {
+    background: #f0f2f5;
+    font-family: "Hiragino Kaku Gothic ProN","Meiryo","MS Gothic",sans-serif;
+    margin: 0; padding: 0;
+    color: #1a1a1a;
+  }
+  #printBar {
+    background: #1a2235; color: #c9d1d9;
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 22px;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid #30363d;
+  }
+  #printBar h1 { font-size: 14px; color: #fff; flex: 1; margin: 0; }
+  #printBar .ptype { font-size: 11px; color: #8b949e; white-space: nowrap; }
+  .btn-print {
+    background: #1a6feb; color: #fff; border: none;
+    border-radius: 7px; padding: 8px 20px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .btn-print:hover { background: #2079ff; }
+  .btn-back {
+    background: #21262d; color: #c9d1d9;
+    border: 1px solid #30363d; border-radius: 7px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer;
+  }
+
+  /* ===== A4 帳票シート ===== */
+  .sheet {
+    background: #fff;
+    width: 210mm;
+    min-height: 270mm;
+    margin: 24px auto;
+    padding: 14mm 18mm;
+    box-shadow: 0 4px 24px rgba(0,0,0,.15);
+    box-sizing: border-box;
+  }
+
+  /* ヘッダー */
+  .doc-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2.5px solid #1a2235;
+    padding-bottom: 10px; margin-bottom: 12px;
+  }
+  .doc-header .company { font-size: 10.5px; color: #555; }
+  .doc-header .doc-title { font-size: 21px; font-weight: 900; color: #1a2235; letter-spacing: .04em; }
+  .doc-header .doc-no { font-family: monospace; font-size: 13px; color: #1a6feb; font-weight: 700; margin-top: 3px; }
+  .doc-header-right { text-align: right; font-size: 11px; color: #555; }
+
+  .meta-row {
+    display: flex; gap: 18px; font-size: 11.5px; color: #555;
+    margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .meta-row b { color: #1a1a1a; }
+
+  /* セクション見出し */
+  .sec-head {
+    background: #1a2235; color: #fff;
+    font-size: 10.5px; font-weight: 700;
+    padding: 4px 10px; margin: 14px 0 0;
+    letter-spacing: .05em;
+  }
+
+  /* フィールドグリッド */
+  .fld-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border: 1px solid #bbb; font-size: 12px;
+  }
+  .fld-grid.g1 { grid-template-columns: 1fr; }
+  .fld-grid.g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .fld-grid.g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .fld {
+    border-right: 1px solid #bbb;
+    border-bottom: 1px solid #bbb;
+  }
+  .fld:last-child, .fld.noright { border-right: none; }
+  .fld.span2 { grid-column: 1 / 3; border-right: none; }
+  .fld label {
+    display: block;
+    background: #eef0f4; padding: 3px 8px;
+    font-size: 10px; font-weight: 700; color: #444;
+    border-bottom: 1px solid #bbb; letter-spacing: .03em;
+  }
+  .fld .val {
+    padding: 5px 10px; min-height: 26px;
+    font-size: 12px; color: #1a1a1a;
+    white-space: pre-wrap; line-height: 1.5;
+  }
+  .fld .val.empty { color: #aaa; }
+  .fld .val.mono  { font-family: monospace; }
+
+  /* チェックボックス */
+  .check-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 5px 10px; }
+  .chk { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+  .chk .box {
+    width: 14px; height: 14px;
+    border: 1.5px solid #666; border-radius: 2px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; flex-shrink: 0;
+  }
+  .chk .box.on { background: #1a2235; color: #fff; border-color: #1a2235; }
+
+  /* バッジ */
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px; border: 1px solid currentColor;
+  }
+  .b-approved { color: #1a7a3c; background: #e6f4ea; }
+  .b-pending  { color: #7a5a00; background: #fff8dc; }
+  .b-draft    { color: #555;    background: #f5f5f5; }
+  .b-returned { color: #9a2200; background: #ffeae8; }
+
+  /* 承認欄 */
+  .ap-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border: 1px solid #bbb;
+  }
+  .ap-cell { border-right: 1px solid #bbb; min-height: 56px; }
+  .ap-cell:last-child { border-right: none; }
+  .ap-cell .role {
+    background: #eef0f4; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-bottom: 1px solid #bbb; color: #444;
+  }
+  .ap-cell .sig { padding: 6px 8px; min-height: 38px; font-size: 11px; color: #333; }
+
+  /* チェックリストテーブル */
+  .cl-tbl { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 0; }
+  .cl-tbl th {
+    background: #eef0f4; color: #444; padding: 4px 8px;
+    border: 1px solid #bbb; text-align: left; font-size: 10.5px; font-weight: 700;
+  }
+  .cl-tbl td { padding: 4px 8px; border: 1px solid #bbb; color: #1a1a1a; vertical-align: top; }
+
+  /* フッター */
+  .print-footer {
+    margin-top: 16mm; border-top: 1px solid #bbb;
+    padding-top: 5px; font-size: 9.5px; color: #888;
+    display: flex; justify-content: space-between;
+  }
+
+  /* メッセージ */
+  .msg { padding: 40px; text-align: center; color: #555; font-size: 14px; }
+  .msg.err { color: #c00; }
+
+  /* ===== 印刷時 ===== */
+  @media print {
+    body { background: #fff; }
+    #printBar { display: none !important; }
+    .sheet {
+      margin: 0; padding: 10mm 14mm;
+      box-shadow: none; width: 100%;
+    }
+    @page { size: A4 portrait; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="printBar">
+  <button class="btn-back" onclick="history.back()">← 戻る</button>
+  <h1 id="barTitle">帳票</h1>
+  <span class="ptype" id="barType"></span>
+  <button class="btn-print" onclick="window.print()">🖨 印刷する</button>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="msg">データを読み込んでいます…</div>
+</div>
+
+<script src="./lib/supabase.js"></script>
+<script>
+const esc  = sb.esc;
+const sheet = document.getElementById('sheet');
+
+function qp(k){ return new URLSearchParams(location.search).get(k) || ''; }
+const TYPE = qp('type');   // ptw | wo | plan | defect | insp
+const ID   = qp('id');
+
+const TYPE_LABELS = {
+  ptw:    '作業許可証 (PTW)',
+  wo:     '作業票',
+  plan:   '点検計画書',
+  defect: '異常判断・不具合起票',
+  insp:   '点検実施記録',
+};
+document.getElementById('barType').textContent = TYPE_LABELS[TYPE] || TYPE;
+
+/* ── ユーティリティ ── */
+function fmtDt(v){
+  if(!v) return '—';
+  return String(v).replace('T',' ').replace('+09:00','').replace(/\.\d{3}/,'').slice(0,16);
+}
+
+function badge(st){
+  const m = {
+    approved: ['b-approved','✔ 承認済'],
+    pending:  ['b-pending', '⏳ 申請中'],
+    submitted:['b-pending', '⏳ 申請中'],
+    draft:    ['b-draft',   '下書き'],
+    returned: ['b-returned','↩ 差戻し'],
+    closed:   ['b-approved','クローズ'],
+  };
+  const [cls, txt] = m[st] || ['b-draft', esc(st||'—')];
+  return `<span class="badge ${cls}">${txt}</span>`;
+}
+
+function fld(label, val, opts={}){
+  const empty = val == null || String(val).trim() === '';
+  const cls = (opts.mono ? ' mono' : '') + (empty ? ' empty' : '');
+  const span = opts.span ? ' span2' : '';
+  return `<div class="fld${span}">
+    <label>${esc(label)}</label>
+    <div class="val${cls}">${empty ? '—' : (opts.raw ? val : esc(String(val)))}</div>
+  </div>`;
+}
+
+function chk(label, checked){
+  return `<div class="chk">
+    <div class="box${checked?' on':''}">${checked?'✓':''}</div>
+    <span>${esc(label)}</span>
+  </div>`;
+}
+
+async function getTurbineNo(tid){
+  if(!tid) return '—';
+  try{ const t=await sb.get(`turbines?id=eq.${encodeURIComponent(tid)}&select=turbine_no`); return t[0]?.turbine_no||'—'; }
+  catch(e){ return '—'; }
+}
+
+/* ── PTW 作業許可証 ── */
+async function renderPtw(id){
+  const rows = await sb.get(`v_permits_full?id=eq.${encodeURIComponent(id)}`);
+  if(!rows?.length) throw new Error('PTWが見つかりません');
+  const r = rows[0];
+  const pno = r['permit_no'] || r['ptw番号'] || '—';
+  const st  = r['状態'] || r['permit_status'] || '';
+  const typeMap = {electrical:'電気',height:'高所',lifting:'揚重',hot_work:'火気',confined_space:'閉所',inspection:'点検',maintenance:'保全'};
+  const riskMap = {high:'🔴 高リスク',medium:'🟡 中リスク',low:'🟢 低リスク'};
+
+  document.getElementById('barTitle').textContent = `作業許可証 ${pno}`;
+  document.title = `PTW ${pno} — 阿武隈OS`;
+
+  sheet.innerHTML = `
+    <div class="doc-header">
+      <div>
+        <div class="company">阿武隈風力発電所 O&amp;M コックピット</div>
+        <div class="doc-title">作業許可証（PTW）</div>
+        <div class="doc-no">${esc(pno)}</div>
+      </div>
+      <div class="doc-header-right">
+        ${badge(st)}
+        <div style="margin-top:5px;">印刷日時: ${new Date().toLocaleString('ja-JP')}</div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span>対象号機: <b>${esc(r['風車']||'—')}</b></span>
+      <span>許可種別: <b>${esc(typeMap[r['許可種別']]||r['許可種別']||'—')}</b></span>
+      <span>リスク: <b>${esc(riskMap[r['リスクレベル']]||r['リスクレベル']||'—')}</b></span>
+    </div>
+
+    <div class="sec-head">■ 作業内容・範囲</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      ${fld('作業内容', r['作業内容'], {span:false})}
+    </div>
+
+    <div class="sec-head">■ 作業期間・条件</div>
+    <div class="fld-grid" style="margin-top:0">
+      ${fld('作業開始予定', fmtDt(r['作業開始_jst']||r['start_at']||''))}
+      ${fld('作業終了予定', fmtDt(r['作業終了_jst']||r['end_at']||''))}
+      ${fld('所要時間', r['作業時間h']!=null ? r['作業時間h']+' 時間' : '—')}
+      ${fld('風速制限', r['風速制限ms']!=null ? r['風速制限ms']+' m/s 以下' : '—')}
+    </div>
+
+    <div class="sec-head">■ 安全要件</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      <div class="fld noright">
+        <label>安全措置要否</label>
+        <div class="val"><div class="check-row">
+          ${chk('LOTO（エネルギー隔離）要', !!r['loto要否'])}
+          ${chk('隔離措置 要', !!r['隔離要否'])}
+        </div></div>
+      </div>
+    </div>
+
+    ${r['remarks'] ? `
+    <div class="sec-head">■ 備考</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      ${fld('備考', r['remarks'])}
+    </div>` : ''}
+
+    <div class="sec-head">■ 承認欄</div>
+    <div class="ap-grid" style="margin-top:0">
+      <div class="ap-cell"><div class="role">起票者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">現場責任者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">電気主任技術者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">承認者</div>
+        <div class="sig" style="font-size:10px;color:#555;">${r['承認日時_jst'] ? esc(fmtDt(r['承認日時_jst'])) : ''}</div>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      <span>阿武隈風力発電所 — O&amp;M コックピット</span>
+      <span>文書番号: ${esc(pno)} ｜ 印刷: ${new Date().toLocaleString('ja-JP')}</span>
+    </div>`;
+}
+
+/* ── 作業票 ── */
+async function renderWo(id){
+  const [woRows, sumRows] = await Promise.all([
+    sb.get(`v_work_orders_full?id=eq.${encodeURIComponent(id)}`),
+    sb.get(`v_work_order_outages_summary?work_order_id=eq.${encodeURIComponent(id)}`)
+  ]);
+  if(!woRows?.length) throw new Error('作業票が見つかりません');
+  const r = woRows[0];
+  const s = sumRows?.length ? sumRows[0] : null;
+  const no = r['作業票番号'] || '—';
+  const st = r['approval_status'] || 'draft';
+
+  document.getElementById('barTitle').textContent = `作業票 ${no}`;
+  document.title = `作業票 ${no} — 阿武隈OS`;
+
+  sheet.innerHTML = `
+    <div class="doc-header">
+      <div>
+        <div class="company">阿武隈風力発電所 O&amp;M コックピット</div>
+        <div class="doc-title">作業票</div>
+        <div class="doc-no">${esc(no)}</div>
+      </div>
+      <div class="doc-header-right">
+        ${badge(st)}
+        <div style="margin-top:5px;">起票日: ${fmtDt(r['起票日時_jst']||'')}</div>
+        <div>印刷日時: ${new Date().toLocaleString('ja-JP')}</div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span>対象号機: <b>${esc(r['風車']||'—')}</b></span>
+      <span>作業種別: <b>${esc(r['作業種別']||'—')}</b></span>
+      <span>優先度: <b>${esc(r['優先度表示']||r['優先度']||'—')}</b></span>
+      <span>深刻度: <b>${esc(r['深刻度']||'—')}</b></span>
+    </div>
+
+    <div class="sec-head">■ 作業概要</div>
+    <div class="fld-grid" style="margin-top:0">
+      ${fld('異常概要', r['異常概要']||r['関連異常タイトル'], {span:true})}
+      ${fld('関連異常', r['関連異常タイトル'])}
+      ${fld('対応予定日', r['対応予定日']||'—')}
+    </div>
+
+    <div class="sec-head">■ 処置内容</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      ${fld('暫定処置', r['暫定処置'])}
+      ${fld('根本原因', r['根本原因'])}
+      ${fld('恒久処置', r['恒久処置'])}
+    </div>
+
+    ${s?.outage_occurred ? `
+    <div class="sec-head">■ 停止・発電影響</div>
+    <div class="fld-grid g4" style="margin-top:0">
+      ${fld('停止件数', (s.outage_count||0)+'件')}
+      ${fld('合計停止時間', s.total_downtime_minutes!=null ? s.total_downtime_minutes+'分' : '—')}
+      ${fld('逸失電力量', s.total_lost_energy_kwh>0 ? s.total_lost_energy_kwh.toLocaleString('ja-JP')+' kWh' : '—')}
+      ${fld('逸失売電額(概算)', s.total_lost_revenue_jpy>0 ? '¥'+Math.round(s.total_lost_revenue_jpy).toLocaleString('ja-JP') : '—')}
+    </div>` : ''}
+
+    <div class="sec-head">■ 承認欄</div>
+    <div class="ap-grid" style="margin-top:0">
+      <div class="ap-cell"><div class="role">起票者</div><div class="sig">${esc(r['起票元']||'')}</div></div>
+      <div class="ap-cell"><div class="role">確認者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">電気主任技術者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">完了確認</div>
+        <div class="sig" style="font-size:10px;color:#555;">${r['完了日時_jst'] ? esc(fmtDt(r['完了日時_jst'])) : ''}</div>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      <span>阿武隈風力発電所 — O&amp;M コックピット</span>
+      <span>文書番号: ${esc(no)} ｜ 印刷: ${new Date().toLocaleString('ja-JP')}</span>
+    </div>`;
+}
+
+/* ── 点検計画書 ── */
+async function renderPlan(id){
+  const rows = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=*`);
+  if(!rows?.length) throw new Error('点検計画が見つかりません');
+  const r = rows[0];
+  const tno = await getTurbineNo(r.turbine_id);
+  const pno = r.plan_no || '—';
+  const st  = r.approval_status || 'draft';
+  const typeMap = {routine:'定期点検',special:'特別点検',emergency:'緊急点検',commissioning:'試運転',other:'その他'};
+
+  document.getElementById('barTitle').textContent = `点検計画書 ${pno}`;
+  document.title = `点検計画書 ${pno} — 阿武隈OS`;
+
+  sheet.innerHTML = `
+    <div class="doc-header">
+      <div>
+        <div class="company">阿武隈風力発電所 O&amp;M コックピット</div>
+        <div class="doc-title">点検計画書</div>
+        <div class="doc-no">${esc(pno)}</div>
+      </div>
+      <div class="doc-header-right">
+        ${badge(st)}
+        <div style="margin-top:5px;">計画日: ${esc(r.planned_date||'—')}</div>
+        <div>印刷日時: ${new Date().toLocaleString('ja-JP')}</div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span>対象号機: <b>${esc(tno)}</b></span>
+      <span>点検種別: <b>${esc(typeMap[r.inspection_type]||r.inspection_type||'—')}</b></span>
+    </div>
+
+    <div class="sec-head">■ 計画内容</div>
+    <div class="fld-grid" style="margin-top:0">
+      ${fld('計画日', r.planned_date||'—')}
+      ${fld('点検種別', typeMap[r.inspection_type]||r.inspection_type||'—')}
+      ${fld('備考・内容', r.notes||'—', {span:true})}
+    </div>
+
+    <div class="sec-head">■ 安全要件</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      <div class="fld noright">
+        <label>要否チェック</label>
+        <div class="val"><div class="check-row">
+          ${chk('KY（危険予知）実施 要', !!r.ky_required)}
+          ${chk('LOTO（エネルギー隔離）要', !!r.loto_required)}
+          ${chk('PTW（作業許可証）要', !!r.ptw_required)}
+        </div></div>
+      </div>
+    </div>
+
+    <div class="sec-head">■ 承認欄</div>
+    <div class="ap-grid" style="margin-top:0">
+      <div class="ap-cell"><div class="role">起票者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">確認者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">承認者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">承認日時</div>
+        <div class="sig" style="font-size:10px;color:#555;">${r.approved_at ? esc(fmtDt(r.approved_at)) : ''}</div>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      <span>阿武隈風力発電所 — O&amp;M コックピット</span>
+      <span>文書番号: ${esc(pno)} ｜ 印刷: ${new Date().toLocaleString('ja-JP')}</span>
+    </div>`;
+}
+
+/* ── 異常判断・不具合起票 ── */
+async function renderDefect(id){
+  const rows = await sb.get(`defect_findings?id=eq.${encodeURIComponent(id)}&select=*`);
+  if(!rows?.length) throw new Error('異常判断が見つかりません');
+  const r = rows[0];
+  const tno = await getTurbineNo(r.turbine_id);
+  const no  = r.finding_no || String(r.id).slice(0,8);
+  const st  = r.approval_status || 'draft';
+  const sevMap = {low:'低',medium:'中',high:'高',critical:'重大'};
+
+  document.getElementById('barTitle').textContent = `異常判断 ${no}`;
+  document.title = `異常判断 ${no} — 阿武隈OS`;
+
+  sheet.innerHTML = `
+    <div class="doc-header">
+      <div>
+        <div class="company">阿武隈風力発電所 O&amp;M コックピット</div>
+        <div class="doc-title">異常判断・不具合起票</div>
+        <div class="doc-no">${esc(no)}</div>
+      </div>
+      <div class="doc-header-right">
+        ${badge(st)}
+        <div style="margin-top:5px;">起票日: ${fmtDt(r.created_at||'')}</div>
+        <div>印刷日時: ${new Date().toLocaleString('ja-JP')}</div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span>対象号機: <b>${esc(tno)}</b></span>
+      <span>深刻度: <b>${esc(sevMap[r.severity]||r.severity||'—')}</b></span>
+    </div>
+
+    <div class="sec-head">■ 不具合内容</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      ${fld('不具合タイトル', r.finding_title)}
+      ${fld('不具合詳細', r.finding_detail)}
+      ${fld('安全への影響', r.safety_impact)}
+    </div>
+
+    <div class="sec-head">■ 原因分析（RCA）</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      ${fld('根本原因 (Root Cause)', r.root_cause)}
+      ${fld('是正処置', r.corrective_action)}
+      ${fld('再発防止策', r.preventive_action)}
+    </div>
+
+    <div class="sec-head">■ 承認欄</div>
+    <div class="ap-grid" style="margin-top:0">
+      <div class="ap-cell"><div class="role">起票者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">確認者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">電気主任技術者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">承認者</div>
+        <div class="sig" style="font-size:10px;color:#555;">${r.approved_at ? esc(fmtDt(r.approved_at)) : ''}</div>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      <span>阿武隈風力発電所 — O&amp;M コックピット</span>
+      <span>文書番号: ${esc(no)} ｜ 印刷: ${new Date().toLocaleString('ja-JP')}</span>
+    </div>`;
+}
+
+/* ── 点検実施記録 ── */
+async function renderInsp(id){
+  const rows = await sb.get(`inspection_results?id=eq.${encodeURIComponent(id)}&select=*`);
+  if(!rows?.length) throw new Error('点検実施記録が見つかりません');
+  const r   = rows[0];
+  const tno = await getTurbineNo(r.turbine_id);
+  const st  = r.approval_status || 'draft';
+
+  let planNo = '—';
+  if(r.plan_id){
+    try{
+      const p = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(r.plan_id)}&select=plan_no`);
+      planNo = p[0]?.plan_no || '—';
+    }catch(e){}
+  }
+
+  document.getElementById('barTitle').textContent = `点検実施記録 ${planNo}`;
+  document.title = `点検実施記録 — 阿武隈OS`;
+
+  // source_type ラベル
+  const srcMap = {routine:'定期点検',adhoc:'臨時点検',emergency:'緊急点検'};
+
+  sheet.innerHTML = `
+    <div class="doc-header">
+      <div>
+        <div class="company">阿武隈風力発電所 O&amp;M コックピット</div>
+        <div class="doc-title">点検実施記録</div>
+        <div class="doc-no">${esc(planNo)}</div>
+      </div>
+      <div class="doc-header-right">
+        ${badge(st)}
+        <div style="margin-top:5px;">点検日: ${fmtDt(r.inspected_at||r.created_at||'')}</div>
+        <div>印刷日時: ${new Date().toLocaleString('ja-JP')}</div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span>対象号機: <b>${esc(tno)}</b></span>
+      <span>点検計画番号: <b>${esc(planNo)}</b></span>
+      <span>種別: <b>${esc(srcMap[r.source_type]||r.source_type||'—')}</b></span>
+    </div>
+
+    <div class="sec-head">■ 点検結果</div>
+    <div class="fld-grid" style="margin-top:0">
+      ${fld('点検実施日時', fmtDt(r.inspected_at||''))}
+      ${fld('点検員', r.inspector_name||'—')}
+      ${fld('異常の説明', r.anomaly_description||'—', {span:true})}
+      ${fld('是正事項', r.corrective_action_note||'—', {span:true})}
+    </div>
+
+    <div class="sec-head">■ 安全確認</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      <div class="fld noright">
+        <label>安全確認実施</label>
+        <div class="val"><div class="check-row">
+          ${chk('KY 確認済', !!r.ky_confirmed)}
+          ${chk('LOTO 確認済', !!r.loto_confirmed)}
+        </div></div>
+      </div>
+    </div>
+
+    <div class="sec-head">■ 承認欄</div>
+    <div class="ap-grid" style="margin-top:0">
+      <div class="ap-cell"><div class="role">点検員</div><div class="sig">${esc(r.inspector_name||'')}</div></div>
+      <div class="ap-cell"><div class="role">確認者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">承認者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">承認日時</div>
+        <div class="sig" style="font-size:10px;color:#555;">${r.approved_at ? esc(fmtDt(r.approved_at)) : ''}</div>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      <span>阿武隈風力発電所 — O&amp;M コックピット</span>
+      <span>点検計画: ${esc(planNo)} ｜ 印刷: ${new Date().toLocaleString('ja-JP')}</span>
+    </div>`;
+}
+
+/* ── ルーティング ── */
+async function main(){
+  if(!TYPE || !ID){
+    sheet.innerHTML = '<div class="msg err">URLパラメータが不足しています。<br><code>?type=ptw&amp;id=xxxxxxxx</code> の形式で指定してください。</div>';
+    return;
+  }
+  try{
+    if      (TYPE==='ptw')    await renderPtw(ID);
+    else if (TYPE==='wo')     await renderWo(ID);
+    else if (TYPE==='plan')   await renderPlan(ID);
+    else if (TYPE==='defect') await renderDefect(ID);
+    else if (TYPE==='insp')   await renderInsp(ID);
+    else sheet.innerHTML = `<div class="msg err">不明な帳票種別: ${esc(TYPE)}</div>`;
+  }catch(e){
+    sheet.innerHTML = `<div class="msg err">エラー: ${esc(e.message)}</div>`;
+  }
+}
+
+sb.requireLogin({ onReady: main });
+</script>
+</body>
+</html>
