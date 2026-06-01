@@ -2970,17 +2970,18 @@
     }
 
     // ── 点検ステータスバッジ ──
+    // 状態列は「点検ステータス（業務の現在地）」のみ。承認状態は混ぜない（承認列で別表示）。
     const _EXEC_ST = {
-      not_started:      {lbl:'📅 実施待ち',     c:'#c9d1d9',bg:'rgba(201,209,217,.08)',bd:'#30363d'},
-      in_progress:      {lbl:'🔧 点検中',        c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
-      on_hold:          {lbl:'⏸ 保留',           c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
-      done:             {lbl:'📝 結果記録済',    c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
-      result_pending:   {lbl:'⏳ 結果承認待ち', c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
-      result_approved:  {lbl:'✅ 結果承認済',   c:'#7ee787',bg:'rgba(63,185,80,.08)',  bd:'rgba(63,185,80,.3)'},
-      done_anomaly:     {lbl:'🚨 異常判断中',   c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
-      anomaly_approved: {lbl:'⚠ 異常・承認済',  c:'#ff7b72',bg:'rgba(255,123,114,.08)',bd:'rgba(255,123,114,.3)'},
-      work_ordered:     {lbl:'🔧 作業票化',      c:'#d29922',bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
-      cancelled:        {lbl:'✖ 中止',           c:'#6e7681',bg:'transparent',          bd:'#30363d'},
+      not_started:      {lbl:'📅 実施待ち',   c:'#c9d1d9',bg:'rgba(201,209,217,.08)',bd:'#30363d'},
+      in_progress:      {lbl:'🔧 点検中',     c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
+      on_hold:          {lbl:'⏸ 保留',        c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+      done:             {lbl:'📝 記録済',     c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
+      result_pending:   {lbl:'📝 記録済',     c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
+      result_approved:  {lbl:'✅ クローズ',   c:'#7ee787',bg:'rgba(63,185,80,.08)',  bd:'rgba(63,185,80,.3)'},
+      done_anomaly:     {lbl:'🚨 異常判断中', c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+      anomaly_approved: {lbl:'🚨 異常判断中', c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+      work_ordered:     {lbl:'🔧 作業票化',   c:'#d29922',bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
+      cancelled:        {lbl:'✖ 中止',        c:'#6e7681',bg:'transparent',          bd:'#30363d'},
     };
     function _execStBadge(r){
       const c = _EXEC_ST[r.execution_status||'not_started']||_EXEC_ST.not_started;
@@ -2992,7 +2993,7 @@
       const st = r.latest_ir_approval;
       if(!st||st==='draft') return '<span style="font-size:12px;color:var(--muted);">未申請</span>';
       if(st==='pending')  return '<span style="font-size:12px;color:#e3b341;font-weight:700;">⏳ 申請中</span>';
-      if(st==='approved') return '<span style="font-size:12px;color:#7ee787;font-weight:700;">✅ 承認済</span>';
+      if(st==='approved') return '<span style="font-size:12px;color:#7ee787;font-weight:700;">🔒 承認済</span>';
       if(st==='returned') return '<span style="font-size:12px;color:#ff9a92;font-weight:700;">↩ 差戻し</span>';
       return '';
     }
@@ -3077,25 +3078,20 @@
       return `IR-${(r.latest_executed_date||'').replace(/-/g,'')}-${String(r.latest_result_id).slice(0,4).toUpperCase()}`;
     }
 
-    // ── 行生成（一覧8列：詳細はドロワーへ寄せる） ──
+    // ── 行生成（一覧7列：状態=点検ステータス／承認=ワークフローの2系統を分離） ──
     function _makeExecRow(r){
       const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
       const td = 'padding:9px 10px;border-bottom:1px solid var(--line);';
 
-      // 実施番号（実績がある行は青リンク→詳細ドロワー。なければ未実施・クリック不可）
-      const no = _execResultNo(r);
-      const noCell = no
-        ? `<a onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;text-decoration:none;">${esc(no)}</a>`
-        : '<span style="font-size:11.5px;color:#6e7681;">未実施</span>';
-      // 点検内容（なければ点検表名・点検区分から推定）
+      // 点検内容（なければ点検表名・点検区分から推定）→ クリックで詳細ドロワー
       const content = esc(r.inspection_content || r.checklist_names || r.inspection_category || '—');
+      const contentCell = `<span onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" title="クリックで詳細を表示" style="cursor:pointer;color:#9cd2ff;border-bottom:1px dashed rgba(156,210,255,.45);">${content}</span>`;
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
-        <td style="${td}white-space:nowrap;">${noCell}</td>
-        <td style="${td}white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
-        <td style="${td}font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
         <td style="${td}white-space:nowrap;">${_execStBadge(r)}</td>
-        <td style="${td}font-size:12.5px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${content}</td>
+        <td style="${td}font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
+        <td style="${td}white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
+        <td style="${td}font-size:12.5px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${contentCell}</td>
         <td style="${td}white-space:nowrap;">${_resultBadge(r.result_status)}</td>
         <td style="${td}white-space:nowrap;">${_irApprovalBadge(r)}</td>
         <td style="${td}white-space:nowrap;">${_execNextAction(r)}</td>
@@ -3292,7 +3288,7 @@
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       const thead = `<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-        <thead><tr>${['実施番号','点検日','号機','状態','点検内容','結果','承認','次アクション']
+        <thead><tr>${['状態','号機','点検日','点検内容','結果','承認','次アクション']
           .map(h=>`<th style="text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
