@@ -710,13 +710,16 @@
       const S     = 'text-decoration:none;font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;display:inline-block;white-space:nowrap;';
       let b = '';
       if(appSt === 'approved'){
+        const preInspection = ['planning','ready','inspecting'].includes(us);
         if(['ready','inspecting'].includes(us))
           b += `<a href="./inspection-input.html?plan_id=${pid}" style="${S}color:#7ee787;border:1px solid rgba(63,185,80,.5);">🔧 点検実施</a>`;
         else if(['done_anomaly','anomaly_open'].includes(us))
           b += `<a href="./defect-rca.html?plan_id=${pid}" style="${S}color:#f0c674;border:1px solid rgba(210,153,34,.5);">⚠ 異常判断</a>`;
-        else if(rid && ['result_recorded','result_pending','result_approved','anomaly_approved'].includes(us))
+        else if(['result_recorded','result_pending','result_approved','anomaly_approved'].includes(us))
           b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${S}color:#8b949e;border:1px solid var(--line);">📋 結果</a>`;
-        b += `<a href="./ky-loto.html?plan_id=${pid}" style="${S}color:#e3b341;border:1px solid rgba(210,153,34,.4);">⚠ KY</a>`;
+        // 安全準備（KY/LOTO）は「必要で、かつ点検実施前」のときだけ補助表示（点検実施のゲートではない）
+        if((r['ky_required'] || r['loto_required']) && preInspection)
+          b += `<a href="./ky-loto.html?plan_id=${pid}" style="${S}color:#e3b341;border:1px solid rgba(210,153,34,.4);">⚠ KY/LOTO準備</a>`;
       }
       return b || '<span style="font-size:11px;color:var(--muted);">—</span>';
     }
