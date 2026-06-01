@@ -274,17 +274,22 @@ function buildSafetyHtml(id,s){
   const kyState  = !s.ky_required?chip('—',mu):(s.ky_completed?chip('実施済',ok):chip('未実施',ng));
   const kyExtra  = s.ky_completed?(fmt(s.ky_completed_at)+(s.ky_completed_by_name?(' / '+sb.esc(s.ky_completed_by_name)):'')):'';
   const ptwLbl   = _ptwStateLabel(s.ptw_status);
-  const ptwState = !s.ptw_required?chip('—',mu):(s.ptw_approved?chip('承認済',ok):chip(ptwLbl,ptwLbl==='差戻し'?ng:wn));
+  const ptwState = !s.ptw_required?chip('—',mu):(s.ptw_approved_for_start?chip('承認済',ok):(s.ptw_closed?chip('完了(許可終了)',mu):chip(ptwLbl,ptwLbl==='差戻し'?ng:wn)));
   const ptwExtra = s.ptw_permit_no?sb.esc(s.ptw_permit_no):'';
   const lotoState= !s.loto_required?chip('—',mu):(s.loto_unlocked?chip('施錠済・解除済',ok):(s.loto_locked?chip('施錠済・解除未了',wn):chip('未施錠',ng)));
   const lotoExtra= [s.loto_locked?('施錠 '+fmt(s.loto_locked_at)):'',s.loto_unlocked?('解除 '+fmt(s.loto_unlocked_at)):''].filter(Boolean).join(' / ');
   const row=(l,n,st,ex)=>`<tr><td style="padding:4px 8px;color:#fff;font-weight:700;">${l}</td><td style="padding:4px 8px;">${n}</td><td style="padding:4px 8px;">${st}</td><td style="padding:4px 8px;color:#8b949e;font-size:11px;">${ex||'—'}</td></tr>`;
+  // 開始ゲート：PTWはapproved必須（closedは開始不可）
   const startGaps=[];
   if(s.ky_required&&!s.ky_completed) startGaps.push('KY未実施');
-  if(s.ptw_required&&!s.ptw_approved) startGaps.push('PTW'+ptwLbl);
+  if(s.ptw_required&&!s.ptw_approved_for_start) startGaps.push('PTW未承認');
   if(s.loto_required&&!s.loto_locked) startGaps.push('LOTO未施錠');
-  const closeGaps=[...startGaps];
-  if(s.loto_required&&!s.loto_unlocked) closeGaps.push('LOTO解除未了');
+  // クローズゲート：PTWはapprovedまたはclosed可、LOTOは解除必須
+  const closeGaps=[];
+  if(s.ky_required&&!s.ky_completed) closeGaps.push('KY未実施');
+  if(s.ptw_required&&!s.ptw_approved_for_start&&!s.ptw_closed) closeGaps.push('PTW未承認');
+  if(s.loto_required&&!s.loto_locked) closeGaps.push('LOTO未施錠');
+  if(s.loto_required&&s.loto_locked&&!s.loto_unlocked) closeGaps.push('LOTO未解除');
   const woApproved=s.approval_status==='approved';
   const Bd='font-size:12px;font-weight:700;border:none;border-radius:7px;padding:6px 13px;cursor:pointer;';
   const Bdis='font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:7px;padding:6px 13px;background:#21262d;color:#6e7681;cursor:not-allowed;';
