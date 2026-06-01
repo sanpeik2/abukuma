@@ -2663,20 +2663,40 @@
 
 
     async function reloadList(){
-
-
-
-
-      const rows=await sb.get("v_inspection_results_list?order=実施日.desc&limit=30");
-
-
-
-
-      renderList(rows);
-
-
-
-
+      const body=$("listBody");
+      if(body) body.innerHTML='<div class="loading">読み込み中…</div>';
+      try{
+        const orderCol=encodeURIComponent("実施日");
+        const rows=await sb.get(`v_inspection_results_list?order=${orderCol}.desc&limit=30`);
+        renderList(Array.isArray(rows)?rows:[]);
+      }catch(e){
+        console.warn("点検実績一覧の取得に失敗:", e);
+        try{
+          const fallback=await sb.get("inspection_results?select=*&order=submitted_at.desc&limit=30");
+          const rows=(fallback||[]).map(r=>({
+            "実施日": (r.submitted_at||r.inspection_date||r.created_at||"").slice(0,10),
+            "風車": r.turbine_no||r.turbine_id||"",
+            "結果表示": r.result_status||"",
+            "結果": r.result_status||"",
+            "ng項目数": r.ng_count||0,
+            "チェック項目数": r.check_count||0,
+            "異常あり": !!(r.has_anomaly || r.result_status==="ng"),
+            "異常内容": r.finding_summary||r.comments||"",
+            "深刻度": r.severity||"–",
+            "天候": r.weather||"",
+            "風速ms": r.wind_speed_ms,
+            "コメント": r.comments||""
+          }));
+          renderList(rows);
+          if(body){
+            body.insertAdjacentHTML("afterbegin", '<div style="margin-bottom:8px;color:#e3b341;font-size:12px;">⚠ 集計ビューが取得できないため、点検結果テーブルから簡易表示しています。</div>');
+          }
+        }catch(e2){
+          if(body){
+            body.innerHTML='<div class="err">最近の点検実績を取得できませんでした: '+esc(e2.message||e2)+'<br><span style="color:var(--muted);font-size:12px;">元エラー: '+esc(e.message||e)+'</span><br><button type="button" onclick="reloadList()" style="margin-top:8px;background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;">再読み込み</button></div>';
+          }
+        }
+      }
     }
 
 
@@ -3157,6 +3177,7 @@
         const _b=document.getElementById('execListBody');
         if(_b) _b.innerHTML='<div class="err">取得エラー: '+esc(e.message)+'</div>';
       }
+    }
 
     function togglePtwNumber(){
       const req = document.getElementById('f_ptw_req_y')?.checked;
