@@ -93,7 +93,7 @@
 
 
 
-  .wrap{padding:18px 22px 50px}
+  .wrap{padding:18px 16px 50px}
 
 
 
@@ -1089,7 +1089,9 @@
       document.querySelector('.topbar .sub').textContent = '点検結果を表示しています（入力・登録不可）';
       const allCards = document.querySelectorAll('.wrap .card');
       allCards[0].style.display = 'none';
-      allCards[1].querySelector('h2').textContent = '📋 点検結果（閲覧モード）';
+      // 結果は #historyCard 内の #listBody に描画されるため、閲覧モードでは必ず表示する
+      const hc = document.getElementById('historyCard');
+      if(hc){ hc.style.display = 'block'; const hh=hc.querySelector('h2'); if(hh) hh.textContent='📋 点検結果（閲覧モード）'; const sub=hc.querySelector('div[style*="margin-bottom:10px"]'); if(sub) sub.style.display='none'; }
       const body = $('listBody');
 
       // ── 臨時点検（result_id 直接指定）──
@@ -3090,10 +3092,10 @@
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
         <td style="${td}white-space:nowrap;">${noCell}</td>
-        <td style="${td}white-space:nowrap;">${_execStBadge(r)}</td>
         <td style="${td}white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
         <td style="${td}font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
-        <td style="${td}font-size:12.5px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${content}</td>
+        <td style="${td}white-space:nowrap;">${_execStBadge(r)}</td>
+        <td style="${td}font-size:12.5px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${content}</td>
         <td style="${td}white-space:nowrap;">${_resultBadge(r.result_status)}</td>
         <td style="${td}white-space:nowrap;">${_irApprovalBadge(r)}</td>
         <td style="${td}white-space:nowrap;">${_execNextAction(r)}</td>
@@ -3290,7 +3292,7 @@
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       const thead = `<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-        <thead><tr>${['実施番号','状態','点検日','号機','点検内容','結果','承認','次アクション']
+        <thead><tr>${['実施番号','点検日','号機','状態','点検内容','結果','承認','次アクション']
           .map(h=>`<th style="text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
@@ -3303,6 +3305,8 @@
       const card = document.createElement('div');
       card.id = 'execListCard';
       card.className = 'card';
+      // フルワイド表示（端から端まで）
+      card.style.cssText = 'background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 14px;margin-bottom:24px;width:100%;';
 
       // フィルタータブ HTML
       const filterHtml = _EXEC_FILTERS.map(f=>
@@ -3320,7 +3324,7 @@
         </div>
         <div id="execFilters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${filterHtml}</div>
         <div id="execKpi" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
-        <div id="execListBody" class="loading">読み込み中…</div>`;
+        <div id="execListBody" class="loading" style="overflow-x:auto;">読み込み中…</div>`;
       wrap.insertAdjacentElement('afterbegin', card);
       // フィルタータブにイベント付与
       const _fStyle  = 'background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;';
