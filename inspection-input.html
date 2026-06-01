@@ -3329,8 +3329,8 @@
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       // 列幅（合計100%）：固定レイアウトで全列を画面内に収める
       const cols = [
-        ['実施番号',8],['計画番号',6],['点検日',7],['号機',5],['点検表名',13],
-        ['作業種別・内容',14],['状態',8],['結果',7],['NG/全',4],['深刻度',5],['承認',6],['P/K/L',5],['次アクション',12]
+        ['実施番号',7],['計画番号',5],['点検日',7],['号機',5],['点検表名',16],
+        ['作業種別・内容',18],['状態',7],['結果',6],['NG/全',4],['深刻度',5],['承認',6],['P/K/L',5],['次アクション',9]
       ];
       const colgroup = '<colgroup>'+cols.map(c=>`<col style="width:${c[1]}%">`).join('')+'</colgroup>';
       const thead = `<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;">
