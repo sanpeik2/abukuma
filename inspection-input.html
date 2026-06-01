@@ -3095,15 +3095,12 @@
       const tdn = 'padding:7px 7px;border-bottom:1px solid var(--line);vertical-align:top;font-size:11.5px;white-space:nowrap;line-height:1.4;';
       const hasResult = !!r.latest_result_id;
 
-      // 実施番号（実績がある行は青リンク→詳細ドロワー。なければ未実施）
+      // 実施番号（実績がある行は青リンク→詳細ドロワー。なければ未実施）／計画番号はホバーで表示
       const no = _execResultNo(r);
+      const planTip = r.plan_no ? `計画番号 ${esc(r.plan_no)}（クリックで詳細）` : '計画なし（臨時／異常確認点検）';
       const noCell = no
         ? `<a onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" style="font-family:monospace;font-size:11px;font-weight:700;color:#58a6ff;cursor:pointer;text-decoration:none;">${esc(no)}</a>`
         : '<span style="font-size:11px;color:#6e7681;">未実施</span>';
-      // 計画番号
-      const planCell = r.plan_no
-        ? `<span style="font-family:monospace;font-size:11px;color:#8b949e;">${esc(r.plan_no)}</span>`
-        : '<span style="color:#6e7681;">—</span>';
       // 点検表名（なければ区分から推定）→ クリックで詳細ドロワー
       const clText = r.checklist_names ? esc(r.checklist_names) : `（${esc(r.inspection_category||'点検')}）`;
       const clCell = `<span onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" title="クリックで詳細を表示" style="cursor:pointer;color:${r.checklist_names?'#7ee787':'#9cd2ff'};border-bottom:1px dashed rgba(156,210,255,.45);">${clText}</span>`;
@@ -3117,8 +3114,7 @@
         : '<span style="color:#6e7681;">—</span>';
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
-        <td style="${tdn}">${noCell}</td>
-        <td style="${tdn}">${planCell}</td>
+        <td style="${tdn}" title="${planTip}">${noCell}</td>
         <td style="${tdn}">${esc(r.planned_date||'')}</td>
         <td style="${tdn}font-weight:700;color:#fff;font-family:monospace;font-size:13px;">${esc(r.turbine_no||'')}</td>
         <td style="${td}">${clCell}</td>
@@ -3324,8 +3320,8 @@
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       // 列幅（合計100%）：固定レイアウトで全列を画面内に収める
       const cols = [
-        ['実施番号',8],['計画番号',7],['点検日',7],['号機',5],['点検表名',10],
-        ['作業種別・内容',18],['状態',9],['結果',8],['NG/全',4],['深刻度',5],['承認',6],['P/K/L',6],['次アクション',7]
+        ['実施番号',9],['点検日',7],['号機',5],['点検表名',11],
+        ['作業種別・内容',20],['状態',9],['結果',8],['NG/全',5],['深刻度',5],['承認',6],['P/K/L',6],['次アクション',9]
       ];
       const colgroup = '<colgroup>'+cols.map(c=>`<col style="width:${c[1]}%">`).join('')+'</colgroup>';
       const thead = `<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;">
