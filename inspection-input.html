@@ -2985,11 +2985,12 @@
                + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
         case 'on_hold':
           return B('▶ 再開',`setResume(event,'${r.plan_id}')`, 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;');
-        case 'done':
-          const subBtn = (rid && r.latest_ir_approval!=='pending'&&r.latest_ir_approval!=='approved')
-            ? B('📨 承認申請',`submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;margin-left:4px;')
+        case 'done': {
+          const subBtn = (rid && r.latest_ir_approval!=='pending' && r.latest_ir_approval!=='approved')
+            ? B('📨 承認申請', `submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;margin-left:4px;')
             : '';
           return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);') + subBtn;
+        }
         case 'result_pending':
           return '<span style="font-size:11.5px;color:#e3b341;font-weight:700;">⏳ 承認待ち</span>';
         case 'result_approved':
