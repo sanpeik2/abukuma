@@ -787,23 +787,10 @@ async function openWoEdit(id){
           </label>
         </div>
       </div>
-      <!-- 作業前安全確認（実施時に使用） -->
-      <div id="wo_safety_wrap" style="margin:12px 0;padding:10px 12px;border:1px solid rgba(210,153,34,.5);border-radius:8px;background:rgba(210,153,34,.08);">
-        <div style="font-size:11.5px;font-weight:700;color:#e3b341;margin-bottom:8px;">⚠ 作業前安全確認（作業開始前に必ずチェック）</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid #30363d;background:#0d1117;">
-            <input type="checkbox" id="we_ky_conf" ${d.ky_confirmed?'checked':''} style="width:15px;height:15px;accent-color:#e3b341;">
-            <span><b style="color:#e3b341;">KY（危険予知）</b> 実施済み</span>
-            ${d.ky_confirmed?'<span style="margin-left:auto;font-size:10px;color:#7ee787;">✓ 確認済</span>':''}
-          </label>
-          <label id="wo_loto_conf_wrap" style="display:${(d.loto_required)?'inline-flex':'none'};align-items:center;gap:8px;font-size:12.5px;cursor:pointer;padding:6px 10px;border-radius:6px;border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.04);">
-            <input type="checkbox" id="we_loto_conf" ${d.loto_confirmed?'checked':''} style="width:15px;height:15px;accent-color:#ff9a92;">
-            <span><b style="color:#ff9a92;">LOTO（施錠・タグアウト）</b> 施錠確認済み</span>
-            ${d.loto_confirmed?'<span style="margin-left:auto;font-size:10px;color:#7ee787;">✓ 確認済</span>':''}
-          </label>
-        </div>
-        <button onclick="saveWoSafetyConfirm('${sb.esc(id)}')" style="margin-top:8px;font-size:12px;font-weight:700;background:#238636;color:#fff;border:none;padding:6px 14px;border-radius:7px;cursor:pointer;">✓ 安全確認を記録</button>
-        <a href="./ky-loto.html?work_order_id=${sb.esc(id)}" style="margin-top:8px;display:inline-block;font-size:12px;font-weight:700;color:#e3b341;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:7px;padding:6px 14px;text-decoration:none;">⚠ KY・LOTOシートを開く</a>
+      <!-- 実施・承認・解除は「作業許可（PTW/KY/LOTO）」画面で記録する（作業票は要否のみ管理） -->
+      <div style="margin:12px 0;padding:10px 12px;border:1px dashed rgba(210,153,34,.45);border-radius:8px;background:rgba(210,153,34,.05);">
+        <div style="font-size:11.5px;color:#8b949e;margin-bottom:8px;">KY・PTW・LOTOの<b style="color:#e3b341;">実施・承認・解除</b>は作業許可画面で記録します（作業票では要否のみ設定）。</div>
+        <a href="./ky-loto.html?work_order_id=${sb.esc(id)}" style="display:inline-block;font-size:12px;font-weight:700;color:#e3b341;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:7px;padding:6px 14px;text-decoration:none;">⚠ 作業許可・KY/LOTOを開く</a>
       </div>
       <div id="we_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
       <div style="display:flex;gap:8px;">
