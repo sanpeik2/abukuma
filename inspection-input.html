@@ -1,0 +1,3331 @@
+﻿<!DOCTYPE html>
+
+
+
+
+<html lang="ja">
+
+
+
+
+<head>
+
+
+
+
+<meta charset="UTF-8">
+
+
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+
+<title>阿武隈OS — 点検実績入力（ライブ）</title>
+
+
+
+
+<style>
+
+
+
+
+  :root{
+
+
+
+
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+
+
+
+
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+
+
+
+
+  }
+
+
+
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+
+
+
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+
+
+
+
+  a{color:var(--master);text-decoration:none}
+
+
+
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+
+
+
+
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+
+
+
+
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+
+
+
+
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+
+
+
+
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+
+
+
+
+  .wrap{padding:18px 22px 50px;max-width:1100px;margin:0 auto}
+
+
+
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:24px}
+
+
+
+
+  .card h2{font-size:15px;color:#fff;margin-bottom:6px}
+
+
+
+
+  .hint{font-size:12px;color:var(--muted);margin-bottom:16px}
+
+
+
+
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+
+
+
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+
+
+
+
+  label .req{color:#ff9a92;font-weight:700;margin-left:2px}
+
+
+
+
+  label .opt{color:var(--muted);font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:5px}
+
+
+
+
+  label .help{display:block;color:#6e7681;font-size:10.5px;font-weight:400;margin-top:2px}
+
+
+
+
+  /* ログインオーバーレイ内のinputは除外してスコープを絞る */
+  .wrap input,.wrap select,.wrap textarea,
+  .drawer-body input,.drawer-body select,.drawer-body textarea{
+    width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;display:block;}
+
+
+
+
+  .wrap input:focus,.wrap select:focus,.wrap textarea:focus,
+  .drawer-body input:focus,.drawer-body select:focus,.drawer-body textarea:focus{outline:none;border-color:var(--master)}
+
+
+
+
+  input.bad,textarea.bad,select.bad{border-color:var(--defect)}
+
+
+
+
+  textarea{min-height:60px;resize:vertical}
+
+
+
+
+  .full{grid-column:1/-1}
+
+
+
+
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+
+
+
+
+  .seg button{flex:1;min-width:62px;background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:9px 6px;border-radius:8px;font-size:13px;cursor:pointer;transition:.12s}
+
+
+
+
+  .seg button:hover{border-color:var(--muted)}
+
+
+
+
+  .seg button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
+
+
+
+
+  .seg.sev button.on[data-v="critical"],.seg.sev button.on[data-v="high"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92}
+
+
+
+
+  .ferr{color:#ff9a92;font-size:11px;margin-top:5px;display:none}
+
+
+
+
+  .ferr.show{display:block}
+
+
+
+
+  /* checklist */
+
+
+
+
+  .clhead{display:flex;align-items:center;gap:10px;margin:6px 0 10px;flex-wrap:wrap}
+
+
+
+
+  .clhead .sets{display:flex;gap:6px;flex-wrap:wrap}
+
+
+
+
+  .clhead .sets button{background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:7px 12px;border-radius:8px;font-size:12.5px;cursor:pointer}
+
+
+
+
+  .clhead .sets button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
+
+
+
+
+  .summary{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+
+
+
+
+  .summary .chip{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 11px;color:var(--muted)}
+
+
+
+
+  .summary .chip b{color:#fff}
+
+
+
+
+  .summary .chip.ng b{color:#ff9a92} .summary .chip.ok b{color:#7ee787} .summary .chip.todo b{color:#f0c674}
+
+
+
+
+  .items{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}
+
+
+
+
+  .item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel2)}
+
+
+
+
+  .item.ok{border-color:rgba(63,185,80,.5)} .item.ng{border-color:rgba(248,81,73,.6);background:rgba(248,81,73,.05)} .item.na{opacity:.5}
+
+
+
+
+  .item .nm{font-size:13.5px;color:#fff;font-weight:700;display:flex;align-items:center;gap:8px}
+
+
+
+
+  .item .crit{font-size:11px;color:var(--muted);margin:2px 0 9px}
+
+
+
+
+  .item .meas{display:flex;align-items:center;gap:8px}
+
+
+
+
+  .item .meas input{max-width:120px}
+
+
+
+
+  .item .meas .unit{font-size:12px;color:var(--muted)}
+
+
+
+
+  .item .meas .prev{font-size:11px;color:#6e7681}
+
+
+
+
+  .jbadge{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid;margin-left:auto;white-space:nowrap}
+
+
+
+
+  .jbadge.j-ok{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
+
+
+
+
+  .jbadge.j-ng{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.12)}
+
+
+
+
+  .jbadge.j-na{color:var(--muted);border-color:var(--line)}
+
+
+
+
+  .jbadge.j-none{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
+
+
+
+
+  .vbtns{display:flex;gap:6px;margin-top:2px}
+
+
+
+
+  .vbtns button{flex:1;background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:8px;border-radius:7px;font-size:12.5px;cursor:pointer}
+
+
+
+
+  .vbtns button.on[data-v="ok"]{border-color:var(--insp);background:rgba(63,185,80,.16);color:#7ee787;font-weight:700}
+
+
+
+
+  .vbtns button.on[data-v="ng"]{border-color:var(--defect);background:rgba(248,81,73,.16);color:#ff9a92;font-weight:700}
+
+
+
+
+  .vbtns button.on[data-v="na"]{border-color:var(--muted);color:#fff;font-weight:700}
+
+
+
+
+  .nabtn{margin-left:6px;background:#0d1117;border:1px solid var(--line);color:var(--muted);font-size:11px;padding:4px 9px;border-radius:7px;cursor:pointer}
+
+
+
+
+  .nabtn.on{border-color:var(--muted);color:#fff}
+
+
+
+
+  .icomment{margin-top:9px;display:none} .icomment.show{display:block}
+
+
+
+
+  .icomment textarea{min-height:42px;font-size:12px}
+
+
+
+
+  .submit{margin-top:18px}
+
+
+
+
+  .submit .errsum{font-size:12.5px;color:#f0c674;margin-bottom:10px;display:none}
+
+
+
+
+  .submit .errsum.show{display:block}
+
+
+
+
+  .btn{border:none;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer}
+
+
+
+
+  .btn-primary{background:var(--master);color:#04183a}
+
+
+
+
+  .btn-go{background:var(--insp);color:#04210d}
+
+
+
+
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+
+
+
+
+  .btn:disabled{opacity:.45;cursor:default}
+
+
+
+
+  .msg{font-size:13px;font-weight:700;margin-left:12px}
+
+
+
+
+  .msg.ok{color:#7ee787} .msg.ng{color:#ff9a92}
+
+
+
+
+  .confirm{border:1px solid var(--master);background:rgba(88,166,255,.06);border-radius:10px;padding:16px 18px;margin-top:16px;display:none}
+
+
+
+
+  .confirm.show{display:block}
+
+
+
+
+  .confirm h3{font-size:13.5px;color:#9cd2ff;margin-bottom:12px}
+
+
+
+
+  .confirm .crow{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+
+
+
+
+  .confirm .ck{width:96px;color:var(--muted);flex-shrink:0}
+
+
+
+
+  .confirm .cv{color:#fff} .confirm .cv.warn{color:#ff9a92;font-weight:700}
+
+
+
+
+  .confirm table{margin-top:10px}
+
+
+
+
+  .confirm .cbtns{display:flex;gap:10px;margin-top:14px}
+
+
+
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+
+
+
+
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+
+
+
+
+  th{color:var(--muted);font-weight:600;font-size:11px}
+
+
+
+
+  tr.anom td,tr.ng td{background:rgba(248,81,73,.06)}
+
+
+
+
+  .loading{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
+
+
+
+
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+
+
+
+
+  /* ===== 右スライドドロワー ===== */
+  .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+  .drawer-overlay.open{opacity:1;pointer-events:auto}
+  .drawer-panel{position:fixed;top:0;right:0;height:100%;width:min(600px,100vw);background:#161b22;border-left:1px solid #30363d;z-index:201;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column;}
+  .drawer-panel.open{transform:translateX(0)}
+  .drawer-header{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #30363d;background:#11161d;position:sticky;top:0;z-index:1;}
+  .drawer-header h2{margin:0;font-size:16px;color:#fff;flex:1}
+  .drawer-header .close-btn{background:transparent;border:1px solid #30363d;color:#8b949e;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;display:grid;place-items:center;}
+  .drawer-header .close-btn:hover{border-color:#58a6ff;color:#58a6ff}
+  .drawer-body{padding:18px 20px;flex:1}
+</style>
+
+
+
+
+</head>
+
+
+
+
+<body>
+
+<!-- ===== 右スライドドロワー（点検登録フォーム）===== -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer-panel" id="drawerPanel">
+  <div class="drawer-header">
+    <h2 id="drawerTitle">📝 点検実績を登録</h2>
+    <button class="close-btn" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+
+
+
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:14px 18px 12px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;"><span style="display:flex;flex-direction:column;line-height:1.15;border-left:3px solid rgb(63,185,80);padding-left:9px;flex:0 0 auto;"><b style="color:#e6edf3;font-size:12.5px;font-weight:800;letter-spacing:.04em;">業務フロー</b><span style="color:#6e7681;font-size:10px;">現在地</span></span><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(63,185,80);background:rgba(63,185,80,.13);border:1px solid rgba(63,185,80,.45);">🟢 点検フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">4 / 11</span><span style="flex:0 0 auto;display:inline-block;width:120px;max-width:30vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:30%;border-radius:999px;background:rgb(63,185,80);"></span></span></div><div style="display:flex;align-items:flex-start;flex-wrap:wrap;row-gap:6px;"><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./index.html" title="今日の管制塔（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">今日の管制塔</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./live-board.html" title="監視（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">監視</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-plan.html" title="点検計画（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検計画</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><div title="現在この画面です" aria-current="step" style="display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:rgb(63,185,80);color:#11161d;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:2px solid rgb(63,185,80);box-shadow:0 0 0 4px rgba(63,185,80,.22);box-sizing:border-box;">4</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#fff;font-weight:800;max-width:78px;word-break:break-word;">点検実施</span></div></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="異常判断（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">5</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">異常判断</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業票（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">6</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業票</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./permits.html" title="PTW/KY（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">7</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">PTW/KY</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./approvals.html" title="承認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">8</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">承認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">9</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="復旧確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">10</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">復旧確認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./report-candidates.html" title="クローズ・報告確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">11</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">クローズ・報告確認</span></a></div></div></nav>
+
+
+
+
+  <div class="topbar">
+
+
+
+
+    <div class="mark">AW</div>
+
+
+
+
+    <div>
+
+
+
+
+      <h1>点検実績入力</h1>
+
+
+
+
+      <div class="sub">阿武隈OS ライブ盤 — 項目別チェック（測定値→基準で自動判定）</div>
+
+
+
+
+    </div>
+
+
+
+
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="wrap">
+
+
+
+
+    <div class="card" id="registrationCard" style="display:none;">
+      <h2 id="formTitle">📝 新規 点検実績を登録</h2>
+      <!-- 臨時点検モード時のみ表示 -->
+      <div id="adhocFields" style="display:none;margin-bottom:18px;padding:12px 14px;border:1px solid rgba(219,97,162,.4);border-radius:9px;background:rgba(219,97,162,.06);">
+        <div style="font-size:12.5px;font-weight:700;color:#db61a2;margin-bottom:10px;" id="adhocModeTitle">🔴 臨時点検 — 起点と理由を入力してください（監査証跡として必須）</div>
+        <div class="form-grid">
+          <div>
+            <label>点検種別<span class="req">*</span><span class="help">この点検の種類・起点</span></label>
+            <select id="f_source_type" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;">
+              <optgroup label="── 臨時点検（計画外）">
+                <option value="scada">🔴 SCADAアラーム発報</option>
+                <option value="alarm">🔴 アラーム発報</option>
+                <option value="manual">🟡 現場判断（目視異常等）</option>
+                <option value="chief_instruction">🟡 主任技術者指示</option>
+              </optgroup>
+              <optgroup label="── 異常確認点検">
+                <option value="anomaly_check">🔍 異常確認点検（原因特定のための点検）</option>
+                <option value="recovery">🔍 復旧確認点検</option>
+              </optgroup>
+              <optgroup label="── その他">
+                <option value="weather">天候後確認</option>
+                <option value="manual">現場判断（その他）</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="full">
+            <label>理由・状況<span class="req">*</span><span class="help">例: WTG-07 ギアボックス温度上昇 85℃ / SCADA アラーム発報 10:32</span></label>
+            <textarea id="f_source_reason" placeholder="点検に至った経緯・状況を記録してください" style="min-height:50px;width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+            <div class="ferr" id="e_source_reason">臨時点検の理由は必須です。</div>
+          </div>
+        </div>
+      </div>
+
+
+
+
+      <div class="hint"><span style="color:#ff9a92">*</span> は必須。<b>点検セットを選ぶと項目が出ます</b>。測定値を入れると<b>基準と自動照合してOK/NGを判定</b>します（判定ミス防止）。目視項目はOK/NGを選択。点検しない項目は「対象外」。全項目に入力すると登録できます。 → <a href="./guide-inspection-do.html">② 点検実行の基本</a></div>
+
+
+
+
+
+
+
+
+
+      <div class="form-grid" id="form">
+
+
+
+
+        <div>
+
+
+
+
+          <label>号機<span class="req">*</span></label>
+
+
+
+
+          <select id="f_wtg"></select>
+
+
+
+
+          <div class="ferr" id="e_wtg">号機を選択してください。</div>
+
+
+
+
+        </div>
+
+
+
+
+        <div>
+
+
+
+
+          <label>実施日<span class="req">*</span><span class="help">未来の日付は選べません</span></label>
+
+
+
+
+          <input type="date" id="f_date">
+
+
+
+
+          <div class="ferr" id="e_date">実施日が不正です（未来日は不可）。</div>
+
+
+
+
+        </div>
+
+
+
+
+        <div>
+
+
+
+
+          <label>天候<span class="opt">任意</span></label>
+
+
+
+
+          <div class="seg" id="seg_weather" data-clear="1">
+
+
+
+
+            <button type="button" data-v="晴れ">晴れ</button>
+
+
+
+
+            <button type="button" data-v="曇り">曇り</button>
+
+
+
+
+            <button type="button" data-v="雨">雨</button>
+
+
+
+
+            <button type="button" data-v="雪">雪</button>
+
+
+
+
+            <button type="button" data-v="強風">強風</button>
+
+
+
+
+          </div>
+
+
+
+
+        </div>
+
+
+
+
+        <div>
+
+
+
+
+          <label>風速 (m/s)<span class="opt">任意</span><span class="help">0〜40 の範囲</span></label>
+
+
+
+
+          <input type="number" id="f_wind" step="0.1" min="0" max="40" placeholder="例: 5.2">
+
+
+
+
+          <div class="ferr" id="e_wind">風速は 0〜40 m/s で入力してください。</div>
+
+
+
+
+        </div>
+
+
+
+
+      </div>
+
+
+
+
+
+
+
+
+
+      <div style="margin-top:18px">
+
+
+
+
+        <label>点検セット<span class="req">*</span><span class="help">何を点検するか。セットで項目が決まります</span></label>
+
+
+
+
+        <div class="clhead">
+
+
+
+
+          <div class="sets" id="sets">
+
+
+
+
+            <button type="button" data-s="drive">駆動系・電気（測定）</button>
+
+
+
+
+            <button type="button" data-s="visual">目視巡視</button>
+
+
+
+
+            <button type="button" data-s="both">両方（全項目）</button>
+
+
+
+
+          </div>
+
+
+
+
+        </div>
+
+
+
+
+        <div class="summary" id="summary"></div>
+
+
+
+
+        <div class="ferr" id="e_set" style="margin-bottom:8px">点検セットを選んでください。</div>
+
+
+
+
+        <div class="items" id="items"></div>
+
+
+
+
+        <div class="ferr" id="e_items">未入力の項目があります。すべて OK / NG / 対象外 を入力してください。</div>
+
+
+
+
+      </div>
+
+
+
+
+
+
+
+
+
+      <div class="form-grid" style="margin-top:18px">
+
+
+
+
+        <div class="full" id="sevWrap" style="display:none">
+
+
+
+
+          <label>全体の深刻度<span class="req">*</span><span class="help">NG項目があるため必須</span></label>
+
+
+
+
+          <div class="seg sev" id="seg_sev">
+
+
+
+
+            <button type="button" data-v="low">低</button>
+
+
+
+
+            <button type="button" data-v="medium">中</button>
+
+
+
+
+            <button type="button" data-v="high">高</button>
+
+
+
+
+            <button type="button" data-v="critical">重大</button>
+
+
+
+
+          </div>
+
+
+
+
+          <div class="ferr" id="e_sev">NG項目があるため深刻度は必須です。</div>
+
+
+
+
+        </div>
+
+
+
+
+        <!-- 作業前安全確認セクション -->
+        <div class="full" id="safetyCheckSection" style="padding:12px 14px;border:1px solid rgba(210,153,34,.4);border-radius:9px;background:rgba(210,153,34,.06);">
+          <div style="font-size:12.5px;font-weight:700;color:#e3b341;margin-bottom:10px;">⚠ 作業前安全確認（点検開始前に必ず確認してください）</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label id="ky_check_wrap" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;border-radius:7px;border:1px solid #30363d;background:#0d1117;">
+              <input type="checkbox" id="f_ky_confirmed" style="width:16px;height:16px;accent-color:#e3b341;">
+              <span><b style="color:#e3b341;">KY（危険予知）</b> 実施済み — チームで危険箇所・対策を共有した</span>
+            </label>
+            <label id="loto_check_wrap" style="display:none;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;border-radius:7px;border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.04);">
+              <input type="checkbox" id="f_loto_confirmed" style="width:16px;height:16px;accent-color:#ff9a92;">
+              <span><b style="color:#ff9a92;">LOTO（施錠・タグアウト）</b> 施錠確認済み — 対象機器の施錠・タグを確認した</span>
+            </label>
+          </div>
+          <div class="ferr" id="e_safety" style="margin-top:8px;">作業前安全確認をすべてチェックしてください。</div>
+        </div>
+
+        <!-- PTW セクション -->
+        <div class="full" id="ptwSection">
+          <label>PTW（作業許可書）</label>
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:nowrap;margin-bottom:6px;">
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;"><input type="radio" id="f_ptw_req_n" name="f_ptw_req" value="0" checked onchange="togglePtwNumber()" style="width:auto;display:inline;"> 不要</label>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;"><input type="radio" id="f_ptw_req_y" name="f_ptw_req" value="1" onchange="togglePtwNumber()" style="width:auto;display:inline;"> 要（番号を入力）</label>
+            <a href="./permits.html" target="_blank" style="font-size:11.5px;color:#58a6ff;white-space:nowrap;">📋 デジタルPTWを申請 →</a>
+          </div>
+          <div id="ptwNumberWrap" style="display:none;">
+            <input type="text" id="f_ptw_number" placeholder="例: PTW-2026-001（取得済みPTW番号を記録）" style="width:100%;background:#0d1117;border:1px solid rgba(219,97,162,.5);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;">
+            <div style="font-size:11px;color:#e3b341;margin-top:4px;">口頭・紙で取得済みの場合も番号を記録してください。後から permits.html で正式登録も可能です。</div>
+          </div>
+        </div>
+        <div class="full"><label>全体コメント<span class="opt">任意</span></label><textarea id="f_comment" placeholder="所見・備考（異常なしでも気づきがあれば）"></textarea></div>
+
+
+
+
+        <div class="full">
+
+
+
+
+          <label>写真 / BOX リンク (URL)<span class="opt">任意</span></label>
+
+
+
+
+          <input type="url" id="f_box" placeholder="https://app.box.com/...">
+
+
+
+
+          <div class="ferr" id="e_box">URL は http(s):// で始めてください。</div>
+
+
+
+
+        </div>
+
+
+
+
+      </div>
+
+
+
+
+
+
+
+
+
+      <div class="submit">
+
+
+
+
+        <div class="errsum" id="errsum"></div>
+
+
+
+
+        <button class="btn btn-primary" id="checkBtn">内容を確認</button>
+
+
+
+
+        <span class="msg" id="formMsg"></span>
+
+
+
+
+      </div>
+
+
+
+
+
+
+
+
+
+      <div class="confirm" id="confirm">
+
+
+
+
+        <h3>この内容で登録します。よろしいですか？</h3>
+
+
+
+
+        <div id="confirmBody"></div>
+
+
+
+
+        <div class="cbtns">
+
+
+
+
+          <button class="btn btn-go" id="goBtn">この内容で登録</button>
+
+
+
+
+          <button class="btn btn-ghost" id="backBtn">修正に戻る</button>
+
+
+
+
+        </div>
+
+
+
+
+      </div>
+
+
+
+
+    </div>
+
+
+
+
+
+
+
+
+
+    <div class="card">
+
+
+
+
+      <h2>📋 最近の点検実績</h2>
+
+
+
+
+      <div id="listBody" class="loading">読み込み中…</div>
+
+
+
+
+    </div>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <script src="./lib/supabase.js"></script>
+
+
+
+
+  <script>
+
+
+
+
+    const esc = sb.esc;
+    const READONLY = new URLSearchParams(location.search).get('readonly') === '1';
+
+    /* ===== 結果閲覧モード（readonly=1 で遷移した場合）===== */
+    async function enterReadonly(){
+      const pid = new URLSearchParams(location.search).get('plan_id');
+      const rid = new URLSearchParams(location.search).get('result_id');
+      document.title = '点検結果（閲覧） — 阿武隈風力発電';
+      document.querySelector('.topbar h1').textContent = '点検結果（閲覧モード）';
+      document.querySelector('.topbar .sub').textContent = '点検結果を表示しています（入力・登録不可）';
+      const allCards = document.querySelectorAll('.wrap .card');
+      allCards[0].style.display = 'none';
+      allCards[1].querySelector('h2').textContent = '📋 点検結果（閲覧モード）';
+      const body = $('listBody');
+
+      // ── 臨時点検（result_id 直接指定）──
+      if(!pid && rid){
+        try{
+          const [irRows, clRows] = await Promise.all([
+            sb.get(`inspection_results?id=eq.${encodeURIComponent(rid)}&select=*`),
+            sb.get(`result_checklist?result_id=eq.${encodeURIComponent(rid)}&order=created_at.asc`)
+          ]);
+          const ir = irRows && irRows[0];
+          if(!ir){ body.innerHTML='<div class="err">点検結果が見つかりません。</div>'; return; }
+          const tno2 = (state.turbines.find(t=>t.id===ir.turbine_id)||{}).turbine_no||'–';
+          const SEV_JA={low:'低',medium:'中',high:'高',critical:'重大'};
+          const sev = ir.severity?(SEV_JA[ir.severity]||ir.severity):'–';
+          const isNg = ir.result_status==='ng'||ir.has_anomaly;
+          const kindLbl = ir.source_type ? (SOURCE_LABEL[ir.source_type]||ir.source_type) : '臨時点検';
+          let html = `<div style="margin-bottom:12px;padding:10px 14px;border:1px solid rgba(219,97,162,.4);border-radius:9px;background:rgba(219,97,162,.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;">
+            <span style="color:#db61a2;font-weight:700;">🔴 臨時点検</span>
+            <b style="color:#fff;">${esc(tno2)}</b>
+            <span style="color:var(--muted);">実施日: ${esc(ir.executed_date||'–')}</span>
+            <span style="color:var(--muted);">起点: ${esc(kindLbl)}</span>
+            ${ir.source_reason?`<span style="color:var(--muted);">理由: ${esc(ir.source_reason)}</span>`:''}
+            <a href="./inspection-input.html" style="margin-left:auto;font-size:12px;color:#58a6ff;">← 点検実施一覧へ</a>
+          </div>`;
+          html += renderResultCard(ir, tno2, sev, isNg, clRows||[], pid);
+          body.innerHTML = html;
+        }catch(e){ body.innerHTML=`<div class="err">取得エラー: ${esc(e.message)}</div>`; }
+        return;
+      }
+
+      if(!pid){
+        body.innerHTML = '<div class="err">表示する点検結果が指定されていません。<a href="./inspection-input.html">← 点検実施一覧へ</a></div>';
+        return;
+      }
+      try{
+        const [planRows, irRows] = await Promise.all([
+          sb.get(`inspection_plans?id=eq.${encodeURIComponent(pid)}&select=turbine_id,planned_date,work_type,status`),
+          sb.get(`inspection_results?plan_id=eq.${encodeURIComponent(pid)}&order=submitted_at.desc`)
+        ]);
+        const plan = planRows && planRows[0];
+        let html = '';
+        // 計画情報バナー
+        if(plan){
+          const tno = (state.turbines.find(t => t.id === plan.turbine_id)||{}).turbine_no || '(不明)';
+          html += `<div style="margin-bottom:14px;padding:10px 14px;border:1px solid rgba(63,185,80,.4);border-radius:9px;background:rgba(63,185,80,.08);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;">
+            <span style="color:#7ee787;">📋 点検計画</span>
+            <b style="color:#fff;">${esc(tno)}</b>
+            ${plan.planned_date ? `<span style="color:var(--muted);">予定日: ${esc(plan.planned_date)}</span>` : ''}
+            ${plan.work_type ? `<span style="color:var(--muted);">${esc(plan.work_type)}</span>` : ''}
+            <a href="./inspection-plan.html" style="margin-left:auto;font-size:12px;color:#58a6ff;text-decoration:none;">← 点検計画一覧へ戻る</a>
+          </div>`;
+        }
+        const SEV_JA = {low:'低', medium:'中', high:'高', critical:'重大'};
+        if(!irRows || !irRows.length){
+          html += '<div style="color:var(--muted);padding:12px 0;">この計画の点検結果はまだ登録されていません。</div>';
+        } else {
+          // チェックリスト一括取得（全 result_id を IN で）
+          const idList = irRows.map(r => encodeURIComponent(r.id)).join(',');
+          let clMap = {};
+          try{
+            const clRows = await sb.get(`result_checklist?result_id=in.(${irRows.map(r=>r.id).join(',')})&order=result_id.asc`);
+            (clRows||[]).forEach(c => { if(!clMap[c.result_id]) clMap[c.result_id]=[]; clMap[c.result_id].push(c); });
+          }catch(e2){ /* チェックリスト取得失敗は表示を続行 */ }
+
+          html += irRows.map(r => {
+            const tno2 = (state.turbines.find(t => t.id === r.turbine_id)||{}).turbine_no || '–';
+            const isNg = r.result_status === 'ng' || r.has_anomaly;
+            const overall = isNg ? '<b style="color:#ff9a92;">🔴 NG（異常あり）</b>' : '<b style="color:#7ee787;">🟢 OK</b>';
+            const sev = r.severity ? (SEV_JA[r.severity]||r.severity) : '–';
+            // チェックリスト折りたたみ
+            const clItems = clMap[r.id] || [];
+            const ngCnt = clItems.filter(c => c.check_result==='ng').length;
+            const clDetail = clItems.length ? `
+              <details style="margin-top:10px;">
+                <summary style="cursor:pointer;font-size:12px;color:#9fb0bd;list-style:none;padding:4px 0;display:flex;align-items:center;gap:8px;">
+                  <span>▶ 点検項目詳細</span>
+                  <span style="background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:10.5px;">${clItems.length}件</span>
+                  ${ngCnt>0?`<span style="color:#ff9a92;font-size:10.5px;font-weight:700;">NG ${ngCnt}件</span>`:''}
+                </summary>
+                <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11.5px;">
+                  <thead><tr>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">点検項目</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">判定</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">測定値</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">基準</th>
+                    <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);font-size:10.5px;">コメント</th>
+                  </tr></thead>
+                  <tbody>${clItems.map(cl => {
+                    const jcol = cl.check_result==='ng'?'#ff9a92':cl.check_result==='ok'?'#7ee787':'#788694';
+                    const jtxt = cl.check_result==='ng'?'NG':cl.check_result==='ok'?'OK':cl.check_result==='na'?'対象外':'–';
+                    const meas = cl.measured_value!=null ? `${cl.measured_value}${esc(cl.unit||'')}` : (cl.measured_text ? esc(cl.measured_text) : (cl.criteria_text?'目視':'–'));
+                    const crit = cl.criteria_text ? esc(cl.criteria_text) : (cl.criteria_min!=null ? `${cl.criteria_min}〜${cl.criteria_max} ${esc(cl.unit||'')}` : '–');
+                    return `<tr style="${cl.check_result==='ng'?'background:rgba(248,81,73,.06);':''}">
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);">${esc(cl.check_item||'')}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);color:${jcol};font-weight:700;">${jtxt}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);">${meas}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;">${crit}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);">${esc(cl.comment||'')}</td>
+                    </tr>`;
+                  }).join('')}</tbody>
+                </table>
+              </details>` : '';
+            return `<div data-result-id="${r.id}" style="border:1px solid ${isNg?'rgba(248,81,73,.4)':'var(--line)'};border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${isNg?'rgba(248,81,73,.04)':'var(--panel2)'};">
+              <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+                <span style="font-size:12px;color:var(--muted);">${esc(r.executed_date||'–')}</span>
+                <b style="color:#fff;">${esc(tno2)}</b>
+                ${overall}
+                ${sev!=='–'?`<span style="font-size:11.5px;color:var(--muted);">深刻度: ${esc(sev)}</span>`:''}
+                <span style="font-size:11.5px;color:var(--muted);">天候: ${esc(r.weather||'–')}</span>
+                ${r.approval_status==='approved'?'<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">🔒 承認済</span>':r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">⏳ 承認待ち</span>':r.approval_status==='returned'?'<span style="font-size:11px;color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">↩ 差戻し</span>':''}
+              </div>
+              ${r.anomaly_description?`<div style="margin-top:6px;font-size:12px;color:#ff9a92;">異常内容: ${esc(r.anomaly_description)}</div>`:''}
+              ${r.comments?`<div style="margin-top:4px;font-size:12px;color:var(--muted);">${esc(r.comments)}</div>`:''}
+              ${clDetail}
+              <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="openResultEdit('${r.id}')" style="font-size:11.5px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:5px 10px;cursor:pointer;">✏ 編集</button>`:''}
+                ${isNg?`<a href="./defect-rca.html?inspection_result_id=${encodeURIComponent(r.id)}${pid?'&plan_id='+encodeURIComponent(pid):''}" style="display:inline-block;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">⚠ 異常判断へ進む →</a>`:`<span style="font-size:12px;color:#7ee787;">✓ 記録済み</span>`}
+                ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="submitResultApproval('${r.id}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;cursor:pointer;">📨 承認申請</button>`:''}
+                ${r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;">⏳ 承認待ち</span>':''}
+              </div>
+            </div>`;
+          }).join('');
+        }
+        body.innerHTML = html;
+      }catch(e){
+        body.innerHTML = `<div class="err">取得エラー: ${esc(e.message)}</div>`;
+      }
+    }
+
+
+
+
+    /* ===== 結果カード共通レンダラー ===== */
+    function renderResultCard(r, tno2, sev, isNg, clItems, pid){
+      const overall = isNg ? '<b style="color:#ff9a92;">🔴 NG（異常あり）</b>' : '<b style="color:#7ee787;">🟢 OK</b>';
+      const ngCnt = clItems.filter(c=>c.check_result==='ng').length;
+      const clDetail = clItems.length ? `<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;color:#9fb0bd;list-style:none;padding:4px 0;display:flex;align-items:center;gap:8px;"><span>▶ 点検項目詳細</span><span style="background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:10.5px;">${clItems.length}件</span>${ngCnt>0?`<span style="color:#ff9a92;font-size:10.5px;font-weight:700;">NG ${ngCnt}件</span>`:''}</summary>
+        <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11.5px;"><thead><tr>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">項目</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">判定</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">測定値</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">基準</th>
+          <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">コメント</th>
+        </tr></thead><tbody>${clItems.map(cl=>{
+          const jcol=cl.check_result==='ng'?'#ff9a92':cl.check_result==='ok'?'#7ee787':'#788694';
+          const jtxt=cl.check_result==='ng'?'NG':cl.check_result==='ok'?'OK':cl.check_result==='na'?'対象外':'–';
+          const meas=cl.measured_value!=null?`${cl.measured_value}${esc(cl.unit||'')}`:cl.measured_text?esc(cl.measured_text):'–';
+          const crit=cl.criteria_text?esc(cl.criteria_text):(cl.criteria_min!=null?`${cl.criteria_min}〜${cl.criteria_max} ${esc(cl.unit||'')}`:'–');
+          return `<tr style="${cl.check_result==='ng'?'background:rgba(248,81,73,.06);':''}"><td style="padding:4px 8px;border-bottom:1px solid var(--line);">${esc(cl.check_item||'')}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);color:${jcol};font-weight:700;">${jtxt}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);">${meas}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;">${crit}</td><td style="padding:4px 8px;border-bottom:1px solid var(--line);color:var(--muted);">${esc(cl.comment||'')}</td></tr>`;
+        }).join('')}</tbody></table></details>` : '';
+      return `<div data-result-id="${r.id}" style="border:1px solid ${isNg?'rgba(248,81,73,.4)':'var(--line)'};border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${isNg?'rgba(248,81,73,.04)':'var(--panel2)'};">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <span style="font-size:12px;color:var(--muted);">${esc(r.executed_date||'–')}</span>
+          <b style="color:#fff;">${esc(tno2)}</b>
+          ${overall}
+          ${sev!=='–'?`<span style="font-size:11.5px;color:var(--muted);">深刻度: ${esc(sev)}</span>`:''}
+          <span style="font-size:11.5px;color:var(--muted);">天候: ${esc(r.weather||'–')}</span>
+          ${r.approval_status==='approved'?'<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">🔒 承認済</span>':r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">⏳ 承認待ち</span>':r.approval_status==='returned'?'<span style="font-size:11px;color:#ff9a92;border:1px solid rgba(248,81,73,.5);border-radius:5px;padding:1px 7px;margin-left:auto;">↩ 差戻し</span>':''}
+        </div>
+        ${r.anomaly_description?`<div style="margin-top:6px;font-size:12px;color:#ff9a92;">異常内容: ${esc(r.anomaly_description)}</div>`:''}
+        ${r.comments?`<div style="margin-top:4px;font-size:12px;color:var(--muted);">${esc(r.comments)}</div>`:''}
+        ${clDetail}
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="openResultEdit('${r.id}')" style="font-size:11.5px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:5px 10px;cursor:pointer;">✏ 編集</button>`:''}
+          ${isNg?`<a href="./defect-rca.html?inspection_result_id=${encodeURIComponent(r.id)}${pid?'&plan_id='+encodeURIComponent(pid):''}" style="display:inline-block;background:#d29922;color:#11161d;font-weight:700;text-decoration:none;font-size:12.5px;padding:7px 14px;border-radius:8px;white-space:nowrap;">⚠ 異常判断へ進む →</a>`:`<span style="font-size:12px;color:#7ee787;">✓ 記録済み</span>`}
+          ${(r.approval_status!=='approved'&&r.approval_status!=='pending')?`<button onclick="submitResultApproval('${r.id}')" style="font-size:11px;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;cursor:pointer;">📨 承認申請</button>`:''}
+          ${r.approval_status==='pending'?'<span style="font-size:11px;color:#e3b341;">⏳ 承認待ち</span>':''}
+        </div>
+      </div>`;
+    }
+
+    const $ = id => document.getElementById(id);
+
+
+
+
+    const sevLabel = { low:"低", medium:"中", high:"高", critical:"重大" };
+
+
+
+
+
+
+
+
+
+    // ===== チェックリストマスタ（DBから読み込む） =====
+    // CATALOG は互換用に残す（古い参照が残っている箇所のフォールバック）
+    const CATALOG = {}; // 廃止 → DB マスタに移行済み
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    // 起点ラベル（フォーム用）
+    const SOURCE_LABEL = {manual:'現場判断',scada:'SCADA異常',alarm:'アラーム発報',weather:'天候後確認',recovery:'復旧確認',chief_instruction:'主任技術者指示'};
+    // 作業種別表示（一覧用）— 起点に応じて「臨時/緊急」か「臨時」に分類
+    const SOURCE_KIND  = {manual:'臨時',scada:'臨時/緊急',alarm:'臨時/緊急',weather:'臨時',recovery:'臨時',chief_instruction:'臨時'};
+    const state = {
+      turbines:[], userId:null, weather:"", sev:"", set:"", items:{},
+      submitting:false, adhocMode:false,
+      dbTemplates:[],   // inspection_checklist_templates
+      dbItems:[],       // 現在選択中テンプレートの items（UI形式に変換済み）
+      templateId:null   // 現在選択中テンプレートのUUID
+    };
+
+
+
+
+
+
+
+
+
+    /* DB アイテムを UI 形式に変換 */
+    function dbItemToUiItem(d){
+      const isVisual = (d.input_type==='visual'||d.input_type==='boolean'||d.input_type==='text');
+      if(isVisual) return { k:d.item_code, n:d.item_name, visual:true, crit:d.criteria_text||'確認', dbId:d.id };
+      return { k:d.item_code, n:d.item_name, unit:d.unit||'', min:Number(d.criteria_min)||0, max:Number(d.criteria_max)||9999, dbId:d.id };
+    }
+
+    function curItems(){
+      // DBマスタ読込後はそちらを使う
+      if(state.dbItems && state.dbItems.length) return state.dbItems;
+
+
+
+
+      return [];
+
+
+
+
+    }
+
+
+
+
+    function st(k){ return state.items[k] || (state.items[k]={value:"",vis:"",na:false,comment:""}); }
+
+
+
+
+    // item の判定: '' | 'ok' | 'ng' | 'na'
+
+
+
+
+    function judge(it){
+
+
+
+
+      const s = st(it.k);
+
+
+
+
+      if(s.na) return "na";
+
+
+
+
+      if(it.visual) return s.vis || "";
+
+
+
+
+      if(s.value==="" || s.value===null) return "";
+
+
+
+
+      const v = Number(s.value);
+
+
+
+
+      if(isNaN(v)) return "";
+
+
+
+
+      return (v >= it.min && v <= it.max) ? "ok" : "ng";
+
+
+
+
+    }
+
+
+
+
+    const badgeTxt = {ok:"OK", ng:"NG", na:"対象外", "":"未入力"};
+
+
+
+
+    const badgeCls = {ok:"j-ok", ng:"j-ng", na:"j-na", "":"j-none"};
+
+
+
+
+
+
+
+
+
+    // ===== checklist 描画 =====
+
+
+
+
+    function renderChecklist(){
+
+
+
+
+      const wrap = $("items"); const its = curItems();
+
+
+
+
+      if(!its.length){ wrap.innerHTML=""; return; }
+
+
+
+
+      wrap.innerHTML = its.map(it=>{
+
+
+
+
+        const s = st(it.k); const j = judge(it);
+
+
+
+
+        const crit = it.visual ? ("基準: "+it.crit) : ("基準: "+it.min+"〜"+it.max+" "+it.unit);
+
+
+
+
+        const meas = it.visual
+
+
+
+
+          ? `<div class="vbtns" data-k="${it.k}">
+
+
+
+
+               <button type="button" data-v="ok"  class="${s.vis==='ok'?'on':''}">OK</button>
+
+
+
+
+               <button type="button" data-v="ng"  class="${s.vis==='ng'?'on':''}">NG</button>
+
+
+
+
+               <button type="button" data-v="na"  class="${s.na?'on':''}">対象外</button>
+
+
+
+
+             </div>`
+
+
+
+
+          : `<div class="meas">
+
+
+
+
+               <input type="number" step="0.1" data-k="${it.k}" value="${s.na?'':esc(s.value)}" ${s.na?'disabled':''} placeholder="測定値">
+
+
+
+
+               <span class="unit">${esc(it.unit)}</span>
+
+
+
+
+               <button type="button" class="nabtn ${s.na?'on':''}" data-na="${it.k}">対象外</button>
+
+
+
+
+             </div>`;
+
+
+
+
+        return `<div class="item ${j}" data-item="${it.k}">
+
+
+
+
+          <div class="nm">${esc(it.n)}<span class="jbadge ${badgeCls[j]}" data-badge="${it.k}">${badgeTxt[j]}</span></div>
+
+
+
+
+          <div class="crit">${esc(crit)}</div>
+
+
+
+
+          ${meas}
+
+
+
+
+          <div class="icomment ${j==='ng'?'show':''}" data-cmt="${it.k}">
+
+
+
+
+            <textarea placeholder="NGの内容（どこが・どう異常か）" data-cval="${it.k}">${esc(s.comment)}</textarea>
+
+
+
+
+          </div>
+
+
+
+
+        </div>`;
+
+
+
+
+      }).join("");
+
+
+
+
+      bindItemEvents();
+
+
+
+
+      validate();
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function refreshItem(it){
+
+
+
+
+      const j = judge(it);
+
+
+
+
+      const card = document.querySelector(`[data-item="${it.k}"]`);
+
+
+
+
+      if(!card) return;
+
+
+
+
+      card.className = "item " + j;
+
+
+
+
+      const b = card.querySelector(`[data-badge="${it.k}"]`);
+
+
+
+
+      b.className = "jbadge " + badgeCls[j]; b.textContent = badgeTxt[j];
+
+
+
+
+      const cmt = card.querySelector(`[data-cmt="${it.k}"]`);
+
+
+
+
+      cmt.classList.toggle("show", j==="ng");
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function bindItemEvents(){
+
+
+
+
+      // 測定値入力 → 自動判定
+
+
+
+
+      $("items").querySelectorAll('input[type="number"][data-k]').forEach(inp=>
+
+
+
+
+        inp.addEventListener("input", e=>{
+
+
+
+
+          const k=e.target.dataset.k; st(k).value=e.target.value; st(k).na=false;
+
+
+
+
+          refreshItem(curItems().find(x=>x.k===k)); validate();
+
+
+
+
+        }));
+
+
+
+
+      // 対象外（測定項目）
+
+
+
+
+      $("items").querySelectorAll('[data-na]').forEach(btn=>
+
+
+
+
+        btn.addEventListener("click", e=>{
+
+
+
+
+          const k=e.target.dataset.na; const s=st(k); s.na=!s.na; if(s.na) s.value="";
+
+
+
+
+          renderChecklist();
+
+
+
+
+        }));
+
+
+
+
+      // 目視 OK/NG/対象外
+
+
+
+
+      $("items").querySelectorAll('.vbtns').forEach(g=>
+
+
+
+
+        g.querySelectorAll("button").forEach(btn=>
+
+
+
+
+          btn.addEventListener("click", ()=>{
+
+
+
+
+            const k=g.dataset.k; const v=btn.dataset.v; const s=st(k);
+
+
+
+
+            if(v==="na"){ s.na=!s.na; s.vis=""; }
+
+
+
+
+            else { s.na=false; s.vis = (s.vis===v? "" : v); }
+
+
+
+
+            renderChecklist();
+
+
+
+
+          })));
+
+
+
+
+      // NGコメント
+
+
+
+
+      $("items").querySelectorAll('[data-cval]').forEach(t=>
+
+
+
+
+        t.addEventListener("input", e=>{ st(e.target.dataset.cval).comment=e.target.value; }));
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // ===== セット選択 =====
+
+
+
+
+    /* ===== DBテンプレートからセット選択UIを動的生成 ===== */
+    async function loadAndRenderTemplateSets(){
+      try{
+        const temps = await sb.get('inspection_checklist_templates?is_active=eq.true&order=sort_order.asc');
+        state.dbTemplates = temps || [];
+        const setsEl = $('sets');
+        if(!setsEl) return;
+        setsEl.innerHTML = state.dbTemplates.map(t =>
+          `<button type="button" data-s="${esc(t.template_code)}" data-tid="${esc(t.id)}">${esc(t.template_name)}</button>`
+        ).join('');
+        // イベント再バインド
+        setsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', onSetClick));
+      }catch(e){ console.warn('テンプレート読込失敗:', e.message); }
+    }
+
+    async function onSetClick(){
+      const b = this;
+      $("sets").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      const code = b.dataset.s;
+      const tid  = b.dataset.tid;
+      state.set = code; state.items = {}; state.dbItems = []; state.templateId = tid;
+      $("e_set").classList.remove("show");
+      // DBからチェック項目を読み込む
+      try{
+        const dbRows = await sb.get(`inspection_check_items?template_id=eq.${encodeURIComponent(tid)}&is_active=eq.true&order=sort_order.asc`);
+        state.dbItems = (dbRows||[]).map(dbItemToUiItem);
+        state.templateId = tid;
+      }catch(e){ console.warn('項目読込失敗:', e.message); state.dbItems=[]; }
+      renderChecklist(); validate();
+    }
+
+    $("sets").querySelectorAll("button").forEach(b=>
+      b.addEventListener("click", onSetClick));
+
+    // ダミーイベント（既存コードとの互換用 — 実際は loadAndRenderTemplateSets で上書き）
+    $("sets").querySelectorAll("button").forEach(b=>
+      b.addEventListener("click", ()=>{
+        $("sets").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+        b.classList.add("on");
+        state.set = b.dataset.s; state.items = {};
+        renderChecklist(); validate();
+
+
+
+
+      }));
+
+
+
+
+
+
+
+
+
+    // ===== 共通 segmented =====
+
+
+
+
+    function bindSeg(segId, onPick){
+
+
+
+
+      const seg=$(segId);
+
+
+
+
+      seg.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+
+
+
+
+        const v=b.dataset.v; const already=b.classList.contains("on");
+
+
+
+
+        seg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+
+
+
+
+        let picked=v; if(already && seg.dataset.clear){picked="";} else b.classList.add("on");
+
+
+
+
+        onPick(picked);
+
+
+
+
+      }));
+
+
+
+
+    }
+
+
+
+
+    bindSeg("seg_weather", v=>{ state.weather=v; });
+
+
+
+
+    bindSeg("seg_sev", v=>{ state.sev=v; validate(); });
+
+
+
+
+
+
+
+
+
+    // ===== バリデーション =====
+
+
+
+
+    function setErr(el,errId,bad){ if(errId)$(errId).classList.toggle("show",bad); if(el)el.classList.toggle("bad",bad); }
+
+
+
+
+    function counts(){
+
+
+
+
+      const its=curItems(); let ok=0,ng=0,na=0,todo=0;
+
+
+
+
+      its.forEach(it=>{ const j=judge(it); if(j==="ok")ok++; else if(j==="ng")ng++; else if(j==="na")na++; else todo++; });
+
+
+
+
+      return {total:its.length, ok, ng, na, todo};
+
+
+
+
+    }
+
+
+
+
+    function renderSummary(){
+
+
+
+
+      const c=counts(); const s=$("summary");
+
+
+
+
+      if(!curItems().length){ s.innerHTML=""; return; }
+
+
+
+
+      s.innerHTML =
+
+
+
+
+        `<span class="chip">項目 <b>${c.total}</b></span>
+
+
+
+
+         <span class="chip ok">OK <b>${c.ok}</b></span>
+
+
+
+
+         <span class="chip ng">NG <b>${c.ng}</b></span>
+
+
+
+
+         <span class="chip">対象外 <b>${c.na}</b></span>
+
+
+
+
+         <span class="chip todo">未入力 <b>${c.todo}</b></span>`;
+
+
+
+
+    }
+
+
+
+
+    function collect(){
+
+
+
+
+      const windRaw=$("f_wind").value;
+
+
+
+
+      return { wtg:$("f_wtg").value, date:$("f_date").value,
+
+
+
+
+        wind: windRaw===""?null:Number(windRaw), windRaw,
+
+
+
+
+        box:$("f_box").value.trim(), comment:$("f_comment").value.trim(), weather:state.weather };
+
+
+
+
+    }
+
+
+
+
+    function validate(){
+
+
+
+
+      const d=collect(); const c=counts(); const today=new Date().toISOString().slice(0,10);
+
+
+
+
+      const errs=[];
+
+
+
+
+      const eW=!d.wtg; setErr($("f_wtg"),"e_wtg",eW); if(eW)errs.push("号機");
+
+
+
+
+      const eD=!d.date||d.date>today; setErr($("f_date"),"e_date",eD); if(eD)errs.push("実施日");
+
+
+
+
+      const eSet=!state.set; setErr(null,"e_set",eSet); if(eSet)errs.push("点検セット");
+
+
+
+
+      const eWind=d.wind!==null&&(isNaN(d.wind)||d.wind<0||d.wind>40); setErr($("f_wind"),"e_wind",eWind); if(eWind)errs.push("風速");
+
+
+
+
+      const eBox=d.box!==""&&!/^https?:\/\//i.test(d.box); setErr($("f_box"),"e_box",eBox); if(eBox)errs.push("BOXリンク");
+
+
+
+
+      const eItems = !eSet && c.todo>0; setErr(null,"e_items",eItems); if(eItems)errs.push("未入力項目 "+c.todo+"件");
+
+
+
+
+      // NGがあれば深刻度必須
+
+
+
+
+      const hasNg=c.ng>0; $("sevWrap").style.display=hasNg?"block":"none";
+
+
+
+
+      const eSev=hasNg && !state.sev; setErr(null,"e_sev",eSev); if(eSev)errs.push("深刻度");
+
+
+
+
+      // 全項目対象外は不可（最低1つは点検）
+
+
+
+
+      const eAllNa = !eSet && c.total>0 && c.ok===0 && c.ng===0; if(eAllNa)errs.push("少なくとも1項目は点検");
+
+      // 安全確認チェック（KY は常に必須、LOTO は要の場合のみ）
+      const kyChk  = document.getElementById('f_ky_confirmed')?.checked;
+      const lotoEl = document.getElementById('loto_check_wrap');
+      const lotoRequired = lotoEl && lotoEl.style.display !== 'none';
+      const lotoChk = document.getElementById('f_loto_confirmed')?.checked;
+      const eSafety = !kyChk || (lotoRequired && !lotoChk);
+      setErr(null, "e_safety", eSafety);
+      if(eSafety) errs.push("作業前安全確認");
+
+
+
+
+
+
+
+
+
+      renderSummary();
+
+
+
+
+      const ok=errs.length===0; $("checkBtn").disabled=!ok;
+
+
+
+
+      const sum=$("errsum");
+
+
+
+
+      if(ok){ sum.classList.remove("show"); sum.textContent=""; }
+
+
+
+
+      else { sum.classList.add("show"); sum.textContent="未入力・不正: "+errs.join(" / "); }
+
+
+
+
+      return ok ? d : null;
+
+
+
+
+    }
+
+
+
+
+    ["f_wtg","f_date","f_wind","f_box","f_comment"].forEach(id=>$(id).addEventListener("input",validate));
+
+
+
+
+
+
+
+
+
+    // ===== 確認ステップ =====
+
+
+
+
+    function checkedItems(){ return curItems().filter(it=>{const j=judge(it);return j==="ok"||j==="ng";}); }
+
+
+
+
+    function showConfirm(d){
+
+
+
+
+      const wtgNo=(state.turbines.find(t=>t.id===d.wtg)||{}).turbine_no||d.wtg;
+
+
+
+
+      const c=counts(); const overall=c.ng>0?"NG（異常あり）":"OK（異常なし）";
+
+
+
+
+      let rows=`
+
+
+
+
+        <div class="crow"><div class="ck">号機</div><div class="cv">${esc(wtgNo)}</div></div>
+
+
+
+
+        <div class="crow"><div class="ck">実施日</div><div class="cv">${esc(d.date)}</div></div>
+
+
+
+
+        <div class="crow"><div class="ck">点検セット</div><div class="cv">${esc((state.dbTemplates.find(t=>t.template_code===state.set)||{}).template_name||state.set||'—')}</div></div>
+
+
+
+
+        <div class="crow"><div class="ck">総合判定</div><div class="cv ${c.ng>0?'warn':''}">${esc(overall)}（OK ${c.ok} / NG ${c.ng} / 対象外 ${c.na}）</div></div>`;
+
+
+
+
+      if(c.ng>0) rows+=`<div class="crow"><div class="ck">深刻度</div><div class="cv ${(state.sev==='high'||state.sev==='critical')?'warn':''}">${esc(sevLabel[state.sev]||"（未選択）")}</div></div>`;
+
+
+
+
+      rows+=`<div class="crow"><div class="ck">天候 / 風速</div><div class="cv">${esc(d.weather||"—")} ${d.wind!=null?esc(d.wind)+" m/s":""}</div></div>`;
+
+
+
+
+      if(d.comment) rows+=`<div class="crow"><div class="ck">コメント</div><div class="cv">${esc(d.comment)}</div></div>`;
+
+
+
+
+      if(d.box) rows+=`<div class="crow"><div class="ck">BOX</div><div class="cv">${esc(d.box)}</div></div>`;
+
+
+
+
+      // 項目テーブル
+
+
+
+
+      const trs=checkedItems().map(it=>{const j=judge(it);const s=st(it.k);
+
+
+
+
+        const val=it.visual?"目視":(esc(s.value)+" "+esc(it.unit));
+
+
+
+
+        const crit=it.visual?esc(it.crit):(it.min+"〜"+it.max);
+
+
+
+
+        return `<tr class="${j==='ng'?'ng':''}"><td>${esc(it.n)}</td><td>${val}</td><td style="color:var(--muted)">${crit}</td><td><b style="color:${j==='ng'?'#ff9a92':'#7ee787'}">${badgeTxt[j]}</b></td><td>${esc(s.comment||"")}</td></tr>`;
+
+
+
+
+      }).join("");
+
+
+
+
+      rows+=`<table><thead><tr><th>項目</th><th>測定値</th><th>基準</th><th>判定</th><th>備考</th></tr></thead><tbody>${trs}</tbody></table>`;
+
+
+
+
+      $("confirmBody").innerHTML=rows;
+
+
+
+
+      $("confirm").classList.add("show"); $("checkBtn").style.display="none";
+
+
+
+
+      $("confirm").scrollIntoView({behavior:"smooth",block:"nearest"});
+
+
+
+
+    }
+
+
+
+
+    $("checkBtn").addEventListener("click",()=>{const d=validate(); if(d)showConfirm(d);});
+
+
+
+
+    $("backBtn").addEventListener("click",()=>{$("confirm").classList.remove("show");$("checkBtn").style.display="inline-block";$("formMsg").textContent="";});
+
+
+
+
+
+
+
+
+
+    async function getUserId(){
+
+
+
+
+      const res=await fetch(`${sb.URL}/auth/v1/user`,{headers:sb.headers()});
+
+
+
+
+      if(!res.ok) return null; return (await res.json()).id||null;
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // ===== 登録（確認後）=====
+
+
+
+
+    $("goBtn").addEventListener("click", async ()=>{
+
+
+
+
+      if(state.submitting) return;
+
+
+
+
+      const d=validate(); if(!d){ $("backBtn").click(); return; }
+
+
+
+
+      state.submitting=true;
+
+
+
+
+      const go=$("goBtn"), msg=$("formMsg");
+
+
+
+
+      go.disabled=true; $("backBtn").disabled=true; msg.className="msg"; msg.textContent="登録中…";
+
+
+
+
+      try{
+
+
+
+
+        if(!state.userId) state.userId=await getUserId();
+
+
+
+
+        const items=checkedItems();
+
+
+
+
+        const ngItems=items.filter(it=>judge(it)==="ng");
+
+
+
+
+        const overall = ngItems.length>0 ? "ng" : "ok";
+
+
+
+
+        let comment=d.comment; if(d.box) comment=(comment?comment+"\n":"")+"BOX: "+d.box;
+
+
+
+
+        const anomDesc = ngItems.length
+
+
+
+
+          ? ngItems.map(it=>{const s=st(it.k);return it.n+(it.visual?"":"："+s.value+it.unit)+(s.comment?("（"+s.comment+"）"):"");}).join(" / ")
+
+
+
+
+          : null;
+
+
+
+
+        // 1) 親: inspection_results
+
+
+
+
+        const ins=await sb.write("POST","inspection_results",{
+
+
+
+
+          turbine_id:d.wtg, executed_date:d.date, executed_by:state.userId,
+          plan_id:state.planId||null,
+          source_type: state.adhocMode ? ($('f_source_type')?.value||'manual') : 'planned',
+          source_reason: state.adhocMode ? ($('f_source_reason')?.value?.trim()||null) : null,
+          ptw_required:   document.getElementById('f_ptw_req_y')?.checked ?? false,
+          ptw_number:     document.getElementById('f_ptw_req_y')?.checked ? (document.getElementById('f_ptw_number')?.value?.trim()||null) : null,
+          ky_confirmed:   document.getElementById('f_ky_confirmed')?.checked ?? false,
+          loto_confirmed: document.getElementById('f_loto_confirmed')?.checked ?? false,
+
+
+
+
+          weather:d.weather||null, wind_speed_ms:d.wind,
+
+
+
+
+          result_status:overall, has_anomaly:ngItems.length>0,
+
+
+
+
+          anomaly_description:anomDesc, severity:(ngItems.length>0?state.sev:null),
+
+
+
+
+          comments:comment||null, submitted_at:new Date().toISOString()
+
+
+
+
+        });
+
+
+
+
+        const resultId=Array.isArray(ins)?ins[0].id:ins.id;
+
+
+
+
+        // 2) 子: result_checklist（OK/NG項目のみ。対象外は登録しない）
+
+
+
+
+        const rows=items.map(it=>{const s=st(it.k);const j=judge(it);
+
+
+
+
+          return { result_id:resultId,
+            check_item:it.n,
+            check_item_id: it.dbId || null,
+            checklist_template_id: state.templateId || null,
+            check_result:j,
+
+
+
+
+            measured_value: it.visual?null:(s.value===""?null:Number(s.value)),
+
+
+
+
+            unit: it.visual?null:it.unit,
+
+
+
+
+            criteria_min: it.visual?null:it.min, criteria_max: it.visual?null:it.max,
+
+
+
+
+            criteria_text: it.visual?it.crit:null,
+
+
+
+
+            comment: s.comment||null };
+
+
+
+
+        });
+
+
+
+
+        if(rows.length) await sb.write("POST","result_checklist",rows);
+
+
+
+
+
+
+
+
+
+        msg.className="msg ok"; msg.textContent="✓ 登録しました（項目 "+rows.length+"件）";
+        if(ngItems.length>0){ msg.innerHTML = '✓ 登録しました（項目 '+rows.length+'件・<b style="color:#f0c674;">異常あり</b>）<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><span style="color:#8b949e;font-size:11.5px;">次のアクション:</span><a href="./defect-rca.html?inspection_result_id='+encodeURIComponent(resultId)+(state.planId?'&plan_id='+encodeURIComponent(state.planId):'')+'" style="text-decoration:none;font-size:12px;color:#d29922;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:5px 10px;">異常判断へ進む →</a><a href="./work-orders.html?inspection_result_id='+encodeURIComponent(resultId)+'" style="text-decoration:none;font-size:12px;color:#11161d;background:#d29922;font-weight:700;border-radius:6px;padding:5px 10px;">作業票を作成</a></div>'; }
+
+
+
+
+        if(state.planId){ try{ await sb.write("PATCH",`inspection_plans?id=eq.${encodeURIComponent(state.planId)}`,{status:"completed"}); }catch(e){} state.planId=null; history.replaceState({},"",location.pathname); }
+        // reset
+
+
+
+
+        $("confirm").classList.remove("show"); $("checkBtn").style.display="inline-block";
+        // 登録完了 → ドロワーを少し待って閉じて一覧を更新
+        setTimeout(()=>{ closeDrawer(); }, ngItems.length>0 ? 3000 : 1500);
+
+
+
+
+        $("f_comment").value=""; $("f_box").value=""; $("f_wind").value="";
+
+
+
+
+        state.weather=""; state.sev=""; state.set=""; state.items={};
+
+
+
+
+        $("sets").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+
+
+
+
+        $("seg_weather").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+
+
+
+
+        $("seg_sev").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+
+
+
+
+        $("sevWrap").style.display="none";
+
+
+
+
+        renderChecklist(); validate();
+
+
+
+
+        await reloadList();
+
+
+
+
+      }catch(e){
+
+
+
+
+        msg.className="msg ng"; msg.textContent="登録失敗: "+e.message+"（修正に戻って再試行できます）";
+
+
+
+
+      }finally{
+
+
+
+
+        state.submitting=false; go.disabled=false; $("backBtn").disabled=false;
+
+
+
+
+      }
+
+
+
+
+    });
+
+
+
+
+
+
+
+
+
+    // ===== 最近の実績 =====
+
+
+
+
+    function renderList(rows){
+
+
+
+
+      const body=$("listBody");
+
+
+
+
+      if(!rows.length){ body.innerHTML='<div style="color:var(--muted)">点検実績はまだありません。</div>'; return; }
+
+
+
+
+      const trs=rows.map(r=>`<tr class="${r["異常あり"]?'anom':''}">
+
+
+
+
+        <td style="white-space:nowrap">${esc(r["実施日"]||"")}</td>
+
+
+
+
+        <td><b style="color:#fff">${esc(r["風車"]||"")}</b></td>
+
+
+
+
+        <td style="white-space:nowrap">${esc(r["結果表示"]||r["結果"]||"")}</td>
+
+
+
+
+        <td style="white-space:nowrap">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</td>
+
+
+
+
+        <td>${esc(r["異常内容"]||"")}</td>
+
+
+
+
+        <td style="white-space:nowrap">${esc(r["深刻度"]||"–")}</td>
+
+
+
+
+        <td style="white-space:nowrap;color:var(--muted)">${esc(r["天候"]||"")} ${r["風速ms"]!=null?esc(r["風速ms"])+"m/s":""}</td>
+
+
+
+
+        <td style="color:var(--muted)">${esc(r["コメント"]||"")}</td>
+
+
+
+
+      </tr>`).join("");
+
+
+
+
+      body.innerHTML=`<table><thead><tr>
+
+
+
+
+        <th>実施日</th><th>号機</th><th>判定</th><th>チェック</th><th>異常内容</th><th>深刻度</th><th>天候</th><th>コメント</th>
+
+
+
+
+      </tr></thead><tbody>${trs}</tbody></table>`;
+
+
+
+
+    }
+
+
+
+
+    async function reloadList(){
+      const body=$("listBody");
+      if(body) body.innerHTML='<div class="loading">読み込み中…</div>';
+      try{
+        const orderCol=encodeURIComponent("実施日");
+        const rows=await sb.get(`v_inspection_results_list?order=${orderCol}.desc&limit=30`);
+        renderList(Array.isArray(rows)?rows:[]);
+      }catch(e){
+        console.warn("点検実績一覧の取得に失敗:", e);
+        try{
+          const fallback=await sb.get("inspection_results?select=*&order=submitted_at.desc&limit=30");
+          const rows=(fallback||[]).map(r=>({
+            "実施日": (r.submitted_at||r.inspection_date||r.created_at||"").slice(0,10),
+            "風車": r.turbine_no||r.turbine_id||"",
+            "結果表示": r.result_status||"",
+            "結果": r.result_status||"",
+            "ng項目数": r.ng_count||0,
+            "チェック項目数": r.check_count||0,
+            "異常あり": !!(r.has_anomaly || r.result_status==="ng"),
+            "異常内容": r.finding_summary||r.comments||"",
+            "深刻度": r.severity||"–",
+            "天候": r.weather||"",
+            "風速ms": r.wind_speed_ms,
+            "コメント": r.comments||""
+          }));
+          renderList(rows);
+          if(body){
+            body.insertAdjacentHTML("afterbegin", '<div style="margin-bottom:8px;color:#e3b341;font-size:12px;">⚠ 集計ビューが取得できないため、点検結果テーブルから簡易表示しています。</div>');
+          }
+        }catch(e2){
+          if(body){
+            body.innerHTML='<div class="err">最近の点検実績を取得できませんでした: '+esc(e2.message||e2)+'<br><span style="color:var(--muted);font-size:12px;">元エラー: '+esc(e.message||e)+'</span><br><button type="button" onclick="reloadList()" style="margin-top:8px;background:#21262d;color:#c9d1d9;border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;">再読み込み</button></div>';
+          }
+        }
+      }
+    }
+
+
+
+
+
+
+
+
+
+    async function applyPlanParam(){
+      const pid=new URLSearchParams(location.search).get('plan_id');
+      if(!pid) return;
+      try{
+        const ps=await sb.get(`inspection_plans?id=eq.${encodeURIComponent(pid)}&select=turbine_id,planned_date,work_type,status,ky_required,loto_required,ptw_required,ptw_number`);
+        if(!ps||!ps.length) return;
+        const p=ps[0]; state.planId=pid;
+        if(p.turbine_id){ $("f_wtg").value=p.turbine_id; }
+        const tn=(state.turbines.find(t=>t.id===p.turbine_id)||{}).turbine_no||"";
+        const b=document.createElement("div");
+        b.style.cssText="margin:0 0 12px;padding:10px 12px;border:1px solid rgba(63,185,80,.5);border-radius:9px;background:rgba(63,185,80,.10);color:#7ee787;font-size:12.5px;";
+        b.innerHTML="📋 点検計画から開始: <b>"+esc(tn)+"</b>"+(p.planned_date?(" ／ 予定日 "+esc(p.planned_date)):"")+(p.work_type?(" ／ "+esc(p.work_type)):"");
+        $("f_wtg").insertAdjacentElement("beforebegin", b);
+        // KY/LOTO/PTW 要否を計画から反映
+        if(p.loto_required){
+          const lotoWrap = document.getElementById('loto_check_wrap');
+          if(lotoWrap) lotoWrap.style.display = 'inline-flex';
+        }
+        if(p.ptw_required && p.ptw_number){
+          const ptwReqY = document.getElementById('f_ptw_req_y');
+          const ptwNum  = document.getElementById('f_ptw_number');
+          const ptwWrap = document.getElementById('ptwNumberWrap');
+          if(ptwReqY){ ptwReqY.checked = true; }
+          if(ptwNum)  { ptwNum.value = p.ptw_number; }
+          if(ptwWrap) { ptwWrap.style.display = 'block'; }
+        }
+        validate();
+        if(p.status==="planned"){ try{ await sb.write("PATCH",`inspection_plans?id=eq.${encodeURIComponent(pid)}`,{status:"in_progress"}); }catch(e){} }
+      }catch(e){}
+    }
+    async function loadAll(){
+
+
+
+
+      try{
+
+
+
+
+        state.turbines=await sb.get("turbines?select=id,turbine_no&order=turbine_no.asc");
+        // DBテンプレートを読み込んでセット選択UIを更新
+        await loadAndRenderTemplateSets();
+
+
+
+
+        $("f_wtg").innerHTML='<option value="">選択…</option>'+
+
+
+
+
+          state.turbines.map(t=>`<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`).join("");
+
+
+
+
+        const today=new Date().toISOString().slice(0,10);
+
+
+
+
+        $("f_date").value=today; $("f_date").max=today;
+        if(READONLY){ await enterReadonly(); return; }
+        // plan_id がない場合は点検実施一覧を先頭に表示
+        const hasPid = !!(new URLSearchParams(location.search).get('plan_id'));
+        if(!hasPid){ await loadExecutionList(); }
+        await applyPlanParam();
+
+
+
+
+        renderChecklist(); validate();
+
+
+
+
+        await reloadList();
+
+
+
+
+      }catch(e){
+
+
+
+
+        $("listBody").innerHTML='<div class="err">データ取得に失敗しました: '+esc(e.message)+'</div>';
+
+
+
+
+      }
+
+
+
+
+    }
+
+
+
+
+
+
+    /* ===== 点検結果インライン編集 ===== */
+    let _editResultId = null;
+
+    async function openResultEdit(id){
+      if(_editResultId === id){ closeResultEdit(); return; }
+      _editResultId = id;
+      // 対象カードを探してeditパネルを開く
+      document.querySelectorAll('.result-edit-panel').forEach(el => el.remove());
+      // 対象カードの data-result-id を参照
+      const allCards = document.querySelectorAll('[data-result-id]');
+      let target = null;
+      allCards.forEach(el => { if(el.dataset.resultId === id) target = el; });
+      if(!target){ alert('カードが見つかりません'); return; }
+      try{
+        const [irRows, clRows] = await Promise.all([
+          sb.get(`inspection_results?id=eq.${encodeURIComponent(id)}&select=*`),
+          sb.get(`result_checklist?result_id=eq.${encodeURIComponent(id)}&order=created_at.asc`)
+        ]);
+        const ir = irRows && irRows[0];
+        if(!ir) return;
+        const locked = ir.approval_status==='approved' || ir.approval_status==='pending';
+        const SEV_JA={low:'低',medium:'中',high:'高',critical:'重大'};
+        const clHtml = (clRows||[]).map(cl => {
+          const isNg = cl.check_result === 'ng';
+          const meas = cl.measured_value!=null ? cl.measured_value : '';
+          return `<tr style="background:${isNg?'rgba(248,81,73,.06)':''}">
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);font-size:12px;">${esc(cl.check_item)}</td>
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);">
+              <select data-cl-id="${esc(cl.id)}" data-field="check_result" ${locked?'disabled':''} style="background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:3px 6px;border-radius:5px;font-size:12px;">
+                <option value="ok"  ${cl.check_result==='ok' ?'selected':''}>OK</option>
+                <option value="ng"  ${cl.check_result==='ng' ?'selected':''}>NG</option>
+                <option value="na"  ${cl.check_result==='na' ?'selected':''}>対象外</option>
+              </select>
+            </td>
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);">
+              <input type="number" step="0.1" data-cl-id="${esc(cl.id)}" data-field="measured_value" value="${esc(meas.toString())}" ${locked?'disabled':''} style="width:80px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:3px 6px;border-radius:5px;font-size:12px;">
+              <span style="font-size:11px;color:var(--muted);">${esc(cl.unit||'')}</span>
+            </td>
+            <td style="padding:4px 8px;border-bottom:1px solid var(--line);">
+              <input type="text" data-cl-id="${esc(cl.id)}" data-field="comment" value="${esc(cl.comment||'')}" ${locked?'disabled':''} placeholder="コメント" style="width:150px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:3px 6px;border-radius:5px;font-size:12px;">
+            </td>
+          </tr>`;
+        }).join('');
+        const panel = document.createElement('div');
+        panel.className = 'result-edit-panel';
+        panel.style.cssText = 'margin-top:12px;padding:14px 16px;border:1px solid rgba(88,166,255,.4);border-radius:9px;background:var(--panel2);';
+        panel.innerHTML = `<div style="font-size:13px;font-weight:700;color:#9cd2ff;margin-bottom:10px;">✏ 点検結果を編集${locked?'（'+ir.approval_status+' のため読み取り専用）':''}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">全体の深刻度</label>
+              <select id="ire_sev" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;">
+                <option value="">（選択）</option>
+                <option value="low"     ${ir.severity==='low'    ?'selected':''}>低</option>
+                <option value="medium"  ${ir.severity==='medium' ?'selected':''}>中</option>
+                <option value="high"    ${ir.severity==='high'   ?'selected':''}>高</option>
+                <option value="critical"${ir.severity==='critical'?'selected':''}>重大</option>
+              </select>
+            </div>
+            <div style="grid-column:span 2">
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">全体コメント</label>
+              <textarea id="ire_comment" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(ir.comments||'')}</textarea>
+            </div>
+          </div>
+          ${clRows&&clRows.length?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">チェック項目</div>
+          <div style="overflow-x:auto;margin-bottom:12px;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead><tr>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">項目</th>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">判定</th>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">測定値</th>
+                <th style="text-align:left;padding:4px 8px;color:var(--muted);border-bottom:1px solid var(--line);">コメント</th>
+              </tr></thead>
+              <tbody>${clHtml}</tbody>
+            </table>
+          </div>`:'' }
+          <div id="ire_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
+          <div style="display:flex;gap:8px;">
+            ${!locked?`<button id="ire_save" onclick="saveResultEdit('${esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>`:''}
+            <button onclick="closeResultEdit()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 閉じる</button>
+          </div>`;
+        target.appendChild(panel);
+      }catch(e){ alert('取得失敗: '+e.message); }
+    }
+
+    function closeResultEdit(){
+      document.querySelectorAll('.result-edit-panel').forEach(el => el.remove());
+      _editResultId = null;
+    }
+
+    async function saveResultEdit(id){
+      const btn = document.getElementById('ire_save');
+      const msgEl = document.getElementById('ire_msg');
+      if(btn) btn.disabled = true;
+      try{
+        // inspection_results PATCH
+        const irPatch = {
+          severity: document.getElementById('ire_sev')?.value || null,
+          comments: document.getElementById('ire_comment')?.value || null,
+          updated_at: new Date().toISOString()
+        };
+        // result_checklist PATCH（各行）
+        const clUpdates = [];
+        document.querySelectorAll('[data-cl-id][data-field="check_result"]').forEach(sel => {
+          const clId = sel.dataset.clId;
+          const patch = { check_result: sel.value };
+          const vEl = document.querySelector(`[data-cl-id="${clId}"][data-field="measured_value"]`);
+          const cEl = document.querySelector(`[data-cl-id="${clId}"][data-field="comment"]`);
+          if(vEl) patch.measured_value = vEl.value !== '' ? Number(vEl.value) : null;
+          if(cEl) patch.comment = cEl.value || null;
+          clUpdates.push({id: clId, patch});
+        });
+        await fetch(`${sb.URL}/rest/v1/inspection_results?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(irPatch)});
+        for(const u of clUpdates){
+          await fetch(`${sb.URL}/rest/v1/result_checklist?id=eq.${encodeURIComponent(u.id)}`,
+            {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(u.patch)});
+        }
+        closeResultEdit();
+        location.reload();
+      }catch(e){
+        const msg = e.message||String(e);
+        if(msgEl){ msgEl.textContent = msg.includes('record_locked') ? '承認済みのため編集できません。差戻しが必要です。' : '保存失敗: '+msg; msgEl.style.display='block'; }
+        if(btn) btn.disabled=false;
+      }
+    }
+    /* ===== 点検実施フェーズ ===== */
+    let _execAllRows = [];
+
+    // ── 優先アイコン ──
+    function _execPriority(r){
+      const st = r.execution_status||'not_started';
+      const today = new Date().toISOString().slice(0,10);
+      if(st==='done_anomaly')   return {icon:'🚨',ord:1};
+      if(st==='in_progress')    return {icon:'🔧',ord:2};
+      if(st==='on_hold')        return {icon:'⏸',ord:3};
+      if(st==='result_pending') return {icon:'⏳',ord:4};
+      if(r.planned_date < today && st==='not_started') return {icon:'⚠',ord:5};
+      if(st==='not_started')    return {icon:'📅',ord:6};
+      if(st==='done')           return {icon:'📝',ord:7};
+      if(st==='work_ordered')   return {icon:'🔧',ord:8};
+      if(st==='result_approved'||st==='anomaly_approved') return {icon:'🔒',ord:9};
+      return {icon:'—',ord:10};
+    }
+
+    // ── 点検ステータスバッジ ──
+    const _EXEC_ST = {
+      not_started:      {lbl:'📅 実施待ち',     c:'#c9d1d9',bg:'rgba(201,209,217,.08)',bd:'#30363d'},
+      in_progress:      {lbl:'🔧 点検中',        c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
+      on_hold:          {lbl:'⏸ 保留',           c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+      done:             {lbl:'📝 結果記録済',    c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
+      result_pending:   {lbl:'⏳ 結果承認待ち', c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+      result_approved:  {lbl:'✅ 結果承認済',   c:'#7ee787',bg:'rgba(63,185,80,.08)',  bd:'rgba(63,185,80,.3)'},
+      done_anomaly:     {lbl:'🚨 異常判断中',   c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+      anomaly_approved: {lbl:'⚠ 異常・承認済',  c:'#ff7b72',bg:'rgba(255,123,114,.08)',bd:'rgba(255,123,114,.3)'},
+      work_ordered:     {lbl:'🔧 作業票化',      c:'#d29922',bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
+      cancelled:        {lbl:'✖ 中止',           c:'#6e7681',bg:'transparent',          bd:'#30363d'},
+    };
+    function _execStBadge(r){
+      const c = _EXEC_ST[r.execution_status||'not_started']||_EXEC_ST.not_started;
+      return `<span style="font-size:10.5px;font-weight:700;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:2px 7px;white-space:nowrap;">${c.lbl}</span>`;
+    }
+
+    // ── 結果承認バッジ ──
+    function _irApprovalBadge(r){
+      const st = r.latest_ir_approval;
+      if(!st||st==='draft') return '<span style="font-size:10.5px;color:var(--muted);">未申請</span>';
+      if(st==='pending')  return '<span style="font-size:10.5px;color:#e3b341;font-weight:700;">⏳ 申請中</span>';
+      if(st==='approved') return '<span style="font-size:10.5px;color:#7ee787;font-weight:700;">✅ 承認済</span>';
+      if(st==='returned') return '<span style="font-size:10.5px;color:#ff9a92;font-weight:700;">↩ 差戻し</span>';
+      return '';
+    }
+
+    // ── 次アクション ──
+    function _execNextAction(r){
+      const st  = r.execution_status||'not_started';
+      const pid = r.plan_id ? encodeURIComponent(r.plan_id) : '';
+      const rid = r.latest_result_id ? r.latest_result_id : '';
+      const ridE = rid ? encodeURIComponent(rid) : '';
+      const isAdhoc = r.inspection_kind==='adhoc';
+      const A=(l,h,s)=>`<a href="${h}" style="font-size:11.5px;font-weight:700;text-decoration:none;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</a>`;
+      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</button>`;
+      const resultHref = isAdhoc&&rid
+        ? `./inspection-input.html?readonly=1&result_id=${ridE}`
+        : pid ? `./inspection-input.html?plan_id=${pid}&readonly=1` : '#';
+
+      switch(st){
+        case 'not_started':
+          return B('点検開始',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#238636;color:#fff;')
+               + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
+        case 'in_progress':
+          return B('続きから →',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#1f6feb;color:#fff;')
+               + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
+        case 'on_hold':
+          return B('▶ 再開',`setResume(event,'${r.plan_id}')`, 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;');
+        case 'done': {
+          const subBtn = (rid && r.latest_ir_approval!=='pending' && r.latest_ir_approval!=='approved')
+            ? B('📨 承認申請', `submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;margin-left:4px;')
+            : '';
+          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);') + subBtn;
+        }
+        case 'result_pending':
+          return '<span style="font-size:11.5px;color:#e3b341;font-weight:700;">⏳ 承認待ち</span>';
+        case 'result_approved':
+          return A('🔒 結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+        case 'done_anomaly': {
+          // inspection_result_id も渡して点検結果NG項目を異常判断に引き継ぐ
+          const _anomHref = rid
+            ? `./defect-rca.html?inspection_result_id=${ridE}&plan_id=${pid}`
+            : `./defect-rca.html?plan_id=${pid}`;
+          return A('🚨 異常判断へ', _anomHref, 'background:#d29922;color:#11161d;font-weight:700;')
+               + A('結果', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);margin-left:4px;');
+        }
+        case 'anomaly_approved':
+          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+        case 'work_ordered':
+          return A('🔧 作業票を見る', './work-orders.html', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#d29922;');
+        default:
+          return '';
+      }
+    }
+
+    // ── 行生成 ──
+    function _makeExecRow(r){
+      const isAdhoc = r.inspection_kind==='adhoc';
+      const p = _execPriority(r);
+      const time = [r.time_start_fmt, r.time_end_fmt].filter(Boolean).join('〜')||'—';
+      const ptw  = r.ptw_required
+        ? (r.ptw_number
+            ? `<span style="font-size:10.5px;color:#7ee787;font-family:monospace;">✅ ${esc(r.ptw_number)}</span>`
+            : '<span style="font-size:10.5px;color:#ff9a92;">⚠ 未取得</span>')
+        : '<span style="color:var(--muted);font-size:11px;">—</span>';
+      const anomaly = r.has_anomaly
+        ? '<span style="font-size:10.5px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 6px;">🔴 あり</span>'
+        : '<span style="color:var(--muted);font-size:11px;">—</span>';
+      const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
+      const workLabel = isAdhoc
+        ? `<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:3px;padding:1px 5px;margin-right:4px;">臨時</span>${esc((r.source_reason||r.work_type||'').slice(0,25))}`
+        : esc(r.work_type||'');
+
+      return `<tr style="${rowBg?'background:'+rowBg+';':''}cursor:default;">
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:15px;text-align:center;">${p.icon}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:12px;">${esc(r.planned_date||'')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;font-family:monospace;font-size:13px;">${esc(r.turbine_no||'')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${workLabel}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execStBadge(r)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_irApprovalBadge(r)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;">${anomaly}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);white-space:nowrap;">${esc(time)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${esc(r.required_qualification||'—')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;text-align:right;">${r.worker_count!=null?r.worker_count:'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${ptw}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execNextAction(r)}</td>
+      </tr>`;
+    }
+
+    // ── フィルター定義 ──
+    const _EXEC_FILTERS = [
+      {key:'all',             lbl:'すべて'},
+      {key:'action_needed',   lbl:'⚠ 対応必要'},
+      {key:'today',           lbl:'🔵 本日'},
+      {key:'in_progress',     lbl:'🔧 実施中'},
+      {key:'anomaly',         lbl:'🚨 異常あり'},
+      {key:'approval_pending',lbl:'⏳ 承認待ち'},
+      {key:'approved',        lbl:'✅ 承認済'},
+    ];
+
+    function _execFilter(rows, key){
+      const today = new Date().toISOString().slice(0,10);
+      if(key==='all')             return rows;
+      if(key==='action_needed')   return rows.filter(r=>
+                                    ['done_anomaly','on_hold'].includes(r.execution_status) ||
+                                    (r.execution_status==='done' && r.latest_ir_approval!=='approved') ||
+                                    r.latest_ir_approval==='returned');
+      if(key==='today')           return rows.filter(r=>r.planned_date===today);
+      if(key==='in_progress')     return rows.filter(r=>r.execution_status==='in_progress');
+      if(key==='anomaly')         return rows.filter(r=>r.has_anomaly);
+      if(key==='approval_pending')return rows.filter(r=>r.latest_ir_approval==='pending');
+      if(key==='approved')        return rows.filter(r=>r.latest_ir_approval==='approved');
+      return rows.filter(r=>r.execution_status===key);
+    }
+
+    function _execRender(rows){
+      const body = document.getElementById('execListBody');
+      if(!rows.length){
+        body.innerHTML='<div style="color:var(--muted);padding:20px 0;text-align:center;">該当する点検はありません。<br><span style="font-size:12px;">点検計画を承認すると、ここに表示されます。</span></div>';
+        return;
+      }
+      const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
+      const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
+      const thead = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>${['優先','点検日','号機','作業種別','点検ステータス','承認','異常','時間','資格','人数','PTW','次アクション']
+          .map(h=>`<th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;white-space:nowrap;">${h}</th>`).join('')}
+        </tr></thead><tbody>`;
+      body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
+    }
+
+    async function loadExecutionList(){
+      const wrap = document.querySelector('.wrap');
+      const existingEl = document.getElementById('execListCard');
+      if(existingEl) existingEl.remove();
+      const card = document.createElement('div');
+      card.id = 'execListCard';
+      card.className = 'card';
+
+      // フィルタータブ HTML
+      const filterHtml = _EXEC_FILTERS.map(f=>
+        `<button class="exec-f" data-f="${f.key}" style="background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;">${f.lbl}</button>`
+      ).join('');
+
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+          <h2 style="margin:0;">点検実施</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="activateAnomalyCheckMode()" style="background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔍 異常確認点検</button>
+            <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔴 臨時点検を記録</button>
+          </div>
+        </div>
+        <div id="execFilters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${filterHtml}</div>
+        <div id="execKpi" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+        <div id="execListBody" class="loading">読み込み中…</div>`;
+      wrap.insertAdjacentElement('afterbegin', card);
+      // フィルタータブにイベント付与
+      const _fStyle  = 'background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;';
+      const _fStyleA = 'background:rgba(88,166,255,.1);border:1px solid var(--master);color:#fff;font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:700;';
+      card.querySelectorAll('.exec-f').forEach(btn=>{
+        btn.style.cssText = _fStyle;
+        btn.addEventListener('click',()=>{
+          card.querySelectorAll('.exec-f').forEach(b=>b.style.cssText=_fStyle);
+          btn.style.cssText = _fStyleA;
+          _execRender(_execFilter(_execAllRows,btn.dataset.f));
+        });
+      });
+      const _firstF = card.querySelector('.exec-f[data-f="all"]');
+      if(_firstF) _firstF.style.cssText = _fStyleA;
+
+      try{
+        const rows = await sb.get('v_inspection_execution_list?order=planned_date.asc');
+        _execAllRows = rows||[];
+
+        if(!_execAllRows.length){
+          document.getElementById('execListBody').innerHTML='<div style="color:var(--muted);padding:20px 0;text-align:center;">実施フェーズの点検はありません。<br><span style="font-size:12px;">点検計画を承認すると、ここに表示されます。</span></div>';
+          return;
+        }
+
+        // KPI チップ
+        const kpiEl = document.getElementById('execKpi');
+        const KPI_DEFS=[
+          {st:'done_anomaly',   lbl:'🚨 異常判断中', c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+          {st:'in_progress',    lbl:'🔧 点検中',     c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
+          {st:'result_pending', lbl:'⏳ 承認待ち',   c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+          {st:'not_started',    lbl:'📅 実施待ち',   c:'#c9d1d9',bg:'rgba(201,209,217,.05)',bd:'#30363d'},
+          {st:'done',           lbl:'📝 記録済',     c:'#8b949e',bg:'transparent',          bd:'#30363d'},
+          {st:'result_approved',lbl:'✅ 承認済',     c:'#7ee787',bg:'rgba(63,185,80,.05)',  bd:'rgba(63,185,80,.2)'},
+        ];
+        kpiEl.innerHTML=KPI_DEFS.map(k=>{
+          const cnt=_execAllRows.filter(r=>(r.execution_status||'not_started')===k.st).length;
+          return cnt>0
+            ? `<span style="font-size:12px;font-weight:700;color:${k.c};background:${k.bg};border:1px solid ${k.bd};border-radius:20px;padding:3px 12px;white-space:nowrap;cursor:pointer;" onclick="_execRender(_execFilter(_execAllRows,'${k.st}'))">${k.lbl} ${cnt}</span>`
+            : `<span style="font-size:12px;color:var(--muted);border:1px solid #30363d;border-radius:20px;padding:3px 12px;white-space:nowrap;">${k.lbl} 0</span>`;
+        }).join('');
+
+        _execRender(_execFilter(_execAllRows,'all'));
+      }catch(e){
+        const _b=document.getElementById('execListBody');
+        if(_b) _b.innerHTML='<div class="err">取得エラー: '+esc(e.message)+'</div>';
+      }
+    }
+
+    function togglePtwNumber(){
+      const req = document.getElementById('f_ptw_req_y')?.checked;
+      const wrap = document.getElementById('ptwNumberWrap');
+      if(wrap) wrap.style.display = req ? 'block' : 'none';
+      // 臨時点検時は PTW セクションをピンクで強調
+      const sec = document.getElementById('ptwSection');
+      if(sec) sec.style.border = req ? '1px solid rgba(219,97,162,.4)' : '';
+    }
+
+    /* ===== ドロワー開閉 ===== */
+    function openDrawer(mode){
+      // mode: false/'plan' = 計画点検, 'adhoc' = 臨時点検, 'anomaly' = 異常確認点検
+      const regCard = document.getElementById('registrationCard');
+      const drawerBody = document.getElementById('drawerBody');
+      if(regCard && drawerBody && drawerBody.children.length === 0){
+        while(regCard.firstChild) drawerBody.appendChild(regCard.firstChild);
+      }
+      const title      = document.getElementById('drawerTitle');
+      const adhocFields= document.getElementById('adhocFields');
+      const modeTitle  = document.getElementById('adhocModeTitle');
+      const srcSel     = document.getElementById('f_source_type');
+
+      if(mode === 'adhoc'){
+        state.adhocMode = true;
+        if(title) title.textContent = '🔴 臨時点検を記録';
+        if(adhocFields) adhocFields.style.display = 'block';
+        if(modeTitle) modeTitle.innerHTML = '🔴 <b>臨時点検</b> — 計画外の点検起票（起点と理由を記録してください）';
+        if(srcSel) srcSel.value = 'scada'; // デフォルト: SCADAアラーム
+      } else if(mode === 'anomaly'){
+        state.adhocMode = true;
+        if(title) title.textContent = '🔍 異常確認点検を記録';
+        if(adhocFields) adhocFields.style.display = 'block';
+        if(modeTitle) modeTitle.innerHTML = '🔍 <b>異常確認点検</b> — 異常・故障の原因を確認するための点検（異常判断に連携されます）';
+        if(modeTitle) modeTitle.style.borderColor = 'rgba(88,166,255,.4)';
+        if(modeTitle) modeTitle.style.background  = 'rgba(88,166,255,.06)';
+        if(modeTitle) modeTitle.style.color        = '#9cd2ff';
+        if(srcSel) srcSel.value = 'anomaly_check';
+      } else {
+        state.adhocMode = false;
+        if(title) title.textContent = '📋 計画点検を記録';
+        if(adhocFields) adhocFields.style.display = 'none';
+      }
+      document.getElementById('drawerOverlay').classList.add('open');
+      document.getElementById('drawerPanel').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer(){
+      document.getElementById('drawerOverlay').classList.remove('open');
+      document.getElementById('drawerPanel').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function activateAdhocMode(){ openDrawer('adhoc'); }
+    function activateAnomalyCheckMode(){ openDrawer('anomaly'); }
+
+    async function openDrawerForPlan(ev, planId){
+      ev.stopPropagation();
+      openDrawer(false);
+      // plan_id から計画情報をプリフィル
+      if(planId && state.planId !== planId){
+        try{
+          const ps = await sb.get(
+            `inspection_plans?id=eq.${encodeURIComponent(planId)}&select=turbine_id,planned_date,work_type,status,ky_required,loto_required,ptw_required,ptw_number`
+          );
+          if(ps && ps[0]){
+            const p = ps[0];
+            state.planId = planId;
+            // 号機
+            if(p.turbine_id) $('f_wtg').value = p.turbine_id;
+            // 予定日（過去日なら今日、未来日なら予定日）
+            if(p.planned_date){
+              const today = new Date().toISOString().slice(0,10);
+              $('f_date').value = p.planned_date <= today ? p.planned_date : today;
+              $('f_date').max  = today;
+            }
+            // LOTO 要否
+            if(p.loto_required){
+              const lotoWrap = document.getElementById('loto_check_wrap');
+              if(lotoWrap) lotoWrap.style.display = 'inline-flex';
+            }
+            // PTW 要否・番号
+            if(p.ptw_required){
+              const ptwReqY = document.getElementById('f_ptw_req_y');
+              const ptwNum  = document.getElementById('f_ptw_number');
+              const ptwWrap = document.getElementById('ptwNumberWrap');
+              if(ptwReqY) ptwReqY.checked = true;
+              if(ptwNum && p.ptw_number) ptwNum.value = p.ptw_number;
+              if(ptwWrap) ptwWrap.style.display = 'block';
+              // KY も要の場合はチェック済みに
+              if(p.ky_required){
+                const kyChk = document.getElementById('f_ky_confirmed');
+                if(kyChk) kyChk.parentElement.style.border = '1px solid rgba(219,97,162,.5)';
+              }
+            }
+            validate();
+          }
+        }catch(e){}
+      }
+    }
+
+    async function setOnHold(ev, planId){
+      ev.preventDefault();
+      if(!confirm('この点検を保留にしますか？')) return;
+      try{
+        await fetch(sb.URL+'/rest/v1/inspection_plans?id=eq.'+encodeURIComponent(planId),
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({status:'on_hold'})});
+        await loadExecutionList();
+      }catch(e){ alert('保留設定失敗: '+e.message); }
+    }
+
+    async function setResume(ev, planId){
+      ev.preventDefault();
+      if(!confirm('この点検を再開しますか？')) return;
+      try{
+        await fetch(sb.URL+'/rest/v1/inspection_plans?id=eq.'+encodeURIComponent(planId),
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({status:'planned'})});
+        await loadExecutionList();
+      }catch(e){ alert('再開失敗: '+e.message); }
+    }
+
+    async function submitResultApproval(id){
+      if(!confirm('この点検結果を承認申請しますか？')) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_results?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'pending'})});
+        alert('承認申請しました。承認画面（Step 8）で確認してください。');
+        location.reload();
+      }catch(e){ alert('申請失敗: '+e.message); }
+    }
+    sb.requireLogin({ onReady: loadAll });
+
+
+
+
+  </script>
+
+
+
+
+</body>
+
+
+
+
+</html>
+
+
+
+
