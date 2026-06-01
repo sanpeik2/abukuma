@@ -389,70 +389,119 @@ async function renderWo(id){
     </div>`;
 }
 
-/* ── 点検計画書 ── */
+/* ── 点検作業指示書 ── */
 async function renderPlan(id){
-  const rows = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=*`);
+  // 計画本体 + チェックリストテンプレート名を並行取得
+  const [rows, clRows] = await Promise.all([
+    sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=*`),
+    sb.get('inspection_checklist_templates?select=id,template_name,template_code')
+  ]);
   if(!rows?.length) throw new Error('点検計画が見つかりません');
-  const r = rows[0];
+  const r   = rows[0];
   const tno = await getTurbineNo(r.turbine_id);
   const pno = r.plan_no || '—';
   const st  = r.approval_status || 'draft';
-  const typeMap = {routine:'定期点検',special:'特別点検',emergency:'緊急点検',commissioning:'試運転',other:'その他'};
 
-  document.getElementById('barTitle').textContent = `点検計画書 ${pno}`;
-  document.title = `点検計画書 ${pno} — 阿武隈OS`;
+  // チェックリスト種別名を解決
+  const clName = r.checklist_template_id
+    ? ((clRows||[]).find(t => t.id === r.checklist_template_id)?.template_name || '—')
+    : '—';
+
+  // 点検区分を work_type から導出
+  const wt = r.work_type || '';
+  const ku = wt.includes('年次') ? '年次'
+           : (wt.includes('緊急')||wt.includes('異常')||wt.includes('対応')) ? '随時/緊急'
+           : wt.includes('定期') ? '定期' : 'その他';
+
+  // 時刻フォーマット
+  const fmtTime = v => v ? String(v).substring(0,5) : '—';
+  const timeStr = (r.time_start && r.time_end)
+    ? `${fmtTime(r.time_start)} 〜 ${fmtTime(r.time_end)}`
+    : fmtTime(r.time_start);
+
+  document.getElementById('barTitle').textContent = `点検作業指示書 ${pno}`;
+  document.title = `点検作業指示書 ${pno} — 阿武隈OS`;
+  document.getElementById('barType').textContent  = '点検作業指示書';
 
   sheet.innerHTML = `
     <div class="doc-header">
       <div>
         <div class="company">阿武隈風力発電所 O&amp;M コックピット</div>
-        <div class="doc-title">点検計画書</div>
-        <div class="doc-no">${esc(pno)}</div>
+        <div class="doc-title">点検作業指示書</div>
+        <div class="doc-no">${esc(pno)}
+          <span style="font-size:11px;color:#888;margin-left:10px;">Rev.${r.revision_no||1}</span>
+        </div>
       </div>
       <div class="doc-header-right">
         ${badge(st)}
-        <div style="margin-top:5px;">計画日: ${esc(r.planned_date||'—')}</div>
+        <div style="margin-top:5px;">計画日: <b>${esc(r.planned_date||'—')}</b></div>
         <div>印刷日時: ${new Date().toLocaleString('ja-JP')}</div>
       </div>
     </div>
 
     <div class="meta-row">
       <span>対象号機: <b>${esc(tno)}</b></span>
-      <span>点検種別: <b>${esc(typeMap[r.inspection_type]||r.inspection_type||'—')}</b></span>
+      <span>点検区分: <b>${esc(ku)}</b></span>
+      <span>作業種別: <b>${esc(wt||'—')}</b></span>
+      <span>チェックリスト: <b>${esc(clName)}</b></span>
     </div>
 
-    <div class="sec-head">■ 計画内容</div>
+    <div class="sec-head">■ 基本情報</div>
     <div class="fld-grid" style="margin-top:0">
-      ${fld('計画日', r.planned_date||'—')}
-      ${fld('点検種別', typeMap[r.inspection_type]||r.inspection_type||'—')}
-      ${fld('備考・内容', r.notes||'—', {span:true})}
+      ${fld('計画日',     r.planned_date||'—')}
+      ${fld('作業時間帯', timeStr)}
+      ${fld('実施責任者', r.responsible_person||'—')}
+      ${fld('作業人数',   r.worker_count!=null ? r.worker_count+'名' : '—')}
+      ${fld('必要資格',   r.required_qualification||'—')}
+      ${fld('チェックリスト種別', clName)}
     </div>
+
+    ${(r.inspection_purpose||r.inspection_scope) ? `
+    <div class="sec-head">■ 点検内容</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      ${r.inspection_purpose ? fld('点検目的', r.inspection_purpose) : ''}
+      ${r.inspection_scope   ? fld('点検範囲', r.inspection_scope)   : ''}
+    </div>` : ''}
 
     <div class="sec-head">■ 安全要件</div>
-    <div class="fld-grid g1" style="margin-top:0">
-      <div class="fld noright">
-        <label>要否チェック</label>
+    <div class="fld-grid" style="margin-top:0">
+      <div class="fld noright" style="grid-column:1/3">
+        <label>安全措置チェックリスト</label>
         <div class="val"><div class="check-row">
-          ${chk('KY（危険予知）実施 要', !!r.ky_required)}
-          ${chk('LOTO（エネルギー隔離）要', !!r.loto_required)}
-          ${chk('PTW（作業許可証）要', !!r.ptw_required)}
+          ${chk('KY（危険予知）実施 要',      !!r.ky_required)}
+          ${chk('LOTO（施錠・タグアウト）要',  !!r.loto_required)}
+          ${chk('PTW（作業許可証）要',         !!r.ptw_required)}
+          ${chk('停止作業',                    !!r.outage_required)}
         </div></div>
       </div>
+      ${fld('PTW番号', r.ptw_number||'—')}
+      ${fld('風速上限', r.wind_speed_limit_ms!=null ? r.wind_speed_limit_ms+' m/s 以下（超過時中止）' : '—')}
+      ${fld('天候条件', r.weather_condition||'—')}
+      ${fld('予定停止時間', r.estimated_outage_minutes!=null ? r.estimated_outage_minutes+'分' : '—')}
     </div>
+
+    ${(r.notes||r.special_notes) ? `
+    <div class="sec-head">■ 備考・特記事項</div>
+    <div class="fld-grid g1" style="margin-top:0">
+      ${r.notes        ? fld('備考',   r.notes)        : ''}
+      ${r.special_notes? fld('特記事項', r.special_notes): ''}
+    </div>` : ''}
 
     <div class="sec-head">■ 承認欄</div>
     <div class="ap-grid" style="margin-top:0">
       <div class="ap-cell"><div class="role">起票者</div><div class="sig"></div></div>
-      <div class="ap-cell"><div class="role">確認者</div><div class="sig"></div></div>
-      <div class="ap-cell"><div class="role">承認者</div><div class="sig"></div></div>
-      <div class="ap-cell"><div class="role">承認日時</div>
-        <div class="sig" style="font-size:10px;color:#555;">${r.approved_at ? esc(fmtDt(r.approved_at)) : ''}</div>
+      <div class="ap-cell"><div class="role">確認者（現場責任者）</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">電気主任技術者</div><div class="sig"></div></div>
+      <div class="ap-cell"><div class="role">承認者</div>
+        <div class="sig" style="font-size:10px;color:#555;">
+          ${r.approval_status==='approved' ? `<b style="color:#1a7a3c;">✔ 承認済</b><br>${r.updated_at ? esc(fmtDt(r.updated_at)) : ''}` : ''}
+        </div>
       </div>
     </div>
 
     <div class="print-footer">
       <span>阿武隈風力発電所 — O&amp;M コックピット</span>
-      <span>文書番号: ${esc(pno)} ｜ 印刷: ${new Date().toLocaleString('ja-JP')}</span>
+      <span>文書番号: ${esc(pno)} ｜ Rev.${r.revision_no||1} ｜ 印刷: ${new Date().toLocaleString('ja-JP')}</span>
     </div>`;
 }
 
