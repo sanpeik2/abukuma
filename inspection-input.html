@@ -3104,8 +3104,14 @@
       // 点検箇所（具体）
       const specific = esc(r.inspection_content || r.checklist_names || '');
       const specificCell = specific ? `<span style="color:var(--txt);">${specific}</span>` : '<span style="color:#6e7681;">—</span>';
+      // 実施番号（実績がある行は青リンク→詳細ドロワー。なければ未実施）
+      const no = _execResultNo(r);
+      const noCell = no
+        ? `<a onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;text-decoration:none;">${esc(no)}</a>`
+        : '<span style="font-size:11.5px;color:#6e7681;">未実施</span>';
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
+        <td style="${td}white-space:nowrap;">${noCell}</td>
         <td style="${td}white-space:nowrap;">${_execStBadge(r)}</td>
         <td style="${td}font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
         <td style="${td}white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
@@ -3308,7 +3314,7 @@
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       const thead = `<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-        <thead><tr>${['状態','号機','点検日','点検内容','点検箇所','結果','緊急度','承認','次アクション']
+        <thead><tr>${['実施番号','状態','号機','点検日','点検内容','点検箇所','結果','緊急度','承認','次アクション']
           .map(h=>`<th style="text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
