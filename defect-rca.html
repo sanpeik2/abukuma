@@ -112,7 +112,7 @@
 
 
 
-  .wrap{padding:18px 22px 50px}
+  .wrap{padding:18px 10px 50px}
 
 
 
@@ -160,13 +160,13 @@
 
 
 
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 
 
 
 
 
-  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;white-space:nowrap;vertical-align:top}
+  th,td{border-bottom:1px solid var(--line);padding:7px 7px;text-align:left;white-space:normal;word-break:break-word;overflow-wrap:anywhere;vertical-align:top}
 
 
 
@@ -352,7 +352,7 @@
 
 
 
-  #body{overflow-x:auto}
+  #body{overflow-x:hidden}
 
 
 
@@ -1252,6 +1252,9 @@ const createBtn = !isLocked
 
 
       const heads = ['','発見日時','号機','発見元','異常タイトル','安全影響','原因明確度','再発性','一次判定','状態','現在地','滞留','担当者','RCA要否','次アクション'];
+      // 列幅（合計100%）：全列を画面内に収め横スクロールなし。異常タイトルは短め。
+      const colW = [3,8,5,5,13,6,6,5,7,6,9,6,7,7,7];
+      const colgroup = '<colgroup>' + colW.map(w=>`<col style="width:${w}%">`).join('') + '</colgroup>';
 
 
 
@@ -1263,7 +1266,7 @@ const createBtn = !isLocked
 
 
 
-      body.innerHTML = '<table><thead><tr>' +
+      body.innerHTML = '<table>' + colgroup + '<thead><tr>' +
 
 
 
