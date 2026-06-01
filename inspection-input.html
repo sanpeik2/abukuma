@@ -2916,7 +2916,170 @@
         if(btn) btn.disabled=false;
       }
     }
-    /* ===== 点検実施一覧（承認済み計画を実施ステータスで表示）===== */
+    /* ===== 点検実施フェーズ ===== */
+    let _execAllRows = [];
+
+    // ── 優先アイコン ──
+    function _execPriority(r){
+      const st = r.execution_status||'not_started';
+      const today = new Date().toISOString().slice(0,10);
+      if(st==='done_anomaly')   return {icon:'🚨',ord:1};
+      if(st==='in_progress')    return {icon:'🔧',ord:2};
+      if(st==='on_hold')        return {icon:'⏸',ord:3};
+      if(st==='result_pending') return {icon:'⏳',ord:4};
+      if(r.planned_date < today && st==='not_started') return {icon:'⚠',ord:5};
+      if(st==='not_started')    return {icon:'📅',ord:6};
+      if(st==='done')           return {icon:'📝',ord:7};
+      if(st==='work_ordered')   return {icon:'🔧',ord:8};
+      if(st==='result_approved'||st==='anomaly_approved') return {icon:'🔒',ord:9};
+      return {icon:'—',ord:10};
+    }
+
+    // ── 点検ステータスバッジ ──
+    const _EXEC_ST = {
+      not_started:      {lbl:'📅 実施待ち',     c:'#c9d1d9',bg:'rgba(201,209,217,.08)',bd:'#30363d'},
+      in_progress:      {lbl:'🔧 点検中',        c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
+      on_hold:          {lbl:'⏸ 保留',           c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+      done:             {lbl:'📝 結果記録済',    c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
+      result_pending:   {lbl:'⏳ 結果承認待ち', c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+      result_approved:  {lbl:'✅ 結果承認済',   c:'#7ee787',bg:'rgba(63,185,80,.08)',  bd:'rgba(63,185,80,.3)'},
+      done_anomaly:     {lbl:'🚨 異常判断中',   c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+      anomaly_approved: {lbl:'⚠ 異常・承認済',  c:'#ff7b72',bg:'rgba(255,123,114,.08)',bd:'rgba(255,123,114,.3)'},
+      work_ordered:     {lbl:'🔧 作業票化',      c:'#d29922',bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
+      cancelled:        {lbl:'✖ 中止',           c:'#6e7681',bg:'transparent',          bd:'#30363d'},
+    };
+    function _execStBadge(r){
+      const c = _EXEC_ST[r.execution_status||'not_started']||_EXEC_ST.not_started;
+      return `<span style="font-size:10.5px;font-weight:700;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:2px 7px;white-space:nowrap;">${c.lbl}</span>`;
+    }
+
+    // ── 結果承認バッジ ──
+    function _irApprovalBadge(r){
+      const st = r.latest_ir_approval;
+      if(!st||st==='draft') return '<span style="font-size:10.5px;color:var(--muted);">未申請</span>';
+      if(st==='pending')  return '<span style="font-size:10.5px;color:#e3b341;font-weight:700;">⏳ 申請中</span>';
+      if(st==='approved') return '<span style="font-size:10.5px;color:#7ee787;font-weight:700;">✅ 承認済</span>';
+      if(st==='returned') return '<span style="font-size:10.5px;color:#ff9a92;font-weight:700;">↩ 差戻し</span>';
+      return '';
+    }
+
+    // ── 次アクション ──
+    function _execNextAction(r){
+      const st  = r.execution_status||'not_started';
+      const pid = r.plan_id ? encodeURIComponent(r.plan_id) : '';
+      const rid = r.latest_result_id ? r.latest_result_id : '';
+      const ridE = rid ? encodeURIComponent(rid) : '';
+      const isAdhoc = r.inspection_kind==='adhoc';
+      const A=(l,h,s)=>`<a href="${h}" style="font-size:11.5px;font-weight:700;text-decoration:none;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</a>`;
+      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</button>`;
+      const resultHref = isAdhoc&&rid
+        ? `./inspection-input.html?readonly=1&result_id=${ridE}`
+        : pid ? `./inspection-input.html?plan_id=${pid}&readonly=1` : '#';
+
+      switch(st){
+        case 'not_started':
+          return B('点検開始',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#238636;color:#fff;')
+               + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
+        case 'in_progress':
+          return B('続きから →',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#1f6feb;color:#fff;')
+               + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
+        case 'on_hold':
+          return B('▶ 再開',`setResume(event,'${r.plan_id}')`, 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;');
+        case 'done':
+          const subBtn = (rid && r.latest_ir_approval!=='pending'&&r.latest_ir_approval!=='approved')
+            ? B('📨 承認申請',`submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;margin-left:4px;')
+            : '';
+          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);') + subBtn;
+        case 'result_pending':
+          return '<span style="font-size:11.5px;color:#e3b341;font-weight:700;">⏳ 承認待ち</span>';
+        case 'result_approved':
+          return A('🔒 結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+        case 'done_anomaly':
+          return A('🚨 異常判断へ', `./defect-rca.html?plan_id=${pid}`, 'background:#d29922;color:#11161d;font-weight:700;')
+               + A('結果', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);margin-left:4px;');
+        case 'anomaly_approved':
+          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+        case 'work_ordered':
+          return A('🔧 作業票を見る', './work-orders.html', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#d29922;');
+        default:
+          return '';
+      }
+    }
+
+    // ── 行生成 ──
+    function _makeExecRow(r){
+      const isAdhoc = r.inspection_kind==='adhoc';
+      const p = _execPriority(r);
+      const time = [r.time_start_fmt, r.time_end_fmt].filter(Boolean).join('〜')||'—';
+      const ptw  = r.ptw_required
+        ? (r.ptw_number
+            ? `<span style="font-size:10.5px;color:#7ee787;font-family:monospace;">✅ ${esc(r.ptw_number)}</span>`
+            : '<span style="font-size:10.5px;color:#ff9a92;">⚠ 未取得</span>')
+        : '<span style="color:var(--muted);font-size:11px;">—</span>';
+      const anomaly = r.has_anomaly
+        ? '<span style="font-size:10.5px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 6px;">🔴 あり</span>'
+        : '<span style="color:var(--muted);font-size:11px;">—</span>';
+      const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
+      const workLabel = isAdhoc
+        ? `<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:3px;padding:1px 5px;margin-right:4px;">臨時</span>${esc((r.source_reason||r.work_type||'').slice(0,25))}`
+        : esc(r.work_type||'');
+
+      return `<tr style="${rowBg?'background:'+rowBg+';':''}cursor:default;">
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:15px;text-align:center;">${p.icon}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:12px;">${esc(r.planned_date||'')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;font-family:monospace;font-size:13px;">${esc(r.turbine_no||'')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${workLabel}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execStBadge(r)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_irApprovalBadge(r)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;">${anomaly}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);white-space:nowrap;">${esc(time)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${esc(r.required_qualification||'—')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;text-align:right;">${r.worker_count!=null?r.worker_count:'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${ptw}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execNextAction(r)}</td>
+      </tr>`;
+    }
+
+    // ── フィルター定義 ──
+    const _EXEC_FILTERS = [
+      {key:'all',             lbl:'すべて'},
+      {key:'action_needed',   lbl:'⚠ 対応必要'},
+      {key:'today',           lbl:'🔵 本日'},
+      {key:'in_progress',     lbl:'🔧 実施中'},
+      {key:'anomaly',         lbl:'🚨 異常あり'},
+      {key:'approval_pending',lbl:'⏳ 承認待ち'},
+      {key:'approved',        lbl:'✅ 承認済'},
+    ];
+
+    function _execFilter(rows, key){
+      const today = new Date().toISOString().slice(0,10);
+      if(key==='all')             return rows;
+      if(key==='action_needed')   return rows.filter(r=>['done_anomaly','on_hold'].includes(r.execution_status)||
+                                    (r.execution_status==='done'&&r.latest_ir_approval!=='approved')||
+                                    r.execution_status==='returned');
+      if(key==='today')           return rows.filter(r=>r.planned_date===today);
+      if(key==='in_progress')     return rows.filter(r=>r.execution_status==='in_progress');
+      if(key==='anomaly')         return rows.filter(r=>r.has_anomaly);
+      if(key==='approval_pending')return rows.filter(r=>r.latest_ir_approval==='pending');
+      if(key==='approved')        return rows.filter(r=>r.latest_ir_approval==='approved');
+      return rows.filter(r=>r.execution_status===key);
+    }
+
+    function _execRender(rows){
+      const body = document.getElementById('execListBody');
+      if(!rows.length){
+        body.innerHTML='<div style="color:var(--muted);padding:20px 0;text-align:center;">該当する点検はありません。<br><span style="font-size:12px;">点検計画を承認すると、ここに表示されます。</span></div>';
+        return;
+      }
+      const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
+      const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
+      const thead = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>${['優先','点検日','号機','作業種別','点検ステータス','承認','異常','時間','資格','人数','PTW','次アクション']
+          .map(h=>`<th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;white-space:nowrap;">${h}</th>`).join('')}
+        </tr></thead><tbody>`;
+      body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
+    }
+
     async function loadExecutionList(){
       const wrap = document.querySelector('.wrap');
       const existingEl = document.getElementById('execListCard');
@@ -2924,162 +3087,81 @@
       const card = document.createElement('div');
       card.id = 'execListCard';
       card.className = 'card';
+
+      // フィルタータブ HTML
+      const filterHtml = _EXEC_FILTERS.map(f=>
+        `<button class="exec-f" data-f="${f.key}" style="background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;">${f.lbl}</button>`
+      ).join('');
+
       card.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
           <h2 style="margin:0;">点検実施</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button onclick="activateAnomalyCheckMode()" style="background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔍 異常確認点検</button>
             <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔴 臨時点検を記録</button>
           </div>
         </div>
-        <div id="execKpi" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div id="execFilters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${filterHtml}</div>
+        <div id="execKpi" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
         <div id="execListBody" class="loading">読み込み中…</div>
         <div style="margin-top:14px;padding-bottom:4px;">
           <button onclick="activateAdhocMode()" style="background:rgba(219,97,162,.15);color:#db61a2;border:1px solid rgba(219,97,162,.45);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;">＋ 🔴 臨時点検を記録</button>
         </div>`;
       wrap.insertAdjacentElement('afterbegin', card);
+      // フィルタータブにイベント付与
+      const _fStyle  = 'background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;';
+      const _fStyleA = 'background:rgba(88,166,255,.1);border:1px solid var(--master);color:#fff;font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:700;';
+      card.querySelectorAll('.exec-f').forEach(btn=>{
+        btn.style.cssText = _fStyle;
+        btn.addEventListener('click',()=>{
+          card.querySelectorAll('.exec-f').forEach(b=>b.style.cssText=_fStyle);
+          btn.style.cssText = _fStyleA;
+          _execRender(_execFilter(_execAllRows,btn.dataset.f));
+        });
+      });
+      const _firstF = card.querySelector('.exec-f[data-f="all"]');
+      if(_firstF) _firstF.style.cssText = _fStyleA;
+
       try{
         const rows = await sb.get('v_inspection_execution_list?order=planned_date.asc');
-        const body = document.getElementById('execListBody');
-        const kpiEl = document.getElementById('execKpi');
+        _execAllRows = rows||[];
 
-        if(!rows || !rows.length){
-          body.innerHTML = '<div style="color:var(--muted);padding:20px 0;text-align:center;">実施フェーズの点検はありません。<br><span style="font-size:12px;">点検計画を承認すると、ここに表示されます。</span></div>';
+        if(!_execAllRows.length){
+          document.getElementById('execListBody').innerHTML='<div style="color:var(--muted);padding:20px 0;text-align:center;">実施フェーズの点検はありません。<br><span style="font-size:12px;">点検計画を承認すると、ここに表示されます。</span></div>';
           return;
         }
 
-        // ── 種別バッジ ──────────────────────────────────────
-        function kindBadge(r){
-          if(r.inspection_kind==='adhoc'){
-            const B={scada:['#ff9a92','rgba(248,81,73,.10)','rgba(248,81,73,.4)','SCADA異常'],
-                     alarm:['#ff9a92','rgba(248,81,73,.10)','rgba(248,81,73,.4)','アラーム'],
-                     manual:['#e3b341','rgba(210,153,34,.10)','rgba(210,153,34,.4)','現場判断'],
-                     chief_instruction:['#db61a2','rgba(219,97,162,.10)','rgba(219,97,162,.4)','主任指示'],
-                     weather:['#9cd2ff','rgba(88,166,255,.10)','rgba(88,166,255,.4)','天候後'],
-                     recovery:['#7ee787','rgba(63,185,80,.10)','rgba(63,185,80,.4)','復旧確認']};
-            const b=B[r.source_type||'manual']||['#8b949e','transparent','#30363d','臨時'];
-            return `<span style="font-size:10px;font-weight:700;color:${b[0]};background:${b[1]};border:1px solid ${b[2]};border-radius:4px;padding:1px 7px;">${b[3]}</span>`;
-          }
-          const t=r.work_type||'';
-          if(t.includes('年次')) return '<span style="font-size:10px;font-weight:700;color:#9cd2ff;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);border-radius:4px;padding:1px 7px;">年次</span>';
-          if(t.includes('定期')) return '<span style="font-size:10px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:4px;padding:1px 7px;">定期</span>';
-          if(t.includes('緊急')||t.includes('異常')) return '<span style="font-size:10px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:4px;padding:1px 7px;">緊急</span>';
-          return '<span style="font-size:10px;color:var(--muted);border:1px solid #30363d;border-radius:4px;padding:1px 7px;">その他</span>';
-        }
+        // KPI チップ
+        const kpiEl = document.getElementById('execKpi');
+        const KPI_DEFS=[
+          {st:'done_anomaly',   lbl:'🚨 異常判断中', c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+          {st:'in_progress',    lbl:'🔧 点検中',     c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
+          {st:'result_pending', lbl:'⏳ 承認待ち',   c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+          {st:'not_started',    lbl:'📅 実施待ち',   c:'#c9d1d9',bg:'rgba(201,209,217,.05)',bd:'#30363d'},
+          {st:'done',           lbl:'📝 記録済',     c:'#8b949e',bg:'transparent',          bd:'#30363d'},
+          {st:'result_approved',lbl:'✅ 承認済',     c:'#7ee787',bg:'rgba(63,185,80,.05)',  bd:'rgba(63,185,80,.2)'},
+        ];
+        kpiEl.innerHTML=KPI_DEFS.map(k=>{
+          const cnt=_execAllRows.filter(r=>(r.execution_status||'not_started')===k.st).length;
+          return cnt>0
+            ? `<span style="font-size:12px;font-weight:700;color:${k.c};background:${k.bg};border:1px solid ${k.bd};border-radius:20px;padding:3px 12px;white-space:nowrap;cursor:pointer;" onclick="document.querySelector('.exec-f[data-f=\\'${k.st}\\']')?.click()">${k.lbl} ${cnt}</span>`
+            : `<span style="font-size:12px;color:var(--muted);border:1px solid #30363d;border-radius:20px;padding:3px 12px;white-space:nowrap;">${k.lbl} 0</span>`;
+        }).join('');
 
-        // ── 詳細ボタン ──────────────────────────────────────
-        function detailBtn(r){
-          const rid = r.latest_result_id ? encodeURIComponent(r.latest_result_id) : '';
-          const pid = r.plan_id ? encodeURIComponent(r.plan_id) : '';
-          const isAdhoc = r.inspection_kind === 'adhoc';
-          // 結果があれば readonly 表示、なければ計画詳細
-          if(rid){
-            const href = isAdhoc
-              ? `./inspection-input.html?readonly=1&result_id=${rid}`
-              : `./inspection-input.html?plan_id=${pid}&readonly=1`;
-            return `<a href="${href}" onclick="event.stopPropagation()" style="font-size:11px;color:var(--muted);border:1px solid #30363d;border-radius:5px;padding:2px 8px;text-decoration:none;white-space:nowrap;margin-right:4px;">📋 詳細</a>`;
-          }
-          // 結果なし（未実施）
-          return '';
-        }
+        _execRender(_execFilter(_execAllRows,'all'));
+      }catch(e){
+        const _b=document.getElementById('execListBody');
+        if(_b) _b.innerHTML='<div class="err">取得エラー: '+esc(e.message)+'</div>';
+      }
 
-        // ── 次アクションボタン ──────────────────────────────
-        function nextAction(r){
-          const st=r.execution_status||'not_started';
-          const pid=r.plan_id?encodeURIComponent(r.plan_id):'';
-          const rid=r.latest_result_id?encodeURIComponent(r.latest_result_id):'';
-          const isAdhoc=r.inspection_kind==='adhoc';
-          const BTN=(lbl,href,style)=>`<a href="${href}" style="font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;padding:5px 12px;border-radius:7px;${style}">${lbl}</a>`;
-          const GBTN=(lbl,fn,style)=>`<button onclick="${fn}" style="font-size:12px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:5px 12px;border-radius:7px;${style}">${lbl}</button>`;
-          if(st==='done_anomaly') return BTN('⚠ 異常判断へ','./defect-rca.html?plan_id='+pid,'background:#d29922;color:#11161d;');
-          if(st==='in_progress')  return GBTN('続きから →','openDrawerForPlan(event,\''+r.plan_id+'\')', 'background:#1f6feb;color:#fff;')
-                                       +(pid?GBTN('⏸','setOnHold(event,\''+r.plan_id+'\')', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;'):'');
-          if(st==='on_hold')      return (pid?GBTN('▶ 再開','setResume(event,\''+r.plan_id+'\')', 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;'):'');
-          if(st==='not_started')  return GBTN('点検を開始','openDrawerForPlan(event,\''+r.plan_id+'\')', 'background:#238636;color:#fff;')
-                                       +(pid?GBTN('⏸','setOnHold(event,\''+r.plan_id+'\')', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;'):'');
-          if(st==='work_ordered') return BTN('作業票を見る','./work-orders.html','background:transparent;border:1px solid rgba(210,153,34,.4);color:#d29922;');
-          // done / result_approved / adhoc done
-          const resultHref = isAdhoc&&rid ? './inspection-input.html?readonly=1&result_id='+rid
-                           : pid ? './inspection-input.html?plan_id='+pid+'&readonly=1' : '#';
-          return BTN('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
-        }
-
-        // ── PTW列 ───────────────────────────────────────────
-        function ptwCell(r){
-          if(r.ptw_required && r.ptw_number) return '<span style="font-size:11px;color:#7ee787;">✅ '+esc(r.ptw_number)+'</span>';
-          if(r.ptw_required) return '<span style="font-size:11px;color:#ff9a92;">⚠ 未取得</span>';
-          return '<span style="color:var(--muted);font-size:11px;">—</span>';
-        }
-
-        // ── 行生成 ──────────────────────────────────────────
-        // ── 区分バッジ（定期点検 / 臨時点検 の大分類）──────
-        function kubunBadge(r){
-          if(r.inspection_kind==='adhoc')
-            return '<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:4px;padding:1px 7px;white-space:nowrap;">臨時点検</span>';
-          return '<span style="font-size:10px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.3);border-radius:4px;padding:1px 7px;white-space:nowrap;">定期点検</span>';
-        }
-
-        function makeRow(r){
-          const st=r.execution_status||'not_started';
-          const isAdhoc=r.inspection_kind==='adhoc';
-          const anomBadge=r.has_anomaly?'<span style="font-size:10px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:4px;padding:1px 6px;margin-left:3px;">異常</span>':'';
-
-          // 作業種別（計画: work_type テキスト / 臨時: 理由テキスト）
-          const workTypeLabel = isAdhoc
-            ? (r.source_reason ? esc(r.source_reason.length>30?r.source_reason.slice(0,30)+'…':r.source_reason) : '<span style="color:var(--muted);">—</span>')
-            : esc(r.work_type||'');
-
-          const dateLabel=esc(r.planned_date||'');
-          const rowBg=st==='done_anomaly'?'rgba(248,81,73,.04)':st==='in_progress'?'rgba(88,166,255,.03)':'';
-          return '<tr style="cursor:default;'+(rowBg?'background:'+rowBg+';':'')+'" >'+
-            '<td style="white-space:nowrap;color:var(--muted);font-size:12px;">'+dateLabel+'</td>'+
-            '<td><b style="color:#fff;font-family:monospace;font-size:13px;">'+esc(r.turbine_no||'')+'</b></td>'+
-            '<td style="white-space:nowrap;">'+kubunBadge(r)+'</td>'+
-            '<td style="white-space:nowrap;">'+kindBadge(r)+'</td>'+
-            '<td style="max-width:180px;">'+workTypeLabel+anomBadge+'</td>'+
-            '<td style="white-space:nowrap;">'+ptwCell(r)+'</td>'+
-            '<td style="white-space:nowrap;">'+detailBtn(r)+nextAction(r)+'</td>'+
-            '</tr>';
-        }
-
-        // ── セクション定義（優先度順）──────────────────────
-        const SECTIONS = [
-          {key:'anomaly',   filter:r=>r.execution_status==='done_anomaly',                                    label:'🚨 異常判断中',  color:'#ff9a92', bg:'rgba(248,81,73,.08)', bd:'rgba(248,81,73,.3)'},
-          {key:'progress',  filter:r=>r.execution_status==='in_progress',                                     label:'🔧 点検中',      color:'#9cd2ff', bg:'rgba(88,166,255,.08)',bd:'rgba(88,166,255,.3)'},
-          {key:'hold',      filter:r=>r.execution_status==='on_hold',                                         label:'⏸ 保留中',      color:'#e3b341', bg:'rgba(210,153,34,.08)',bd:'rgba(210,153,34,.3)'},
-          {key:'ready',     filter:r=>r.execution_status==='not_started',                                     label:'📅 実施待ち',    color:'#c9d1d9', bg:'rgba(201,209,217,.05)',bd:'#30363d'},
+      // (旧inner functions削除済み)
+      if(false){const _DEAD_CODE_REMOVED=1;
           {key:'recorded',  filter:r=>r.execution_status==='done'&&!r.has_anomaly,                            label:'📝 結果記録済',  color:'#8b949e', bg:'transparent',         bd:'#30363d'},
           {key:'work_ord',  filter:r=>r.execution_status==='work_ordered',                                    label:'🔧 作業票化',    color:'#d29922', bg:'rgba(210,153,34,.06)',bd:'rgba(210,153,34,.25)'},
           {key:'confirmed', filter:r=>['result_approved','anomaly_approved'].includes(r.execution_status),    label:'✅ 結果確認済',  color:'#7ee787', bg:'rgba(63,185,80,.05)', bd:'rgba(63,185,80,.2)'}
         ];
 
-        // ── KPI チップ ─────────────────────────────────────
-        kpiEl.innerHTML = SECTIONS.map(s=>{
-          const cnt=rows.filter(s.filter).length;
-          return cnt>0
-            ? `<span style="font-size:12px;font-weight:700;color:${s.color};background:${s.bg};border:1px solid ${s.bd};border-radius:20px;padding:3px 12px;white-space:nowrap;">${s.label} ${cnt}</span>`
-            : `<span style="font-size:12px;color:var(--muted);border:1px solid #30363d;border-radius:20px;padding:3px 12px;white-space:nowrap;">${s.label} 0</span>`;
-        }).join('');
-
-        // ── テーブル ─────────────────────────────────────
-        const thead='<table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr>'+
-          ['点検日','号機','区分','種別','作業種別 / 理由','PTW','次アクション'].map(h=>`<th style="text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;">${h}</th>`).join('')+
-          '</tr></thead><tbody>';
-
-        let html='';
-        SECTIONS.forEach(s=>{
-          const sec=rows.filter(s.filter);
-          if(!sec.length) return;
-          html+=`<tr><td colspan="7" style="padding:12px 10px 4px;font-size:11px;font-weight:700;color:${s.color};background:${s.bg};border-top:2px solid ${s.bd};letter-spacing:.04em;">${s.label} <span style="color:var(--muted);font-weight:400;">(${sec.length}件)</span></td></tr>`;
-          html+=sec.map(makeRow).join('');
-        });
-
-        body.innerHTML = thead+html+'</tbody></table>';
-      }catch(e){
-        const body = document.getElementById('execListBody');
-        if(body) body.innerHTML = '<div class="err">取得エラー: '+esc(e.message)+'</div>';
-      }
-    }
+      } // end if(false)
 
     function togglePtwNumber(){
       const req = document.getElementById('f_ptw_req_y')?.checked;
