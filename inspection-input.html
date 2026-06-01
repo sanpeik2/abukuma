@@ -3078,21 +3078,41 @@
       return `IR-${(r.latest_executed_date||'').replace(/-/g,'')}-${String(r.latest_result_id).slice(0,4).toUpperCase()}`;
     }
 
-    // ── 行生成（一覧7列：状態=点検ステータス／承認=ワークフローの2系統を分離） ──
+    // ── 緊急度（異常がある行のみ。異常なしは「—」） ──
+    function _urgencyCell(r){
+      const isAnom = r.has_anomaly || r.result_status==='ng';
+      if(!isAnom) return '<span style="color:#6e7681;">—</span>';
+      const map={
+        critical:['🔴 重大','#ff7b72',700],
+        high:    ['🟠 高',  '#ff9a92',700],
+        medium:  ['🟡 中',  '#e3b341',700],
+        low:     ['低',     '#8b949e',400]
+      };
+      const m=map[r.severity];
+      if(!m) return '<span style="color:#ff9a92;font-weight:700;white-space:nowrap;">⚠ 要確認</span>';
+      return `<span style="color:${m[1]};font-weight:${m[2]};white-space:nowrap;">${m[0]}</span>`;
+    }
+
+    // ── 行生成（状態=点検ステータス／承認=ワークフローの2系統を分離。点検内容＋具体箇所＋緊急度） ──
     function _makeExecRow(r){
       const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
       const td = 'padding:9px 10px;border-bottom:1px solid var(--line);';
 
-      // 点検内容（なければ点検表名・点検区分から推定）→ クリックで詳細ドロワー
-      const content = esc(r.inspection_content || r.checklist_names || r.inspection_category || '—');
-      const contentCell = `<span onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" title="クリックで詳細を表示" style="cursor:pointer;color:#9cd2ff;border-bottom:1px dashed rgba(156,210,255,.45);">${content}</span>`;
+      // 点検内容（業務区分）→ クリックで詳細ドロワー
+      const general = esc(r.inspection_category || '点検');
+      const generalCell = `<span onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" title="クリックで詳細を表示" style="cursor:pointer;color:#9cd2ff;border-bottom:1px dashed rgba(156,210,255,.45);">${general}</span>`;
+      // 点検箇所（具体）
+      const specific = esc(r.inspection_content || r.checklist_names || '');
+      const specificCell = specific ? `<span style="color:var(--txt);">${specific}</span>` : '<span style="color:#6e7681;">—</span>';
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
         <td style="${td}white-space:nowrap;">${_execStBadge(r)}</td>
         <td style="${td}font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
         <td style="${td}white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
-        <td style="${td}font-size:12.5px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${contentCell}</td>
+        <td style="${td}font-size:12.5px;white-space:nowrap;">${generalCell}</td>
+        <td style="${td}font-size:12.5px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${specificCell}</td>
         <td style="${td}white-space:nowrap;">${_resultBadge(r.result_status)}</td>
+        <td style="${td}white-space:nowrap;text-align:center;">${_urgencyCell(r)}</td>
         <td style="${td}white-space:nowrap;">${_irApprovalBadge(r)}</td>
         <td style="${td}white-space:nowrap;">${_execNextAction(r)}</td>
       </tr>`;
@@ -3288,7 +3308,7 @@
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       const thead = `<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-        <thead><tr>${['状態','号機','点検日','点検内容','結果','承認','次アクション']
+        <thead><tr>${['状態','号機','点検日','点検内容','点検箇所','結果','緊急度','承認','次アクション']
           .map(h=>`<th style="text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
