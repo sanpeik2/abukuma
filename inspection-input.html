@@ -576,17 +576,25 @@
       <h2 id="formTitle">📝 新規 点検実績を登録</h2>
       <!-- 臨時点検モード時のみ表示 -->
       <div id="adhocFields" style="display:none;margin-bottom:18px;padding:12px 14px;border:1px solid rgba(219,97,162,.4);border-radius:9px;background:rgba(219,97,162,.06);">
-        <div style="font-size:12.5px;font-weight:700;color:#db61a2;margin-bottom:10px;">🔴 臨時点検 — 起点と理由を入力してください（監査証跡として必須）</div>
+        <div style="font-size:12.5px;font-weight:700;color:#db61a2;margin-bottom:10px;" id="adhocModeTitle">🔴 臨時点検 — 起点と理由を入力してください（監査証跡として必須）</div>
         <div class="form-grid">
           <div>
-            <label>起点<span class="req">*</span><span class="help">なぜこの点検を実施したか</span></label>
+            <label>点検種別<span class="req">*</span><span class="help">この点検の種類・起点</span></label>
             <select id="f_source_type" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;">
-              <option value="manual">現場判断</option>
-              <option value="scada">SCADA異常</option>
-              <option value="alarm">アラーム発報</option>
-              <option value="weather">天候後確認</option>
-              <option value="recovery">復旧確認</option>
-              <option value="chief_instruction">主任技術者指示</option>
+              <optgroup label="── 臨時点検（計画外）">
+                <option value="scada">🔴 SCADAアラーム発報</option>
+                <option value="alarm">🔴 アラーム発報</option>
+                <option value="manual">🟡 現場判断（目視異常等）</option>
+                <option value="chief_instruction">🟡 主任技術者指示</option>
+              </optgroup>
+              <optgroup label="── 異常確認点検">
+                <option value="anomaly_check">🔍 異常確認点検（原因特定のための点検）</option>
+                <option value="recovery">🔍 復旧確認点検</option>
+              </optgroup>
+              <optgroup label="── その他">
+                <option value="weather">天候後確認</option>
+                <option value="manual">現場判断（その他）</option>
+              </optgroup>
             </select>
           </div>
           <div class="full">
@@ -2919,7 +2927,10 @@
       card.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px;">
           <h2 style="margin:0;">点検実施</h2>
-          <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">＋ 臨時点検を記録</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="activateAnomalyCheckMode()" style="background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔍 異常確認点検</button>
+            <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔴 臨時点検を記録</button>
+          </div>
         </div>
         <div id="execKpi" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
         <div id="execListBody" class="loading">読み込み中…</div>
@@ -3080,25 +3091,36 @@
     }
 
     /* ===== ドロワー開閉 ===== */
-    function openDrawer(adhoc){
-      // フォームカードのコンテンツをドロワーボディに移動（初回のみ）
+    function openDrawer(mode){
+      // mode: false/'plan' = 計画点検, 'adhoc' = 臨時点検, 'anomaly' = 異常確認点検
       const regCard = document.getElementById('registrationCard');
       const drawerBody = document.getElementById('drawerBody');
-      // コメントノードを除く element children が 0 のときだけ移動
       if(regCard && drawerBody && drawerBody.children.length === 0){
         while(regCard.firstChild) drawerBody.appendChild(regCard.firstChild);
       }
-      if(adhoc){
+      const title      = document.getElementById('drawerTitle');
+      const adhocFields= document.getElementById('adhocFields');
+      const modeTitle  = document.getElementById('adhocModeTitle');
+      const srcSel     = document.getElementById('f_source_type');
+
+      if(mode === 'adhoc'){
         state.adhocMode = true;
-        const title = document.getElementById('drawerTitle');
-        const adhocFields = document.getElementById('adhocFields');
         if(title) title.textContent = '🔴 臨時点検を記録';
         if(adhocFields) adhocFields.style.display = 'block';
+        if(modeTitle) modeTitle.innerHTML = '🔴 <b>臨時点検</b> — 計画外の点検起票（起点と理由を記録してください）';
+        if(srcSel) srcSel.value = 'scada'; // デフォルト: SCADAアラーム
+      } else if(mode === 'anomaly'){
+        state.adhocMode = true;
+        if(title) title.textContent = '🔍 異常確認点検を記録';
+        if(adhocFields) adhocFields.style.display = 'block';
+        if(modeTitle) modeTitle.innerHTML = '🔍 <b>異常確認点検</b> — 異常・故障の原因を確認するための点検（異常判断に連携されます）';
+        if(modeTitle) modeTitle.style.borderColor = 'rgba(88,166,255,.4)';
+        if(modeTitle) modeTitle.style.background  = 'rgba(88,166,255,.06)';
+        if(modeTitle) modeTitle.style.color        = '#9cd2ff';
+        if(srcSel) srcSel.value = 'anomaly_check';
       } else {
         state.adhocMode = false;
-        const title = document.getElementById('drawerTitle');
-        const adhocFields = document.getElementById('adhocFields');
-        if(title) title.textContent = '📝 点検実績を登録';
+        if(title) title.textContent = '📋 計画点検を記録';
         if(adhocFields) adhocFields.style.display = 'none';
       }
       document.getElementById('drawerOverlay').classList.add('open');
@@ -3112,7 +3134,8 @@
       document.body.style.overflow = '';
     }
 
-    function activateAdhocMode(){ openDrawer(true); }
+    function activateAdhocMode(){ openDrawer('adhoc'); }
+    function activateAnomalyCheckMode(){ openDrawer('anomaly'); }
 
     async function openDrawerForPlan(ev, planId){
       ev.stopPropagation();
