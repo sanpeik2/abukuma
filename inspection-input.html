@@ -1045,12 +1045,11 @@
 
 
 
+    <!-- 履歴は「🕘 直近の実績」フィルターに統合（旧履歴カードは閲覧モードでのみ使用） -->
     <div class="card" id="historyCard" style="display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <h2 style="margin:0;">🕘 点検実績の履歴</h2>
-        <button onclick="toggleHistory()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;">✕ 閉じる</button>
+        <h2 style="margin:0;">📋 点検結果</h2>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">直近30件の点検結果（最新順）。実施状況は上の「点検実施」テーブルで管理します。</div>
       <div id="listBody" class="loading">読み込み中…</div>
     </div>
 
@@ -3062,7 +3061,7 @@
       if(!rs) return '<span style="color:#6e7681;">—</span>';
       if(rs==='ok')          return '<span style="font-size:12px;color:#3fb950;">✅ 異常なし</span>';
       if(rs==='ng')          return '<span style="font-size:12px;color:#ff7b72;">🔴 異常あり</span>';
-      if(rs==='conditional') return '<span style="font-size:12px;color:#e3b341;">🟡 条件付き</span>';
+      if(rs==='conditional') return '<span style="font-size:12px;color:#e3b341;">🟡 条件付き合格</span>';
       return esc(rs);
     }
 
@@ -3358,7 +3357,6 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
           <h2 style="margin:0;">点検実施</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="toggleHistory()" id="histBtn" style="background:var(--panel);color:var(--muted);border:1px solid var(--line);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🕘 履歴を表示</button>
             <button onclick="activateAnomalyCheckMode()" style="background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔍 異常確認点検を開始</button>
             <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔴 臨時点検を開始</button>
           </div>
