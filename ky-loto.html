@@ -235,7 +235,41 @@ async function loadWoContext(){
     const banner = $('ctxBanner');
     banner.style.display='flex';
     banner.innerHTML = `<span style="color:#d29922;font-weight:700;">🔧 作業票</span><b style="color:#fff;">${esc(tno)}</b><span style="color:var(--muted);">${esc(w.work_order_no||'')}</span><span style="color:var(--muted);">${esc(workDesc)}</span>`;
+    // 作業票の安全要件（要否）を読み込み、必須ゲートと次の操作を提示
+    try{
+      const ss = await sb.get(`v_work_order_safety_status?work_order_id=eq.${encodeURIComponent(WO_ID)}&select=*`);
+      if(ss && ss[0]) renderWoSafetyReq(ss[0]);
+    }catch(e){}
   }catch(e){}
+}
+
+function renderWoSafetyReq(s){
+  const banner=document.getElementById('ctxBanner');
+  if(!banner) return;
+  let box=document.getElementById('woSafetyReq');
+  if(!box){ box=document.createElement('div'); box.id='woSafetyReq'; banner.insertAdjacentElement('afterend', box); }
+  const ok='#3fb950',ng='#ff7b72',wn='#e3b341',mu='#6e7681';
+  const chip=(t,c)=>`<span style="color:${c};font-weight:700;">${t}</span>`;
+  const reqd=b=>b?'<span style="color:#e3b341;font-weight:700;">必須</span>':'<span style="color:#8b949e;">不要</span>';
+  const ptwLbl=({draft:'未申請',submitted:'申請中',approved:'承認済',rejected:'差戻し',closed:'完了'})[s.ptw_status]||(s.ptw_status||'未申請');
+  const kyState  = !s.ky_required?chip('—',mu):(s.ky_completed?chip('実施済',ok):chip('未実施',ng));
+  const ptwState = !s.ptw_required?chip('—',mu):(s.ptw_approved?chip('承認済',ok):chip(ptwLbl,ptwLbl==='差戻し'?ng:wn));
+  const lotoState= !s.loto_required?chip('—',mu):(s.loto_unlocked?chip('解除済',ok):(s.loto_locked?chip('施錠済',wn):chip('未施錠',ng)));
+  const todo=[];
+  if(s.ky_required&&!s.ky_completed) todo.push('KY記録を作成・確定する');
+  if(s.ptw_required&&!s.ptw_approved) todo.push('PTWを申請し承認を得る');
+  if(s.loto_required&&!s.loto_locked) todo.push('LOTOを施錠・タグ取付して記録する');
+  if(s.loto_required&&s.loto_locked&&!s.loto_unlocked) todo.push('作業後にLOTOを解除して記録する');
+  box.innerHTML=`<div style="margin:10px 0;padding:11px 14px;border:1px solid rgba(210,153,34,.45);border-radius:9px;background:rgba(210,153,34,.06);">
+    <div style="font-size:12px;font-weight:700;color:#e3b341;margin-bottom:6px;">⚠ この作業票の安全要件（要否は作業票で設定）</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;">
+      <span>KY: ${reqd(s.ky_required)} / ${kyState}</span>
+      <span>PTW: ${reqd(s.ptw_required)} / ${ptwState}</span>
+      <span>LOTO: ${reqd(s.loto_required)} / ${lotoState}</span>
+    </div>
+    ${todo.length?`<div style="margin-top:8px;font-size:12px;color:#ff9a92;">次にやること： ${todo.map(esc).join(' → ')}</div>`:`<div style="margin-top:8px;font-size:12px;color:#7ee787;">✅ 作業開始に必要な安全ゲートは充足${(s.loto_required&&!s.loto_unlocked)?'（作業後のLOTO解除が残っています）':''}</div>`}
+    <div style="margin-top:6px;font-size:11px;color:#8b949e;">作業開始可: ${s.safety_ready_to_start?'✅ 可':'⛔ 不可'} ／ クローズ可: ${s.safety_ready_to_close?'✅ 可':'⛔ 不可'}</div>
+  </div>`;
 }
 
 async function loadExistingRecords(){
