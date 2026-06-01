@@ -253,11 +253,11 @@ function renderWoSafetyReq(s){
   const reqd=b=>b?'<span style="color:#e3b341;font-weight:700;">必須</span>':'<span style="color:#8b949e;">不要</span>';
   const ptwLbl=({draft:'未申請',submitted:'申請中',approved:'承認済',rejected:'差戻し',closed:'完了'})[s.ptw_status]||(s.ptw_status||'未申請');
   const kyState  = !s.ky_required?chip('—',mu):(s.ky_completed?chip('実施済',ok):chip('未実施',ng));
-  const ptwState = !s.ptw_required?chip('—',mu):(s.ptw_approved?chip('承認済',ok):chip(ptwLbl,ptwLbl==='差戻し'?ng:wn));
+  const ptwState = !s.ptw_required?chip('—',mu):(s.ptw_approved_for_start?chip('承認済',ok):(s.ptw_closed?chip('完了(許可終了)',mu):chip(ptwLbl,ptwLbl==='差戻し'?ng:wn)));
   const lotoState= !s.loto_required?chip('—',mu):(s.loto_unlocked?chip('解除済',ok):(s.loto_locked?chip('施錠済',wn):chip('未施錠',ng)));
   const todo=[];
   if(s.ky_required&&!s.ky_completed) todo.push('KY記録を作成・確定する');
-  if(s.ptw_required&&!s.ptw_approved) todo.push('PTWを申請し承認を得る');
+  if(s.ptw_required&&!s.ptw_approved_for_start&&!s.ptw_closed) todo.push('PTWを申請し承認を得る');
   if(s.loto_required&&!s.loto_locked) todo.push('LOTOを施錠・タグ取付して記録する');
   if(s.loto_required&&s.loto_locked&&!s.loto_unlocked) todo.push('作業後にLOTOを解除して記録する');
   box.innerHTML=`<div style="margin:10px 0;padding:11px 14px;border:1px solid rgba(210,153,34,.45);border-radius:9px;background:rgba(210,153,34,.06);">
