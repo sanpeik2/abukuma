@@ -3111,6 +3111,12 @@
       const ngCell = hasResult
         ? `<span style="${ng>0?'color:#f0c674;font-weight:700;':'color:var(--muted);'}">${ng}/${tot}</span>`
         : '<span style="color:#6e7681;">—</span>';
+      // 結果（履歴表の「異常」表示に合わせる：⚠ 異常 / ○ 正常）
+      const resultCell = hasResult
+        ? (r.has_anomaly
+            ? '<span style="color:#f0c674;font-weight:700;">⚠ 異常</span>'
+            : '<span style="color:#3fb950;">○ 正常</span>')
+        : '<span style="color:#6e7681;">—</span>';
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
         <td style="${tdn}" title="${planTip}">${noCell}</td>
@@ -3119,7 +3125,7 @@
         <td style="${td}">${clCell}</td>
         <td style="${td}">${contentCell}</td>
         <td style="${tdn}">${_execStBadge(r)}</td>
-        <td style="${tdn}">${_resultBadge(r.result_status)}</td>
+        <td style="${tdn}">${resultCell}</td>
         <td style="${tdn}text-align:center;">${ngCell}</td>
         <td style="${tdn}text-align:center;">${_urgencyCell(r)}</td>
         <td style="${tdn}">${_irApprovalBadge(r)}</td>
