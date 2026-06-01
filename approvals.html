@@ -396,6 +396,54 @@
         inspection_plan:"#58a6ff", defect_finding:"#f85149", near_miss:"#e3b341", moc:"#bc8cff" })[t] || "#8b949e";
     }
 
+    // 申請内容（元レコード）の表示用ラベル
+    const _APPR_LABELS = {
+      finding_title:"異常タイトル", finding_detail:"詳細", safety_impact:"安全影響", operation_impact:"運転影響",
+      initial_judgement:"一次判定", regulation_impact:"保安規定影響", cause_clarity:"原因明確度", recurrence_type:"再発性",
+      severity:"深刻度", first_check_person:"一次確認者", first_check_method:"一次確認方法", first_check_notes:"一次確認メモ",
+      legal_judgement_class:"法令分類", report_required_flag:"報告要否",
+      result_status:"結果", has_anomaly:"異常有無", anomaly_description:"異常内容", comments:"コメント",
+      executed_date:"実施日", weather:"天候", wind_speed_ms:"風速(m/s)", ptw_number:"PTW番号",
+      work_type:"作業種別", planned_date:"予定日", inspection_purpose:"点検目的", inspection_scope:"点検範囲",
+      notes:"備考", responsible_person:"責任者", worker_count:"作業人数", required_qualification:"必要資格",
+      plan_no:"計画番号", work_order_no:"作業票番号", title:"件名", description:"内容", work_description:"作業内容",
+      permit_status:"許可状態", valid_from:"有効開始", valid_to:"有効終了", estimated_outage_minutes:"想定停止(分)"
+    };
+    function _apprFmtVal(k,v){
+      if(typeof v === "boolean") return v ? "はい" : "いいえ";
+      return esc(String(v));
+    }
+    const _apprDetLoaded = {};
+    async function toggleApprovalDetail(recId, t){
+      const el = document.getElementById("det_"+recId);
+      if(!el) return;
+      const show = el.style.display === "none" || !el.style.display;
+      el.style.display = show ? "block" : "none";
+      if(!show || _apprDetLoaded[recId]) return;
+      _apprDetLoaded[recId] = true;
+      el.innerHTML = '<div style="margin-top:8px;color:#8b949e;font-size:12px;">読み込み中…</div>';
+      const cfg = patchTarget[t];
+      if(!cfg){ el.innerHTML = '<div style="margin-top:8px;color:#8b949e;font-size:12px;">この種別は申請内容の表示に未対応です。</div>'; return; }
+      try{
+        const rows = await sb.get(`${cfg.table}?id=eq.${encodeURIComponent(recId)}&select=*`);
+        const d = rows && rows[0];
+        if(!d){ el.innerHTML = '<div style="margin-top:8px;color:#8b949e;font-size:12px;">申請内容が取得できませんでした。</div>'; return; }
+        const skip = /(^id$|_id$|_at$|^created|^updated|^revision|^approval_status$|^source_type$|^status$)/;
+        const items = Object.keys(d)
+          .filter(k => !skip.test(k) && d[k] !== null && d[k] !== "")
+          .map(k => `<div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #21262d;">
+              <span style="min-width:110px;color:#8b949e;font-size:11.5px;">${esc(_APPR_LABELS[k]||k)}</span>
+              <span style="font-size:12.5px;color:#c9d1d9;white-space:pre-wrap;">${_apprFmtVal(k,d[k])}</span>
+            </div>`).join("");
+        el.innerHTML = `<div style="margin-top:8px;padding:11px 13px;background:#0d1117;border:1px solid #30363d;border-radius:9px;">
+            <div style="font-size:11.5px;font-weight:700;color:#9cd2ff;margin-bottom:7px;">📄 申請内容</div>
+            ${items || '<span style="color:#8b949e;font-size:12px;">表示できる項目がありません。</span>'}
+          </div>`;
+      }catch(e){
+        el.innerHTML = '<div style="margin-top:8px;color:#f85149;font-size:12px;">取得エラー: '+esc(e.message)+'</div>';
+      }
+    }
+
 
 
 
@@ -536,7 +584,7 @@
 
 
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px;">
-            <span style="font-size:15px;font-weight:800;padding:6px 13px;border-radius:9px;white-space:nowrap;color:${_apprTypeColor(t)};background:${_apprTypeColor(t)}22;border:1px solid ${_apprTypeColor(t)}66;">${esc(r["表示ラベル"]||t)}</span>
+            <span onclick="toggleApprovalDetail('${esc(id)}','${esc(t)}')" title="クリックで申請内容を表示" style="cursor:pointer;font-size:15px;font-weight:800;padding:6px 13px;border-radius:9px;white-space:nowrap;color:${_apprTypeColor(t)};background:${_apprTypeColor(t)}22;border:1px solid ${_apprTypeColor(t)}66;">${esc(r["表示ラベル"]||t)} <span style="font-size:12px;">▾</span></span>
             <span style="font-size:17px;font-weight:800;padding:6px 13px;border-radius:9px;white-space:nowrap;color:#fff;background:#1c2128;border:1px solid #30363d;font-family:monospace;">🌀 ${esc(wtg)}</span>
           </div>
 
@@ -544,6 +592,8 @@
 
 
           <h3>${esc(r["内容"]||"(内容なし)")}</h3>
+
+          <div id="det_${esc(id)}" style="display:none;"></div>
 
 
 
