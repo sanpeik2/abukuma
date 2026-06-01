@@ -502,7 +502,7 @@
 
 
 
-        ['計画番号','申請日','号機','作業種別','区分','点検ステータス','計画日','時間','必要資格','人数','PTW','KY・LOTO'].map(h=>`<th>${h}</th>`).join('') +
+        ['計画番号','申請日','計画日','号機','点検区分','作業種別','チェックリスト','計画承認','安全準備','時間','責任者','人数','次アクション'].map(h=>`<th>${h}</th>`).join('') +
 
 
 
@@ -532,12 +532,15 @@
 
 
 
-            <td style="white-space:nowrap;"><a onclick="event.stopPropagation();openEditPanel('${esc(r["計画id"]||"")}')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;">${esc(r["plan_no"]||"—")}</a></td><td style="color:var(--muted);white-space:nowrap;">${r["申請日"] ? esc(r["申請日"]) : "—"}</td>
+            <td style="white-space:nowrap;"><a onclick="event.stopPropagation();openEditPanel('${esc(r["計画id"]||"")}')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;">${esc(r["plan_no"]||"—")}</a></td>
+            <td style="color:var(--muted);white-space:nowrap;font-size:11px;">${r["申請日"] ? esc(r["申請日"]) : "—"}</td>
+            <td style="white-space:nowrap;font-size:11px;">${esc(r["計画日"]||"")}</td>
             <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
-            <td>${esc(r["作業種別"]||"")}</td>
             <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
+            <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;font-size:12px;">${esc(r["作業種別"]||"")}</td>
+            <td style="font-size:11px;color:#9cd2ff;white-space:nowrap;">${r["チェックリスト名"] ? esc(r["チェックリスト名"]) : '<span style="color:var(--muted);">—</span>'}</td>
             <td style="white-space:nowrap;">${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]==="approved"?execMiniTag(r["unified_status"]||"ready"):""}${(r["approval_status"]==="draft"||r["approval_status"]==="returned")?`<button onclick="event.stopPropagation();submitApproval('${esc(r["計画id"]||"")}')" style="margin-left:6px;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;">${r["approval_status"]==="returned"?"📨 再申請":"📨 承認申請"}</button>`:""}</td>
-            <td style="white-space:nowrap;">${esc(r["計画日"]||"")}</td>
+            <td style="white-space:nowrap;">${safetyBadge(r)}</td>
 
 
 
@@ -547,7 +550,7 @@
 
 
 
-            <td>${esc(r["必要資格"]||"—")}</td>
+            <td style="font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;">${esc(r["実施責任者"]||"—")}</td>
 
 
 
@@ -557,8 +560,7 @@
 
 
 
-            <td style="white-space:nowrap;">${ptwBadge(r)}</td>
-            <td style="white-space:nowrap;">${planButtons(r)}</td>
+            <td style="white-space:nowrap;">${nextActionCell(r)}</td>
 
 
 
@@ -623,15 +625,16 @@
 
 
 
+    let _CHECKLIST_TEMPLATES = [];
+
     async function loadAll(){
 
 
 
 
       try{
-
-
-
+        // チェックリストテンプレートを先に取得（編集パネルのセレクトに使用）
+        _CHECKLIST_TEMPLATES = await sb.get('inspection_checklist_templates?is_active=eq.true&order=sort_order.asc').catch(()=>[]);
 
         state.rows = await sb.get("v_inspection_plan_list?order=計画日.asc");
 
@@ -684,19 +687,38 @@
     // 補修・停止が事前に決まっている計画のキーワード判定
     const REPAIR_KW = ['補修','停止','修理','交換','清掃作業'];
 
-    function planButtons(r){
+    /* ===== 安全準備バッジ ===== */
+    function safetyBadge(r){
+      const parts = [];
+      if(r['ptw_required']){
+        if(r['ptw番号'])
+          parts.push(`<button onclick="event.stopPropagation();openPtwCard('${esc(r['ptw番号'])}',event)" style="font-size:10px;color:#7ee787;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);border-radius:3px;padding:1px 6px;cursor:pointer;font-family:monospace;">PTW ✅</button>`);
+        else
+          parts.push('<span style="font-size:10px;color:#ff9a92;border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 5px;white-space:nowrap;">PTW ⚠未</span>');
+      }
+      if(r['ky_required'])   parts.push('<span style="font-size:10px;color:#e3b341;border:1px solid rgba(210,153,34,.35);border-radius:3px;padding:1px 5px;">KY</span>');
+      if(r['loto_required']) parts.push('<span style="font-size:10px;color:#ff9a92;border:1px solid rgba(248,81,73,.35);border-radius:3px;padding:1px 5px;">LOTO</span>');
+      return parts.length ? parts.join('&nbsp;') : '<span style="font-size:10px;color:var(--muted);">—</span>';
+    }
+
+    /* ===== 次アクションセル ===== */
+    function nextActionCell(r){
       const appSt = r["approval_status"] || "draft";
-      const rawId = r["計画id"] || "";
-      let b = "";
-
-      // ── 詳細ボタン（常に表示・承認状態で編集可否が変わる）──
-      // 詳細ボタンのみ（承認申請はステータス列に移動済み）
-      
-      b += `<a href="./ky-loto.html?plan_id=${encodeURIComponent(rawId)}" style="display:inline-block;font-size:11px;font-weight:700;color:#e3b341;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;text-decoration:none;">⚠ KY・LOTO</a>`;
-
-      // 差戻しは approvals.html（承認者画面）の権限のため担当者側には表示しない
-
-      return b;
+      const us    = r["unified_status"] || "planning";
+      const pid   = encodeURIComponent(r["計画id"] || "");
+      const rid   = r["最新inspection_result_id"] ? encodeURIComponent(r["最新inspection_result_id"]) : "";
+      const S     = 'text-decoration:none;font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;display:inline-block;white-space:nowrap;';
+      let b = '';
+      if(appSt === 'approved'){
+        if(['ready','inspecting'].includes(us))
+          b += `<a href="./inspection-input.html?plan_id=${pid}" style="${S}color:#7ee787;border:1px solid rgba(63,185,80,.5);">🔧 点検実施</a>`;
+        else if(['done_anomaly','anomaly_open'].includes(us))
+          b += `<a href="./defect-rca.html?plan_id=${pid}" style="${S}color:#f0c674;border:1px solid rgba(210,153,34,.5);">⚠ 異常判断</a>`;
+        else if(rid && ['result_recorded','result_pending','result_approved','anomaly_approved'].includes(us))
+          b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${S}color:#8b949e;border:1px solid var(--line);">📋 結果</a>`;
+        b += `<a href="./ky-loto.html?plan_id=${pid}" style="${S}color:#e3b341;border:1px solid rgba(210,153,34,.4);">⚠ KY</a>`;
+      }
+      return b || '<span style="font-size:11px;color:var(--muted);">—</span>';
     }
     /* ===== PTW番号 クイック入力 ===== */
     async function openPtwInput(id){
@@ -759,14 +781,27 @@
               ✏ 点検計画を編集
               ${locked ? '<span style="margin-left:8px;font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:4px;padding:1px 6px;">'+d.approval_status==='pending'?'⏳ 承認待ち（編集不可）':'🔒 承認済（編集不可）'+'</span>' : ''}
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px;">
+            <!-- ■ 基本情報 -->
+            <div style="font-size:11px;color:#9cd2ff;font-weight:700;margin-bottom:8px;border-left:3px solid #9cd2ff;padding-left:8px;">基本情報</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;">
               <div>
-                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">予定日</label>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">計画日</label>
                 <input id="ep_date" type="date" value="${esc(d.planned_date||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">作業種別</label>
                 <input id="ep_wtype" type="text" value="${esc(d.work_type||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">チェックリスト種別</label>
+                <select id="ep_cl" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+                  <option value="">— 選択 —</option>
+                  ${(_CHECKLIST_TEMPLATES||[]).map(t=>`<option value="${esc(t.id)}" ${d.checklist_template_id===t.id?'selected':''}>${esc(t.template_name)}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">実施責任者</label>
+                <input id="ep_resp" type="text" value="${esc(d.responsible_person||'')}" ${locked?'disabled':''} placeholder="氏名" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">開始時刻</label>
@@ -778,26 +813,48 @@
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">作業人数</label>
-                <input id="ep_workers" type="number" min="1" max="20" value="${d.worker_count||''}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+                <input id="ep_workers" type="number" min="1" max="30" value="${d.worker_count||''}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">必要資格</label>
                 <input id="ep_qual" type="text" value="${esc(d.required_qualification||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
+            </div>
+
+            <!-- ■ 点検内容 -->
+            <div style="font-size:11px;color:#9cd2ff;font-weight:700;margin-bottom:8px;border-left:3px solid #9cd2ff;padding-left:8px;">点検内容</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">点検目的</label>
+                <textarea id="ep_purpose" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.inspection_purpose||'')}</textarea>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">点検範囲</label>
+                <textarea id="ep_scope" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.inspection_scope||'')}</textarea>
+              </div>
+              <div style="grid-column:1/3">
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">備考</label>
+                <textarea id="ep_notes" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.notes||'')}</textarea>
+              </div>
+              <div style="grid-column:1/3">
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">特記事項</label>
+                <textarea id="ep_special" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.special_notes||'')}</textarea>
+              </div>
+            </div>
+
+            <!-- ■ 安全・停止 -->
+            <div style="font-size:11px;color:#e3b341;font-weight:700;margin-bottom:8px;border-left:3px solid #e3b341;padding-left:8px;">安全要件・停止影響</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(210,153,34,.3);border-radius:8px;background:rgba(210,153,34,.04);">
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW 要否</label>
                 <div style="display:flex;gap:8px;margin-top:2px;">
-                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
-                    <input type="radio" id="ep_ptw_req_y" name="ep_ptw_req" value="1" ${d.ptw_required?'checked':''} ${locked?'disabled':''}> 要
-                  </label>
-                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
-                    <input type="radio" id="ep_ptw_req_n" name="ep_ptw_req" value="0" ${!d.ptw_required?'checked':''} ${locked?'disabled':''}> 不要
-                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ptw_req_y" name="ep_ptw_req" value="1" ${d.ptw_required?'checked':''} ${locked?'disabled':''}> 要</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ptw_req_n" name="ep_ptw_req" value="0" ${!d.ptw_required?'checked':''} ${locked?'disabled':''}> 不要</label>
                 </div>
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW番号</label>
-                <input id="ep_ptw" type="text" value="${esc(d.ptw_number||'')}" ${locked?'disabled':''} placeholder="PTW-2026-001" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+                <input id="ep_ptw" type="text" value="${esc(d.ptw_number||'')}" ${locked?'disabled':''} placeholder="PTW-2026-MMDD-NN" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">KY（危険予知）</label>
@@ -813,10 +870,25 @@
                   <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_loto_n" name="ep_loto" value="0" ${!d.loto_required?'checked':''} ${locked?'disabled':''}> 不要</label>
                 </div>
               </div>
-            </div>
-            <div style="margin-bottom:14px;">
-              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">備考</label>
-              <textarea id="ep_notes" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.notes||'')}</textarea>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">停止要否</label>
+                <div style="display:flex;gap:8px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_out_y" name="ep_out" value="1" ${d.outage_required?'checked':''} ${locked?'disabled':''}> 停止あり</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_out_n" name="ep_out" value="0" ${!d.outage_required?'checked':''} ${locked?'disabled':''}> 停止なし</label>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">予定停止時間（分）</label>
+                <input id="ep_outmin" type="number" min="0" value="${d.estimated_outage_minutes||''}" ${locked?'disabled':''} placeholder="例: 120" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">風速上限 (m/s)</label>
+                <input id="ep_wind" type="number" step="0.1" min="0" value="${d.wind_speed_limit_ms||''}" ${locked?'disabled':''} placeholder="例: 10" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">天候条件</label>
+                <input id="ep_weather" type="text" value="${esc(d.weather_condition||'')}" ${locked?'disabled':''} placeholder="例: 晴・曇のみ（雨天中止）" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
             </div>
             <div id="ep_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -840,22 +912,31 @@
       const btn = document.getElementById('ep_save');
       const msgEl = document.getElementById('ep_msg');
       if(btn) btn.disabled = true;
+      const gep = id => document.getElementById(id);
       const patch = {
-        planned_date:          document.getElementById('ep_date')?.value   || null,
-        work_type:             document.getElementById('ep_wtype')?.value  || null,
-        time_start:            document.getElementById('ep_tstart')?.value || null,
-        time_end:              document.getElementById('ep_tend')?.value   || null,
-        worker_count:          document.getElementById('ep_workers')?.value ? Number(document.getElementById('ep_workers').value) : null,
-        required_qualification:document.getElementById('ep_qual')?.value   || null,
-        ptw_required:          document.getElementById('ep_ptw_req_y')?.checked ?? false,
-        ptw_number:            document.getElementById('ep_ptw')?.value    || null,
-        ky_required:           document.getElementById('ep_ky_y')?.checked  ?? false,
-        loto_required:         document.getElementById('ep_loto_y')?.checked ?? false,
-        notes:                 document.getElementById('ep_notes')?.value  || null,
-        updated_at:            new Date().toISOString(),
-        revision_no:           999  // actual increment done via DB or just update
+        planned_date:             gep('ep_date')?.value    || null,
+        work_type:                gep('ep_wtype')?.value   || null,
+        checklist_template_id:    gep('ep_cl')?.value      || null,
+        responsible_person:       gep('ep_resp')?.value    || null,
+        time_start:               gep('ep_tstart')?.value  || null,
+        time_end:                 gep('ep_tend')?.value     || null,
+        worker_count:             gep('ep_workers')?.value ? Number(gep('ep_workers').value) : null,
+        required_qualification:   gep('ep_qual')?.value    || null,
+        inspection_purpose:       gep('ep_purpose')?.value || null,
+        inspection_scope:         gep('ep_scope')?.value   || null,
+        notes:                    gep('ep_notes')?.value   || null,
+        special_notes:            gep('ep_special')?.value || null,
+        ptw_required:             gep('ep_ptw_req_y')?.checked  ?? false,
+        ptw_number:               gep('ep_ptw')?.value     || null,
+        ky_required:              gep('ep_ky_y')?.checked   ?? false,
+        loto_required:            gep('ep_loto_y')?.checked ?? false,
+        outage_required:          gep('ep_out_y')?.checked  ?? false,
+        estimated_outage_minutes: gep('ep_outmin')?.value  ? Number(gep('ep_outmin').value) : null,
+        wind_speed_limit_ms:      gep('ep_wind')?.value    ? Number(gep('ep_wind').value)   : null,
+        weather_condition:        gep('ep_weather')?.value || null,
+        updated_at:               new Date().toISOString()
       };
-      // revision_no は現在値+1 に（取得済みなら使う）
+      // revision_no を +1
       try{
         const cur = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=revision_no,approval_status`);
         const d = cur && cur[0];
@@ -864,7 +945,7 @@
           if(btn) btn.disabled = false;
           return;
         }
-        patch.revision_no = (d?.revision_no || 1);
+        patch.revision_no = (d?.revision_no || 1) + 1;
         await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
           {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
         closeEditPanel();
