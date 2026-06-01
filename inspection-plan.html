@@ -538,7 +538,7 @@
             <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
             <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
             <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;font-size:12px;">${esc(r["作業種別"]||"")}</td>
-            <td style="font-size:11px;color:#9cd2ff;white-space:nowrap;">${r["チェックリスト名"] ? esc(r["チェックリスト名"]) : '<span style="color:var(--muted);">—</span>'}</td>
+            <td style="font-size:11px;color:#9cd2ff;">${r["チェックリスト名"] ? (esc(r["チェックリスト名"]) + ((r["点検票数"]||0)>1 ? ` <span style="color:#7ee787;font-weight:700;">📋${r["点検票数"]}種</span>` : '')) : '<span style="color:var(--muted);">—</span>'}</td>
             <td style="white-space:nowrap;">${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]==="approved"?execMiniTag(r["unified_status"]||"ready"):""}${(r["approval_status"]==="draft"||r["approval_status"]==="returned")?`<button onclick="event.stopPropagation();submitApproval('${esc(r["計画id"]||"")}')" style="margin-left:6px;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;">${r["approval_status"]==="returned"?"📨 再申請":"📨 承認申請"}</button>`:""}</td>
             <td style="white-space:nowrap;">${safetyBadge(r)}</td>
 
@@ -772,6 +772,9 @@
         const d = rows && rows[0];
         if(!d) return;
         const locked = d.approval_status === 'approved' || d.approval_status === 'pending';
+        // 点検票（チェックリスト構成）を junction から取得
+        const attached = await sb.get(`v_plan_checklists?inspection_plan_id=eq.${encodeURIComponent(id)}&select=template_id,template_name,item_count,sort_order&order=sort_order.asc`).catch(()=>[]);
+        const attachedIds = new Set((attached||[]).map(a=>a.template_id));
         const panel = document.createElement('tr');
         panel.className = 'edit-panel-row';
         const colCount = targetRow.children.length;
@@ -791,13 +794,6 @@
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">作業種別</label>
                 <input id="ep_wtype" type="text" value="${esc(d.work_type||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
-              </div>
-              <div>
-                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">チェックリスト種別</label>
-                <select id="ep_cl" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
-                  <option value="">— 選択 —</option>
-                  ${(_CHECKLIST_TEMPLATES||[]).map(t=>`<option value="${esc(t.id)}" ${d.checklist_template_id===t.id?'selected':''}>${esc(t.template_name)}</option>`).join('')}
-                </select>
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">実施責任者</label>
@@ -840,6 +836,21 @@
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">特記事項</label>
                 <textarea id="ep_special" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.special_notes||'')}</textarea>
               </div>
+            </div>
+
+            <!-- ■ 点検票を準備（チェックリスト構成） -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="font-size:11px;color:#7ee787;font-weight:700;border-left:3px solid #7ee787;padding-left:8px;">📋 点検票を準備（チェックリスト構成）</div>
+              ${locked ? '<span style="font-size:11px;color:#e3b341;">🔒 承認後は構成変更不可</span>' : '<span style="font-size:11px;color:var(--muted);">複数選択可。実施画面はこの構成で点検票を表示します</span>'}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(126,231,135,.3);border-radius:8px;background:rgba(126,231,135,.04);">
+              ${(_CHECKLIST_TEMPLATES||[]).map(t=>{
+                const on = attachedIds.has(t.id);
+                return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:${locked?'default':'pointer'};padding:6px 8px;border:1px solid ${on?'rgba(126,231,135,.5)':'var(--line)'};border-radius:7px;background:${on?'rgba(126,231,135,.08)':'transparent'};">
+                  <input type="checkbox" class="ep_cl_chk" value="${esc(t.id)}" ${on?'checked':''} ${locked?'disabled':''}>
+                  <span style="flex:1;">${esc(t.template_name)}<span style="color:var(--muted);font-size:11px;margin-left:6px;">${esc(t.inspection_type||'')}</span></span>
+                </label>`;
+              }).join('') || '<span style="font-size:12px;color:var(--muted);">点検票マスタがありません</span>'}
             </div>
 
             <!-- ■ 安全・停止 -->
@@ -916,7 +927,6 @@
       const patch = {
         planned_date:             gep('ep_date')?.value    || null,
         work_type:                gep('ep_wtype')?.value   || null,
-        checklist_template_id:    gep('ep_cl')?.value      || null,
         responsible_person:       gep('ep_resp')?.value    || null,
         time_start:               gep('ep_tstart')?.value  || null,
         time_end:                 gep('ep_tend')?.value     || null,
@@ -946,8 +956,19 @@
           return;
         }
         patch.revision_no = (d?.revision_no || 1) + 1;
+        // 選択された点検票（チェックリスト構成）
+        const selIds = Array.from(document.querySelectorAll('.ep_cl_chk:checked')).map(c=>c.value);
+        patch.checklist_template_id = selIds[0] || null; // 後方互換（印刷の主チェックリスト）
         await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
           {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
+        // junction を同期：全削除→再挿入（承認前のみ編集可）
+        await fetch(`${sb.URL}/rest/v1/inspection_plan_checklists?inspection_plan_id=eq.${encodeURIComponent(id)}`,
+          {method:'DELETE',headers:sb.headers({'Prefer':'return=minimal'})});
+        if(selIds.length){
+          const ins = selIds.map((tid,i)=>({inspection_plan_id:id, template_id:tid, sort_order:i+1}));
+          await fetch(`${sb.URL}/rest/v1/inspection_plan_checklists`,
+            {method:'POST',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(ins)});
+        }
         closeEditPanel();
         location.reload();
       }catch(e){
