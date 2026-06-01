@@ -3093,33 +3093,50 @@
       return `<span style="color:${m[1]};font-weight:${m[2]};white-space:nowrap;">${m[0]}</span>`;
     }
 
-    // ── 行生成（状態=点検ステータス／承認=ワークフローの2系統を分離。点検内容＋具体箇所＋緊急度） ──
+    // ── 行生成（統合実績レイアウト：状態=進捗／承認=ワークフローの2系統を分離） ──
     function _makeExecRow(r){
       const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
       const td = 'padding:9px 10px;border-bottom:1px solid var(--line);';
+      const hasResult = !!r.latest_result_id;
 
-      // 点検内容（業務区分）→ クリックで詳細ドロワー
-      const general = esc(r.inspection_category || '点検');
-      const generalCell = `<span onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" title="クリックで詳細を表示" style="cursor:pointer;color:#9cd2ff;border-bottom:1px dashed rgba(156,210,255,.45);">${general}</span>`;
-      // 点検箇所（具体）
-      const specific = esc(r.inspection_content || r.checklist_names || '');
-      const specificCell = specific ? `<span style="color:var(--txt);">${specific}</span>` : '<span style="color:#6e7681;">—</span>';
       // 実施番号（実績がある行は青リンク→詳細ドロワー。なければ未実施）
       const no = _execResultNo(r);
       const noCell = no
         ? `<a onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;text-decoration:none;">${esc(no)}</a>`
         : '<span style="font-size:11.5px;color:#6e7681;">未実施</span>';
+      // 計画番号
+      const planCell = r.plan_no
+        ? `<span style="font-family:monospace;font-size:11.5px;color:#8b949e;">${esc(r.plan_no)}</span>`
+        : '<span style="color:#6e7681;">—</span>';
+      // 点検表名（なければ区分から推定）
+      const clCell = r.checklist_names
+        ? `<span style="color:#7ee787;">${esc(r.checklist_names)}</span>`
+        : `<span style="color:#6e7681;">（${esc(r.inspection_category||'点検')}）</span>`;
+      // 点検区分（業務名）→ クリックで詳細ドロワー
+      const catCell = `<span onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" title="クリックで詳細を表示" style="cursor:pointer;color:#9cd2ff;border-bottom:1px dashed rgba(156,210,255,.45);white-space:nowrap;">${esc(r.inspection_category||'点検')}</span>`;
+      // 作業種別・内容
+      const content = esc(r.inspection_content || '');
+      const contentCell = content ? `<span style="color:var(--txt);">${content}</span>` : '<span style="color:#6e7681;">—</span>';
+      // NG/全
+      const ng = Number(r.ng_count||0), tot = Number(r.total_check_count||0);
+      const ngCell = hasResult
+        ? `<span style="${ng>0?'color:#f0c674;font-weight:700;':'color:var(--muted);'}">${ng}/${tot}</span>`
+        : '<span style="color:#6e7681;">—</span>';
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
         <td style="${td}white-space:nowrap;">${noCell}</td>
-        <td style="${td}white-space:nowrap;">${_execStBadge(r)}</td>
-        <td style="${td}font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
+        <td style="${td}white-space:nowrap;">${planCell}</td>
         <td style="${td}white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
-        <td style="${td}font-size:12.5px;white-space:nowrap;">${generalCell}</td>
-        <td style="${td}font-size:12.5px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${specificCell}</td>
+        <td style="${td}font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
+        <td style="${td}font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${clCell}</td>
+        <td style="${td}font-size:12.5px;">${catCell}</td>
+        <td style="${td}font-size:12.5px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${contentCell}</td>
+        <td style="${td}white-space:nowrap;">${_execStBadge(r)}</td>
         <td style="${td}white-space:nowrap;">${_resultBadge(r.result_status)}</td>
+        <td style="${td}white-space:nowrap;text-align:center;">${ngCell}</td>
         <td style="${td}white-space:nowrap;text-align:center;">${_urgencyCell(r)}</td>
         <td style="${td}white-space:nowrap;">${_irApprovalBadge(r)}</td>
+        <td style="${td}white-space:nowrap;">${_safetyChips(r)}</td>
         <td style="${td}white-space:nowrap;">${_execNextAction(r)}</td>
       </tr>`;
     }
@@ -3314,7 +3331,7 @@
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       const thead = `<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-        <thead><tr>${['実施番号','状態','号機','点検日','点検内容','点検箇所','結果','緊急度','承認','次アクション']
+        <thead><tr>${['実施番号','計画番号','点検日','号機','点検表名','点検区分','作業種別・内容','状態','結果','NG/全','深刻度','承認','PTW/KY/LOTO','次アクション']
           .map(h=>`<th style="text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
