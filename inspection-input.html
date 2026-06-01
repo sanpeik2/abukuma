@@ -2985,16 +2985,16 @@
     };
     function _execStBadge(r){
       const c = _EXEC_ST[r.execution_status||'not_started']||_EXEC_ST.not_started;
-      return `<span style="font-size:12px;font-weight:700;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:3px 9px;white-space:nowrap;">${c.lbl}</span>`;
+      return `<span style="font-size:12px;font-weight:500;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:3px 9px;white-space:nowrap;">${c.lbl}</span>`;
     }
 
     // ── 結果承認バッジ ──
     function _irApprovalBadge(r){
       const st = r.latest_ir_approval;
       if(!st||st==='draft') return '<span style="font-size:12px;color:var(--muted);">未申請</span>';
-      if(st==='pending')  return '<span style="font-size:12px;color:#e3b341;font-weight:700;">⏳ 申請中</span>';
-      if(st==='approved') return '<span style="font-size:12px;color:#7ee787;font-weight:700;">🔒 承認済</span>';
-      if(st==='returned') return '<span style="font-size:12px;color:#ff9a92;font-weight:700;">↩ 差戻し</span>';
+      if(st==='pending')  return '<span style="font-size:12px;color:#e3b341;">⏳ 申請中</span>';
+      if(st==='approved') return '<span style="font-size:12px;color:#7ee787;">🔒 承認済</span>';
+      if(st==='returned') return '<span style="font-size:12px;color:#ff9a92;">↩ 差戻し</span>';
       return '';
     }
 
@@ -3005,8 +3005,8 @@
       const rid = r.latest_result_id ? r.latest_result_id : '';
       const ridE = rid ? encodeURIComponent(rid) : '';
       const isAdhoc = r.inspection_kind==='adhoc';
-      const A=(l,h,s)=>`<a href="${h}" style="font-size:11.5px;font-weight:700;text-decoration:none;white-space:nowrap;padding:3px 9px;border-radius:6px;${s}">${l}</a>`;
-      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:3px 9px;border-radius:6px;${s}">${l}</button>`;
+      const A=(l,h,s)=>`<a href="${h}" style="font-size:11.5px;font-weight:600;text-decoration:none;white-space:nowrap;padding:3px 9px;border-radius:6px;${s}">${l}</a>`;
+      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:11.5px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;padding:3px 9px;border-radius:6px;${s}">${l}</button>`;
       const dash = '<span style="color:#6e7681;">—</span>';
 
       switch(st){
@@ -3020,7 +3020,7 @@
           return B('▶ 再開',`setResume(event,'${r.plan_id}')`, 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;');
         case 'done':
           return (rid && r.latest_ir_approval!=='pending' && r.latest_ir_approval!=='approved')
-            ? B('📨 承認申請', `submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;')
+            ? B('📨 承認申請', `submitResultApproval('${rid}')`, 'background:#1f6feb;color:#fff;')
             : dash;
         case 'result_pending':
           return '<span style="font-size:11.5px;color:#e3b341;font-weight:700;">⏳ 承認待ち</span>';
@@ -3031,7 +3031,7 @@
           const _anomHref = rid
             ? `./defect-rca.html?inspection_result_id=${ridE}&plan_id=${pid}`
             : `./defect-rca.html?plan_id=${pid}`;
-          return A('🚨 異常判断へ', _anomHref, 'background:#d29922;color:#11161d;font-weight:700;');
+          return A('🔧 異常判断へ', _anomHref, 'background:transparent;color:#d29922;border:1px solid rgba(210,153,34,.5);');
         }
         case 'anomaly_approved':
           return dash;
@@ -3060,9 +3060,9 @@
     // ── 結果バッジ ──
     function _resultBadge(rs){
       if(!rs) return '<span style="color:#6e7681;">—</span>';
-      if(rs==='ok')          return '<span style="font-size:12px;font-weight:700;color:#3fb950;">✅ 異常なし</span>';
-      if(rs==='ng')          return '<span style="font-size:12px;font-weight:700;color:#ff7b72;">🔴 異常あり</span>';
-      if(rs==='conditional') return '<span style="font-size:12px;font-weight:700;color:#e3b341;">🟡 条件付き</span>';
+      if(rs==='ok')          return '<span style="font-size:12px;color:#3fb950;">✅ 異常なし</span>';
+      if(rs==='ng')          return '<span style="font-size:12px;color:#ff7b72;">🔴 異常あり</span>';
+      if(rs==='conditional') return '<span style="font-size:12px;color:#e3b341;">🟡 条件付き</span>';
       return esc(rs);
     }
 
@@ -3077,14 +3077,14 @@
       const isAnom = r.has_anomaly || r.result_status==='ng';
       if(!isAnom) return '<span style="color:#6e7681;">—</span>';
       const map={
-        critical:['🔴 重大','#ff7b72',700],
-        high:    ['🟠 高',  '#ff9a92',700],
-        medium:  ['🟡 中',  '#e3b341',700],
-        low:     ['低',     '#8b949e',400]
+        critical:['🔴 重大','#ff7b72'],
+        high:    ['🟠 高',  '#ff9a92'],
+        medium:  ['🟡 中',  '#e3b341'],
+        low:     ['低',     '#8b949e']
       };
       const m=map[r.severity];
-      if(!m) return '<span style="color:#ff9a92;font-weight:700;white-space:nowrap;">⚠ 要確認</span>';
-      return `<span style="color:${m[1]};font-weight:${m[2]};white-space:nowrap;">${m[0]}</span>`;
+      if(!m) return '<span style="color:#ff9a92;white-space:nowrap;">⚠ 要確認</span>';
+      return `<span style="color:${m[1]};white-space:nowrap;">${m[0]}</span>`;
     }
 
     // ── 行生成（統合実績レイアウト：固定幅・折り返しで全列を画面内に収める） ──
@@ -3293,6 +3293,7 @@
       {key:'anomaly',         lbl:'🚨 異常あり'},
       {key:'approval_pending',lbl:'⏳ 承認待ち'},
       {key:'approved',        lbl:'✅ 承認済'},
+      {key:'recent',          lbl:'🕘 直近の実績'},
     ];
 
     function _execFilter(rows, key){
@@ -3307,6 +3308,9 @@
       if(key==='anomaly')         return rows.filter(r=>r.has_anomaly);
       if(key==='approval_pending')return rows.filter(r=>r.latest_ir_approval==='pending');
       if(key==='approved')        return rows.filter(r=>r.latest_ir_approval==='approved');
+      if(key==='recent')          return rows.filter(r=>r.latest_result_id)
+                                    .sort((a,b)=>(b.latest_executed_date||'').localeCompare(a.latest_executed_date||''))
+                                    .slice(0,30);
       return rows.filter(r=>r.execution_status===key);
     }
 
@@ -3317,7 +3321,11 @@
         return;
       }
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
-      const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
+      // 全行が実績ありなら「直近順（実施日降順）」、それ以外は業務の現在地（ステータス）順
+      const allExecuted = rows.length && rows.every(r=>r.latest_result_id);
+      const sorted = allExecuted
+        ? [...rows].sort((a,b)=>(b.latest_executed_date||'').localeCompare(a.latest_executed_date||''))
+        : [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       // 列幅（合計100%）：固定レイアウトで全列を画面内に収める
       const cols = [
         ['実施番号',9],['点検日',7],['号機',5],['点検表名',11],
