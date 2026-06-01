@@ -23,7 +23,7 @@
 
 
 
-<title>阿武隈OS — 点検実績入力（ライブ）</title>
+<title>阿武隈OS — 点検実施（ライブ）</title>
 
 
 
@@ -537,12 +537,12 @@
 
 
 
-      <h1>点検実績入力</h1>
+      <h1>点検実施</h1>
 
 
 
 
-      <div class="sub">阿武隈OS ライブ盤 — 項目別チェック（測定値→基準で自動判定）</div>
+      <div class="sub">承認済み点検計画・臨時点検・異常確認点検を実施し、結果を記録する画面</div>
 
 
 
@@ -1037,21 +1037,13 @@
 
 
 
-    <div class="card">
-
-
-
-
-      <h2>📋 最近の点検実績</h2>
-
-
-
-
+    <div class="card" id="historyCard" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h2 style="margin:0;">🕘 点検実績の履歴</h2>
+        <button onclick="toggleHistory()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;">✕ 閉じる</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">直近30件の点検結果（最新順）。実施状況は上の「点検実施」テーブルで管理します。</div>
       <div id="listBody" class="loading">読み込み中…</div>
-
-
-
-
     </div>
 
 
@@ -2796,7 +2788,7 @@
 
 
 
-        await reloadList();
+        // 履歴（最近の点検実績）はデフォルト非表示。ヘッダの「履歴を表示」で遅延ロード。
 
 
 
@@ -2806,7 +2798,7 @@
 
 
 
-        $("listBody").innerHTML='<div class="err">データ取得に失敗しました: '+esc(e.message)+'</div>';
+        const _lb=$("listBody"); if(_lb) _lb.innerHTML='<div class="err">データ取得に失敗しました: '+esc(e.message)+'</div>';
 
 
 
@@ -3010,7 +3002,7 @@
 
       switch(st){
         case 'not_started':
-          return B('点検開始',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#238636;color:#fff;')
+          return B('▶ 点検を開始',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#238636;color:#fff;')
                + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
         case 'in_progress':
           return B('続きから →',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#1f6feb;color:#fff;')
@@ -3019,24 +3011,25 @@
           return B('▶ 再開',`setResume(event,'${r.plan_id}')`, 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;');
         case 'done': {
           const subBtn = (rid && r.latest_ir_approval!=='pending' && r.latest_ir_approval!=='approved')
-            ? B('📨 承認申請', `submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;margin-left:4px;')
+            ? B('📨 点検結果を承認申請', `submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;')
             : '';
-          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);') + subBtn;
+          return subBtn + A('点検記録を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);'+(subBtn?'margin-left:4px;':''));
         }
         case 'result_pending':
-          return '<span style="font-size:11.5px;color:#e3b341;font-weight:700;">⏳ 承認待ち</span>';
+          return '<span style="font-size:11.5px;color:#e3b341;font-weight:700;">⏳ 承認待ち</span>'
+               + A('点検記録を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);margin-left:4px;');
         case 'result_approved':
-          return A('🔒 結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+          return A('🔒 点検記録を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
         case 'done_anomaly': {
           // inspection_result_id も渡して点検結果NG項目を異常判断に引き継ぐ
           const _anomHref = rid
             ? `./defect-rca.html?inspection_result_id=${ridE}&plan_id=${pid}`
             : `./defect-rca.html?plan_id=${pid}`;
           return A('🚨 異常判断へ', _anomHref, 'background:#d29922;color:#11161d;font-weight:700;')
-               + A('結果', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);margin-left:4px;');
+               + A('点検記録を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);margin-left:4px;');
         }
         case 'anomaly_approved':
-          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+          return A('点検記録を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
         case 'work_ordered':
           return A('🔧 作業票を見る', './work-orders.html', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#d29922;');
         default:
@@ -3044,37 +3037,78 @@
       }
     }
 
-    // ── 行生成 ──
+    // ── 安全確認チップ（PTW/KY/LOTO） ──
+    function _safetyChips(r){
+      const done = ['done','done_anomaly','result_pending','result_approved','anomaly_approved','work_ordered'].includes(r.execution_status);
+      const chip=(lbl,state)=>{
+        const col={ok:'#3fb950',req:'#e3b341',none:'#3a4250'}[state];
+        const bg ={ok:'rgba(63,185,80,.12)',req:'rgba(210,153,34,.12)',none:'transparent'}[state];
+        const tip={ok:'確認済/取得済',req:'要',none:'対象外'}[state];
+        return `<span title="${lbl}: ${tip}" style="display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:3px;color:${col};background:${bg};border:1px solid ${col}55;">${lbl}</span>`;
+      };
+      const ptwState  = (r.ptw_required && r.ptw_number) ? 'ok' : (r.ptw_required ? 'req' : 'none');
+      const kyState   = done ? (r.ky_confirmed?'ok':(r.ky_required?'req':'none'))   : (r.ky_required?'req':'none');
+      const lotoState = done ? (r.loto_confirmed?'ok':(r.loto_required?'req':'none')) : (r.loto_required?'req':'none');
+      return chip('PTW',ptwState)+chip('KY',kyState)+chip('LOTO',lotoState);
+    }
+
+    // ── 結果バッジ ──
+    function _resultBadge(rs){
+      if(!rs) return '<span style="color:#6e7681;">—</span>';
+      if(rs==='ok')          return '<span style="font-size:12px;font-weight:700;color:#3fb950;">✅ 異常なし</span>';
+      if(rs==='ng')          return '<span style="font-size:12px;font-weight:700;color:#ff7b72;">🔴 異常あり</span>';
+      if(rs==='conditional') return '<span style="font-size:12px;font-weight:700;color:#e3b341;">🟡 条件付き</span>';
+      return esc(rs);
+    }
+
+    // ── 行生成（統合15列） ──
     function _makeExecRow(r){
       const isAdhoc = r.inspection_kind==='adhoc';
       const p = _execPriority(r);
-      const time = [r.time_start_fmt, r.time_end_fmt].filter(Boolean).join('〜')||'—';
-      const ptw  = r.ptw_required
-        ? (r.ptw_number
-            ? `<span style="font-size:12px;color:#7ee787;font-family:monospace;">✅ ${esc(r.ptw_number)}</span>`
-            : '<span style="font-size:12px;color:#ff9a92;font-weight:700;">⚠ 未取得</span>')
-        : '<span style="color:var(--muted);font-size:12px;">—</span>';
+      const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
+
+      // 実施番号（実績がある行のみ。なければ「未実施」）
+      const resultNo = r.latest_result_id
+        ? `<span style="font-family:monospace;font-size:11.5px;color:#9cd2ff;">IR-${esc((r.latest_executed_date||'').replace(/-/g,''))}-${esc(String(r.latest_result_id).slice(0,4).toUpperCase())}</span>`
+        : '<span style="font-size:11.5px;color:#6e7681;">未実施</span>';
+      // 計画番号（臨時/異常確認は計画なし）
+      const planNo = r.plan_no
+        ? `<span style="font-family:monospace;font-size:11.5px;color:#58a6ff;">${esc(r.plan_no)}</span>`
+        : `<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:3px;padding:1px 6px;">${esc(r.inspection_category||'臨時')}</span>`;
+      // 点検表名（なければ点検区分から推定）
+      const clName = r.checklist_names
+        ? `<span style="color:#7ee787;">${esc(r.checklist_names)}</span>`
+        : `<span style="color:#8b949e;">（${esc(r.inspection_category||'点検')}）</span>`;
+      // 点検内容
+      const content = esc(r.inspection_content || r.inspection_category || '—');
+      // 異常有無
       const anomaly = r.has_anomaly
         ? '<span style="font-size:12px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:2px 8px;">🔴 あり</span>'
-        : '<span style="color:var(--muted);font-size:12px;">—</span>';
-      const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
-      const workLabel = isAdhoc
-        ? `<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:3px;padding:1px 5px;margin-right:4px;">臨時</span>${esc((r.source_reason||r.work_type||'').slice(0,25))}`
-        : esc(r.work_type||'');
+        : (r.latest_result_id ? '<span style="color:#3fb950;font-size:12px;">○ なし</span>' : '<span style="color:#6e7681;font-size:12px;">—</span>');
+      // NG件数
+      const ng = Number(r.ng_count||0);
+      const ngCell = r.latest_result_id
+        ? `<span style="${ng>0?'color:#f0c674;font-weight:700;':'color:var(--muted);'}">${ng}</span>`
+        : '<span style="color:#6e7681;">—</span>';
+      // 深刻度
+      const sev = r.severity ? `<span style="${(r.severity==='high'||r.severity==='critical')?'color:#ff7b72;font-weight:700;':'color:var(--muted);'}">${esc(sevLabel[r.severity]||r.severity)}</span>` : '<span style="color:#6e7681;">—</span>';
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}cursor:default;">
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:17px;text-align:center;">${p.icon}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${workLabel}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execStBadge(r)}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${_irApprovalBadge(r)}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);text-align:center;">${anomaly}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted);white-space:nowrap;">${esc(time)}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:12.5px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${esc(r.required_qualification||'—')}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:12.5px;text-align:right;">${r.worker_count!=null?r.worker_count:'—'}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${ptw}</td>
-        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execNextAction(r)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);font-size:17px;text-align:center;">${p.icon}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${resultNo}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${planNo}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${clName}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);font-size:12.5px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${content}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execStBadge(r)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${_safetyChips(r)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${_resultBadge(r.result_status)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);text-align:center;">${anomaly}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);text-align:center;">${ngCell}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center;">${sev}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${_irApprovalBadge(r)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execNextAction(r)}</td>
       </tr>`;
     }
 
@@ -3113,8 +3147,8 @@
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
       const thead = `<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-        <thead><tr>${['優先','点検日','号機','作業種別','点検ステータス','承認','異常','時間','資格','人数','PTW','次アクション']
-          .map(h=>`<th style="text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
+        <thead><tr>${['優先','実施番号','計画番号','点検日','号機','点検表名','点検内容','実施ステータス','安全確認','結果','異常','NG','深刻度','承認','次アクション']
+          .map(h=>`<th style="text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
     }
@@ -3136,8 +3170,9 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
           <h2 style="margin:0;">点検実施</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="activateAnomalyCheckMode()" style="background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔍 異常確認点検</button>
-            <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔴 臨時点検を記録</button>
+            <button onclick="toggleHistory()" id="histBtn" style="background:var(--panel);color:var(--muted);border:1px solid var(--line);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🕘 履歴を表示</button>
+            <button onclick="activateAnomalyCheckMode()" style="background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔍 異常確認点検を開始</button>
+            <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔴 臨時点検を開始</button>
           </div>
         </div>
         <div id="execFilters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${filterHtml}</div>
@@ -3246,6 +3281,21 @@
 
     function activateAdhocMode(){ openDrawer('adhoc'); }
     function activateAnomalyCheckMode(){ openDrawer('anomaly'); }
+
+    // 履歴（最近の点検実績）の開閉トグル ＋ 遅延ロード
+    let _historyLoaded = false;
+    function toggleHistory(){
+      const card = document.getElementById('historyCard');
+      const btn  = document.getElementById('histBtn');
+      if(!card) return;
+      const show = card.style.display === 'none' || !card.style.display;
+      card.style.display = show ? 'block' : 'none';
+      if(btn) btn.innerHTML = show ? '🕘 履歴を隠す' : '🕘 履歴を表示';
+      if(show){
+        if(!_historyLoaded){ _historyLoaded = true; reloadList(); }
+        card.scrollIntoView({behavior:'smooth', block:'start'});
+      }
+    }
 
     async function openDrawerForPlan(ev, planId){
       ev.stopPropagation();
