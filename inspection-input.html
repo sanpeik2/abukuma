@@ -3117,6 +3117,10 @@
             ? '<span style="color:#f0c674;font-weight:700;">⚠ 異常</span>'
             : '<span style="color:#3fb950;">○ 正常</span>')
         : '<span style="color:#6e7681;">—</span>';
+      // 承認（点検結果承認レーンは「異常なしルート」のみ。異常ありは異常報告レーンで承認するため「—」）
+      const apprCell = r.has_anomaly
+        ? '<span style="color:#6e7681;" title="異常ありは異常報告レーンで承認（作業票化で本画面は終了）">—</span>'
+        : _irApprovalBadge(r);
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}">
         <td style="${tdn}" title="${planTip}">${noCell}</td>
@@ -3128,7 +3132,7 @@
         <td style="${tdn}">${resultCell}</td>
         <td style="${tdn}text-align:center;">${ngCell}</td>
         <td style="${tdn}text-align:center;">${_urgencyCell(r)}</td>
-        <td style="${tdn}">${_irApprovalBadge(r)}</td>
+        <td style="${tdn}">${apprCell}</td>
         <td style="${tdn}">${_safetyChips(r)}</td>
         <td style="${tdn}">${_execNextAction(r)}</td>
       </tr>`;
@@ -3250,8 +3254,10 @@
         : '<div style="color:#6e7681;font-size:12px;padding:8px 0;">チェック項目の記録はありません。</div>';
       const ckSec = SEC(`チェック項目一覧（${checklist.length}件）`) + ckBody;
 
-      // ── 承認状態 ──
-      const apprSec = SEC('承認状態') + `<div>${_irApprovalBadge(row)}</div>`;
+      // ── 承認状態 ──（異常ありは異常報告レーンで承認するため、本画面の承認は対象外）
+      const apprSec = SEC('承認状態') + (row.has_anomaly
+        ? '<div style="font-size:12.5px;color:var(--muted);">— 異常ありのため、承認は<b style="color:#d29922;">異常報告レーン</b>で実施（作業票化で本画面は終了）</div>'
+        : `<div>${_irApprovalBadge(row)}</div>`);
 
       return head + basic + contentSec + statusSec + safeSec + cmtSec + ckSec + apprSec + _renderDetailLinks(row, result, rid);
     }
