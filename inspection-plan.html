@@ -532,7 +532,7 @@
 
 
 
-            <td style="white-space:nowrap;"><a onclick="event.stopPropagation();openEditPanel('"+esc(r["計画id"]||"")+"')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;">${esc(r["plan_no"]||"—")}</a></td><td style="color:var(--muted);white-space:nowrap;">${r["申請日"] ? esc(r["申請日"]) : "—"}</td>
+            <td style="white-space:nowrap;"><a onclick="event.stopPropagation();openEditPanel('${esc(r["計画id"]||"")}')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;">${esc(r["plan_no"]||"—")}</a></td><td style="color:var(--muted);white-space:nowrap;">${r["申請日"] ? esc(r["申請日"]) : "—"}</td>
             <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
             <td>${esc(r["作業種別"]||"")}</td>
             <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
