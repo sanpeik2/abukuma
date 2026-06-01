@@ -93,7 +93,7 @@
 
 
 
-  .wrap{padding:18px 22px 50px;max-width:1100px;margin:0 auto}
+  .wrap{padding:18px 22px 50px}
 
 
 
@@ -2970,16 +2970,16 @@
     };
     function _execStBadge(r){
       const c = _EXEC_ST[r.execution_status||'not_started']||_EXEC_ST.not_started;
-      return `<span style="font-size:10.5px;font-weight:700;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:2px 7px;white-space:nowrap;">${c.lbl}</span>`;
+      return `<span style="font-size:12px;font-weight:700;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:3px 9px;white-space:nowrap;">${c.lbl}</span>`;
     }
 
     // ── 結果承認バッジ ──
     function _irApprovalBadge(r){
       const st = r.latest_ir_approval;
-      if(!st||st==='draft') return '<span style="font-size:10.5px;color:var(--muted);">未申請</span>';
-      if(st==='pending')  return '<span style="font-size:10.5px;color:#e3b341;font-weight:700;">⏳ 申請中</span>';
-      if(st==='approved') return '<span style="font-size:10.5px;color:#7ee787;font-weight:700;">✅ 承認済</span>';
-      if(st==='returned') return '<span style="font-size:10.5px;color:#ff9a92;font-weight:700;">↩ 差戻し</span>';
+      if(!st||st==='draft') return '<span style="font-size:12px;color:var(--muted);">未申請</span>';
+      if(st==='pending')  return '<span style="font-size:12px;color:#e3b341;font-weight:700;">⏳ 申請中</span>';
+      if(st==='approved') return '<span style="font-size:12px;color:#7ee787;font-weight:700;">✅ 承認済</span>';
+      if(st==='returned') return '<span style="font-size:12px;color:#ff9a92;font-weight:700;">↩ 差戻し</span>';
       return '';
     }
 
@@ -2990,8 +2990,8 @@
       const rid = r.latest_result_id ? r.latest_result_id : '';
       const ridE = rid ? encodeURIComponent(rid) : '';
       const isAdhoc = r.inspection_kind==='adhoc';
-      const A=(l,h,s)=>`<a href="${h}" style="font-size:11.5px;font-weight:700;text-decoration:none;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</a>`;
-      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</button>`;
+      const A=(l,h,s)=>`<a href="${h}" style="font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap;padding:5px 12px;border-radius:6px;${s}">${l}</a>`;
+      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:12.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:5px 12px;border-radius:6px;${s}">${l}</button>`;
       const resultHref = isAdhoc&&rid
         ? `./inspection-input.html?readonly=1&result_id=${ridE}`
         : pid ? `./inspection-input.html?plan_id=${pid}&readonly=1` : '#';
@@ -3039,30 +3039,30 @@
       const time = [r.time_start_fmt, r.time_end_fmt].filter(Boolean).join('〜')||'—';
       const ptw  = r.ptw_required
         ? (r.ptw_number
-            ? `<span style="font-size:10.5px;color:#7ee787;font-family:monospace;">✅ ${esc(r.ptw_number)}</span>`
-            : '<span style="font-size:10.5px;color:#ff9a92;">⚠ 未取得</span>')
-        : '<span style="color:var(--muted);font-size:11px;">—</span>';
+            ? `<span style="font-size:12px;color:#7ee787;font-family:monospace;">✅ ${esc(r.ptw_number)}</span>`
+            : '<span style="font-size:12px;color:#ff9a92;font-weight:700;">⚠ 未取得</span>')
+        : '<span style="color:var(--muted);font-size:12px;">—</span>';
       const anomaly = r.has_anomaly
-        ? '<span style="font-size:10.5px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 6px;">🔴 あり</span>'
-        : '<span style="color:var(--muted);font-size:11px;">—</span>';
+        ? '<span style="font-size:12px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:2px 8px;">🔴 あり</span>'
+        : '<span style="color:var(--muted);font-size:12px;">—</span>';
       const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
       const workLabel = isAdhoc
         ? `<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:3px;padding:1px 5px;margin-right:4px;">臨時</span>${esc((r.source_reason||r.work_type||'').slice(0,25))}`
         : esc(r.work_type||'');
 
       return `<tr style="${rowBg?'background:'+rowBg+';':''}cursor:default;">
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:15px;text-align:center;">${p.icon}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:12px;">${esc(r.planned_date||'')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;font-family:monospace;font-size:13px;">${esc(r.turbine_no||'')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${workLabel}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execStBadge(r)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_irApprovalBadge(r)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;">${anomaly}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);white-space:nowrap;">${esc(time)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${esc(r.required_qualification||'—')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;text-align:right;">${r.worker_count!=null?r.worker_count:'—'}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${ptw}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execNextAction(r)}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:17px;text-align:center;">${p.icon}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:13px;">${esc(r.planned_date||'')}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;font-family:monospace;font-size:14px;">${esc(r.turbine_no||'')}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${workLabel}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execStBadge(r)}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${_irApprovalBadge(r)}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);text-align:center;">${anomaly}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted);white-space:nowrap;">${esc(time)}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:12.5px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${esc(r.required_qualification||'—')}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);font-size:12.5px;text-align:right;">${r.worker_count!=null?r.worker_count:'—'}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${ptw}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execNextAction(r)}</td>
       </tr>`;
     }
 
@@ -3100,9 +3100,9 @@
       }
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
       const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
-      const thead = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+      const thead = `<table style="width:100%;border-collapse:collapse;font-size:13.5px;">
         <thead><tr>${['優先','点検日','号機','作業種別','点検ステータス','承認','異常','時間','資格','人数','PTW','次アクション']
-          .map(h=>`<th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;white-space:nowrap;">${h}</th>`).join('')}
+          .map(h=>`<th style="text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
     }
@@ -3133,8 +3133,8 @@
         <div id="execListBody" class="loading">読み込み中…</div>`;
       wrap.insertAdjacentElement('afterbegin', card);
       // フィルタータブにイベント付与
-      const _fStyle  = 'background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;';
-      const _fStyleA = 'background:rgba(88,166,255,.1);border:1px solid var(--master);color:#fff;font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:700;';
+      const _fStyle  = 'background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;';
+      const _fStyleA = 'background:rgba(88,166,255,.1);border:1px solid var(--master);color:#fff;font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:700;';
       card.querySelectorAll('.exec-f').forEach(btn=>{
         btn.style.cssText = _fStyle;
         btn.addEventListener('click',()=>{
@@ -3168,8 +3168,8 @@
         kpiEl.innerHTML=KPI_DEFS.map(k=>{
           const cnt=_execAllRows.filter(r=>(r.execution_status||'not_started')===k.st).length;
           return cnt>0
-            ? `<span style="font-size:12px;font-weight:700;color:${k.c};background:${k.bg};border:1px solid ${k.bd};border-radius:20px;padding:3px 12px;white-space:nowrap;cursor:pointer;" onclick="_execRender(_execFilter(_execAllRows,'${k.st}'))">${k.lbl} ${cnt}</span>`
-            : `<span style="font-size:12px;color:var(--muted);border:1px solid #30363d;border-radius:20px;padding:3px 12px;white-space:nowrap;">${k.lbl} 0</span>`;
+            ? `<span style="font-size:13px;font-weight:700;color:${k.c};background:${k.bg};border:1px solid ${k.bd};border-radius:20px;padding:4px 14px;white-space:nowrap;cursor:pointer;" onclick="_execRender(_execFilter(_execAllRows,'${k.st}'))">${k.lbl} ${cnt}</span>`
+            : `<span style="font-size:13px;color:var(--muted);border:1px solid #30363d;border-radius:20px;padding:4px 14px;white-space:nowrap;">${k.lbl} 0</span>`;
         }).join('');
 
         _execRender(_execFilter(_execAllRows,'all'));
