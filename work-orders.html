@@ -776,10 +776,11 @@ async function openWoEdit(id){
       <!-- 安全確認要否 -->
       <div style="margin:12px 0;padding:10px 12px;border:1px solid rgba(210,153,34,.35);border-radius:8px;background:rgba(210,153,34,.05);">
         <div style="font-size:11.5px;font-weight:700;color:#e3b341;margin-bottom:8px;">⚠ 安全要件（作業前確認に反映されます）</div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
-          <!-- KYは点検・作業ともに必須（固定）。実施記録は下の「作業前安全確認」で行う -->
-          <input type="checkbox" id="we_ky_req" checked style="display:none;">
-          <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#e3b341;background:rgba(210,153,34,.15);border:1px solid rgba(210,153,34,.55);border-radius:6px;padding:4px 11px;">⚠ KY（危険予知）必須</span>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="we_ky_req" ${d.ky_required?'checked':''} ${locked?'disabled':''} style="width:14px;height:14px;accent-color:#e3b341;">
+            <span>KY（危険予知）要</span>
+          </label>
           <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
             <input type="checkbox" id="we_loto_req" ${d.loto_required?'checked':''} ${locked?'disabled':''} style="width:14px;height:14px;accent-color:#ff9a92;">
             <span>LOTO（施錠・タグアウト）要</span>
