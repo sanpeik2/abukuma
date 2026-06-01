@@ -3051,16 +3051,16 @@
     // ── 安全確認チップ（PTW/KY/LOTO） ──
     function _safetyChips(r){
       const done = ['done','done_anomaly','result_pending','result_approved','anomaly_approved','work_ordered'].includes(r.execution_status);
-      const chip=(lbl,state)=>{
+      const chip=(initial,full,state)=>{
         const col={ok:'#3fb950',req:'#e3b341',none:'#3a4250'}[state];
         const bg ={ok:'rgba(63,185,80,.12)',req:'rgba(210,153,34,.12)',none:'transparent'}[state];
         const tip={ok:'確認済/取得済',req:'要',none:'対象外'}[state];
-        return `<span title="${lbl}: ${tip}" style="display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:3px;color:${col};background:${bg};border:1px solid ${col}55;">${lbl}</span>`;
+        return `<span title="${full}: ${tip}" style="display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-right:3px;color:${col};background:${bg};border:1px solid ${col}55;">${initial}</span>`;
       };
       const ptwState  = (r.ptw_required && r.ptw_number) ? 'ok' : (r.ptw_required ? 'req' : 'none');
       const kyState   = done ? (r.ky_confirmed?'ok':(r.ky_required?'req':'none'))   : (r.ky_required?'req':'none');
       const lotoState = done ? (r.loto_confirmed?'ok':(r.loto_required?'req':'none')) : (r.loto_required?'req':'none');
-      return chip('PTW',ptwState)+chip('KY',kyState)+chip('LOTO',lotoState);
+      return chip('P','PTW',ptwState)+chip('K','KY',kyState)+chip('L','LOTO',lotoState);
     }
 
     // ── 結果バッジ ──
@@ -3330,7 +3330,7 @@
       // 列幅（合計100%）：固定レイアウトで全列を画面内に収める
       const cols = [
         ['実施番号',8],['計画番号',6],['点検日',7],['号機',5],['点検表名',13],
-        ['作業種別・内容',14],['状態',8],['結果',7],['NG/全',4],['深刻度',5],['承認',6],['PTW/KY/LOTO',7],['次アクション',10]
+        ['作業種別・内容',14],['状態',8],['結果',7],['NG/全',4],['深刻度',5],['承認',6],['P/K/L',5],['次アクション',12]
       ];
       const colgroup = '<colgroup>'+cols.map(c=>`<col style="width:${c[1]}%">`).join('')+'</colgroup>';
       const thead = `<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;">
