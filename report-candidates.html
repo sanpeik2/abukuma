@@ -515,7 +515,7 @@
 
 
 
-      document.getElementById('kConfirm').textContent = d.filter(r=>r.screening_class==='要主任技術者確認').length;
+      document.getElementById('kConfirm').textContent = d.filter(r=>r.screening_class&&r.screening_class.includes('要主任技術者確認')).length;
 
 
 
@@ -556,7 +556,15 @@
 
 
 
-        const cls = r.screening_class==='要主任技術者確認'
+        const legalBadge = r.legal_judgement_class
+          ? `<span class="tag" style="background:rgba(188,140,255,.12);color:#bc8cff;border-color:rgba(188,140,255,.4);">⚖ ${sb.esc(r.legal_judgement_label||r.legal_judgement_class)}</span> `
+          : '';
+        const reportFlag = r.report_required_flag
+          ? '<span class="tag must" style="background:rgba(248,81,73,.15);">🚨 報告候補</span> '
+          : '';
+        const cls = r.screening_class&&r.screening_class.includes('要法令報告')
+          ? `<span class="tag must" style="background:rgba(248,81,73,.2);">🔴 要法令報告確認</span>`
+          : r.screening_class&&r.screening_class.includes('要主任技術者確認')
 
 
 
@@ -596,11 +604,7 @@
 
 
 
-          <td>${cls}</td>
-
-
-
-
+          <td>${legalBadge}${reportFlag}${cls}</td>
           <td>${trig||'–'}</td>
 
 
