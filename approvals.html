@@ -391,6 +391,10 @@
 
 
     const typeClass = { work_order:"wo", work_permit:"ptw", inspection_result:"insp", inspection_plan:"plan", defect_finding:"defect", near_miss:"nm", moc:"moc", permit:"ptw" };
+    function _apprTypeColor(t){
+      return ({ work_order:"#d29922", work_permit:"#db61a2", permit:"#db61a2", inspection_result:"#3fb950",
+        inspection_plan:"#58a6ff", defect_finding:"#f85149", near_miss:"#e3b341", moc:"#bc8cff" })[t] || "#8b949e";
+    }
 
 
 
@@ -531,17 +535,15 @@
 
 
 
-          <div class="lbl">${esc(r["表示ラベル"]||t)}</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px;">
+            <span style="font-size:15px;font-weight:800;padding:6px 13px;border-radius:9px;white-space:nowrap;color:${_apprTypeColor(t)};background:${_apprTypeColor(t)}22;border:1px solid ${_apprTypeColor(t)}66;">${esc(r["表示ラベル"]||t)}</span>
+            <span style="font-size:17px;font-weight:800;padding:6px 13px;border-radius:9px;white-space:nowrap;color:#fff;background:#1c2128;border:1px solid #30363d;font-family:monospace;">🌀 ${esc(wtg)}</span>
+          </div>
 
 
 
 
           <h3>${esc(r["内容"]||"(内容なし)")}</h3>
-
-
-
-
-          <div class="meta">号機 <b style="color:#fff">${esc(wtg)}</b></div>
 
 
 
