@@ -1629,16 +1629,25 @@ const createBtn = !isLocked
       const btn = document.getElementById('newRcaSaveBtn');
       btn.disabled = true; btn.textContent = '保存中…';
       try {
+        const gv = id => document.getElementById(id)?.value || null;
         const body = {
-          turbine_id:    document.getElementById('nr_turbine').value || null,
-          finding_title: title,
-          finding_detail: document.getElementById('nr_detail').value || null,
-          safety_impact: document.getElementById('nr_safety').value,
-          first_judgment: document.getElementById('nr_judge').value,
-          source_type:   document.getElementById('nr_source').value,
-          found_at:      document.getElementById('nr_found_at').value ? new Date(document.getElementById('nr_found_at').value).toISOString() : null,
-          status:        'open',
-          approval_status: 'draft'
+          turbine_id:           gv('nr_turbine'),
+          finding_title:        title,
+          finding_detail:       gv('nr_detail'),
+          safety_impact:        gv('nr_safety') || 'low',
+          initial_judgement:    gv('nr_judge'),           // ← 修正: first_judgment→initial_judgement
+          source_type:          gv('nr_source'),
+          detected_at:          gv('nr_found_at') ? new Date(gv('nr_found_at')).toISOString() : null,  // ← 修正: found_at→detected_at
+          // 一次確認メモ
+          first_check_person:   gv('nr_check_person'),
+          first_check_at:       gv('nr_check_at')   ? new Date(gv('nr_check_at')).toISOString()   : null,
+          first_check_method:   gv('nr_check_method'),
+          first_check_notes:    gv('nr_check_notes'),
+          // 法令分類
+          legal_judgement_class:gv('nr_legal_class'),
+          report_required_flag: document.getElementById('nr_report_flag')?.checked || false,
+          status:               'open',
+          approval_status:      'draft'
         };
         await sb.write('POST', 'defect_findings', body);
         closeNewRca();
@@ -2044,6 +2053,9 @@ const createBtn = !isLocked
       <button onclick="closeNewRca()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:18px" id="newRcaBody">
+
+      <!-- ■ 基本情報 -->
+      <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:8px;border-left:3px solid #58a6ff;padding-left:8px;">基本情報</div>
       <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">号機</label>
         <select id="nr_turbine" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
           <option value="">— 選択 —</option>
@@ -2057,23 +2069,80 @@ const createBtn = !isLocked
       </div>
       <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">発見元</label>
         <select id="nr_source" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
-          <option value="点検">点検</option><option value="監視">監視アラーム</option>
-          <option value="目視">目視巡回</option><option value="その他">その他</option>
+          <option value="点検">点検（計画点検/臨時点検）</option>
+          <option value="scada">SCADAアラーム</option>
+          <option value="監視">監視（目視巡回）</option>
+          <option value="anomaly_check">異常確認点検</option>
+          <option value="その他">その他</option>
         </select>
       </div>
-      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">安全影響</label>
-        <select id="nr_safety" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
-          <option value="low">低</option><option value="medium">中</option><option value="high">高</option><option value="critical">重大</option>
-        </select>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">詳細・状況</label>
+        <textarea id="nr_detail" rows="2" placeholder="異常の状況・症状を記入" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;resize:vertical"></textarea>
       </div>
-      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">一次判定</label>
-        <select id="nr_judge" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
-          <option value="A">A: 即時停止・修理</option><option value="B">B: 計画修理</option>
-          <option value="C">C: 経過観察</option><option value="D">D: 記録のみ</option>
-        </select>
+
+      <!-- ■ 一次確認メモ（誰が・いつ・どうやって確認したか） -->
+      <div style="font-size:11px;color:#e3b341;font-weight:700;margin-bottom:8px;border-left:3px solid #e3b341;padding-left:8px;margin-top:16px;">一次確認メモ</div>
+      <div style="background:rgba(210,153,34,.05);border:1px solid rgba(210,153,34,.25);border-radius:8px;padding:12px;margin-bottom:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">確認者</label>
+            <input id="nr_check_person" type="text" placeholder="氏名" style="display:block;width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 9px;border-radius:6px;font-size:12.5px">
+          </div>
+          <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">確認日時</label>
+            <input id="nr_check_at" type="datetime-local" style="display:block;width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 9px;border-radius:6px;font-size:12.5px">
+          </div>
+        </div>
+        <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">確認方法</label>
+          <select id="nr_check_method" style="display:block;width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 9px;border-radius:6px;font-size:12.5px">
+            <option value="">— 選択 —</option>
+            <option value="remote">遠隔確認（SCADA・カメラ）</option>
+            <option value="onsite">現地確認</option>
+            <option value="scada">SCADAデータ確認</option>
+            <option value="photo">写真・画像確認</option>
+            <option value="phone">電話確認</option>
+          </select>
+        </div>
+        <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">確認内容・暫定判断</label>
+          <textarea id="nr_check_notes" rows="2" placeholder="例: SCADA でギア温度85℃確認。過去最高値。即時現地確認を指示。" style="display:block;width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 9px;border-radius:6px;font-size:12.5px;resize:vertical"></textarea>
+        </div>
       </div>
-      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">詳細・備考</label>
-        <textarea id="nr_detail" rows="3" placeholder="状況の詳細を記入" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;resize:vertical"></textarea>
+
+      <!-- ■ リスク・法令分類 -->
+      <div style="font-size:11px;color:#ff9a92;font-weight:700;margin-bottom:8px;border-left:3px solid #f85149;padding-left:8px;">現場リスク・法令分類</div>
+      <div style="margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">現場リスク（安全影響）</label>
+          <select id="nr_safety" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+            <option value="low">🟢 低</option>
+            <option value="medium" selected>🟡 中</option>
+            <option value="high">🟠 高</option>
+            <option value="critical">🔴 重大</option>
+          </select>
+        </div>
+        <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">一次判定（対応方針）</label>
+          <select id="nr_judge" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+            <option value="A">A: 即時停止・修理</option>
+            <option value="B">B: 計画修理</option>
+            <option value="C">C: 経過観察</option>
+            <option value="D">D: 記録のみ</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;padding:10px 12px;background:rgba(188,140,255,.05);border:1px solid rgba(188,140,255,.25);border-radius:8px;">
+        <div style="font-size:11px;color:#bc8cff;font-weight:700;margin-bottom:8px;">⚖ 法令・報告分類（A〜F）<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px;">現場リスクとは別の法令上の分類</span></div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <select id="nr_legal_class" style="display:block;width:100%;background:var(--panel2);border:1px solid rgba(188,140,255,.4);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:12.5px">
+            <option value="">— 未分類 —</option>
+            <option value="A">A: 重大事故（死亡・重傷・大規模破損）→ 法令報告必須</option>
+            <option value="B">B: 重要設備故障（主要機器の機能停止）→ 報告検討</option>
+            <option value="C">C: 設備異常（修理・交換が必要）</option>
+            <option value="D">D: 異常検知（機能維持・要監視）</option>
+            <option value="E">E: 軽微な不具合（通常運転可・記録）</option>
+            <option value="F">F: 改善提案・未然防止</option>
+          </select>
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;white-space:nowrap;">
+            <input type="checkbox" id="nr_report_flag" style="width:14px;height:14px;accent-color:#bc8cff;">
+            <span style="color:#bc8cff;font-weight:700;">報告候補</span>
+          </label>
+        </div>
       </div>
     </div>
     <div style="padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0">
