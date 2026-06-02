@@ -424,3 +424,16 @@ CREATE OR REPLACE VIEW v_work_order_safety_status AS  SELECT wo.id AS work_order
 -- ※ v_rca_list / v_work_execution_list / v_restoration_check_list / v_closeout_review_list
 --    は本ファイル先頭のテーブル定義に対応する一覧ビュー。各CASEで業務名・絵文字に整形。
 --    最新の正本は Supabase 上の定義（pg_get_viewdef）を参照のこと。
+
+
+-- ---------------------------------------------------------------------
+-- ky_records: KYチェックシート画面(ky-loto.html)の入力カラムを補完
+--   （フォームは executed_date/work_description/members/risk_items/status を使用）
+-- ---------------------------------------------------------------------
+ALTER TABLE ky_records
+  ADD COLUMN IF NOT EXISTS executed_date date,
+  ADD COLUMN IF NOT EXISTS work_description text,
+  ADD COLUMN IF NOT EXISTS members text,
+  ADD COLUMN IF NOT EXISTS risk_items jsonb,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft',
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
