@@ -212,6 +212,48 @@ CREATE INDEX IF NOT EXISTS idx_rc_wo ON restoration_checks(work_order_id);
 
 
 -- ---------------------------------------------------------------------
+-- 状態自動連動：作業実施 / クローズ → 作業票ステータス
+--   （安全ゲート尊重：LOTO解除前は自動completeしない）
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sync_wo_status_from_execution() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE v_loto_req boolean; v_loto_ok boolean;
+BEGIN
+  UPDATE work_orders SET status='in_progress'
+   WHERE id = NEW.work_order_id AND status = 'open';
+  IF NEW.result_status = 'completed' THEN
+    SELECT COALESCE(loto_required,false) INTO v_loto_req FROM work_orders WHERE id = NEW.work_order_id;
+    v_loto_ok := (NOT v_loto_req)
+                 OR EXISTS (SELECT 1 FROM loto_records WHERE work_order_id = NEW.work_order_id AND status = 'unlocked');
+    IF v_loto_ok THEN
+      UPDATE work_orders SET status='completed', completed_at = COALESCE(completed_at, now())
+       WHERE id = NEW.work_order_id AND status <> 'cancelled';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_sync_wo_from_exec ON work_execution_results;
+CREATE TRIGGER trg_sync_wo_from_exec
+  AFTER INSERT OR UPDATE OF result_status, work_order_id ON work_execution_results
+  FOR EACH ROW EXECUTE FUNCTION sync_wo_status_from_execution();
+
+CREATE OR REPLACE FUNCTION sync_wo_status_from_closeout() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.review_status = 'closed' THEN
+    IF NEW.closed_at IS NULL THEN NEW.closed_at := now(); END IF;
+    UPDATE work_orders SET status='completed', completed_at = COALESCE(completed_at, now())
+     WHERE id = NEW.work_order_id AND status <> 'cancelled';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_sync_wo_from_closeout ON closeout_reviews;
+CREATE TRIGGER trg_sync_wo_from_closeout
+  BEFORE INSERT OR UPDATE OF review_status ON closeout_reviews
+  FOR EACH ROW EXECUTE FUNCTION sync_wo_status_from_closeout();
+
+
+-- ---------------------------------------------------------------------
 -- Step 11. クローズ・報告確認
 --   ※ まっさらな環境でも再現できるよう CREATE TABLE IF NOT EXISTS を先に実行。
 --      既存DB（旧スキーマの closeout_reviews）には後続 ALTER で不足カラムを追加。
