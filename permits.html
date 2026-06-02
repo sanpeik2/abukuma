@@ -113,12 +113,20 @@
 
 
 
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-
-
-
-
-  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+  table colgroup col.col-no{width:13%}
+  table colgroup col.col-wtg{width:7%}
+  table colgroup col.col-type{width:6%}
+  table colgroup col.col-desc{width:18%}
+  table colgroup col.col-st{width:8%}
+  table colgroup col.col-risk{width:7%}
+  table colgroup col.col-safe{width:10%}
+  table colgroup col.col-wind{width:6%}
+  table colgroup col.col-time{width:13%}
+  table colgroup col.col-h{width:5%}
+  table colgroup col.col-op{width:7%}
+  th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top;overflow:hidden;word-break:break-word}
+  td.col-desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 
 
@@ -406,17 +414,9 @@
 
 
 
-        <td><b style="color:#fff">${esc(r["風車"]||"—")}</b></td>
-
-
-
-
+        <td style="white-space:nowrap"><b style="color:#fff">${esc(r["風車"]||"—")}</b></td>
         <td><span class="typ">${esc(typeLabel[r["許可種別"]]||r["許可種別"]||"")}</span></td>
-
-
-
-
-        <td>${esc(r["作業内容"]||"")}</td>
+        <td class="col-desc" title="${esc(r["作業内容"]||"")}">${esc((r["作業内容"]||"").split("\n")[0])}</td>
 
 
 
@@ -476,16 +476,9 @@
 
 
 
-      body.innerHTML = `<table><thead><tr>
-
-
-
-
+      const cg = `<colgroup><col class="col-no"><col class="col-wtg"><col class="col-type"><col class="col-desc"><col class="col-st"><col class="col-risk"><col class="col-safe"><col class="col-wind"><col class="col-time"><col class="col-h"><col class="col-op"></colgroup>`;
+      body.innerHTML = `<table>${cg}<thead><tr>
         <th>PTW番号</th><th>号機</th><th>種別</th><th>作業内容</th><th>状態</th><th>リスク</th><th>安全要件</th><th>風速制限</th><th>作業時間帯</th><th>所要</th><th>操作</th>
-
-
-
-
       </tr></thead><tbody>${trs}</tbody></table>`;
 
 
