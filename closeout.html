@@ -75,25 +75,61 @@ function woNav(cur){
 const RVS=[['open','📋 未確認'],['in_review','🔍 確認中'],['returned','↩ 差戻し'],['closed','✅ クローズ済']];
 const REPT=[['','—'],['保安規定報告','保安規定報告'],['事故報告','事故報告'],['社内報告','社内報告'],['顧客報告','顧客報告']];
 async function load(){
-  try{
+  const bodyEl = document.getElementById('body');
+  bodyEl.innerHTML = '<div class="empty">取得中…</div>';
+  try {
     if(WO_ID) await loadCtx();
-    // closeout_reviews を直接取得し、work_orders / turbines を別途結合
-    let q='closeout_reviews?select=*&order=created_at.desc';
-    if(WO_ID) q+=`&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
-    const rows=await sb.get(q)||[];
-    // work_order_no / turbine_no を一括取得
-    const woIds=[...new Set(rows.map(r=>r.work_order_id).filter(Boolean))];
-    const woMap={};
-    if(woIds.length){
-      const wos=await sb.get(`work_orders?id=in.(${woIds.join(',')})&select=id,work_order_no,turbine_id`).catch(()=>[]);
-      const tids=[...new Set((wos||[]).map(w=>w.turbine_id).filter(Boolean))];
-      const tMap={};
-      if(tids.length){const ts=await sb.get(`turbines?id=in.(${tids.join(',')})&select=id,turbine_no`).catch(()=>[]);(ts||[]).forEach(t=>tMap[t.id]=t.turbine_no);}
-      (wos||[]).forEach(w=>woMap[w.id]={no:w.work_order_no||'–',tno:tMap[w.turbine_id]||'–'});
+
+    // Step1: closeout_reviews を直接取得
+    let q = 'closeout_reviews?select=*&order=created_at.desc';
+    if(WO_ID) q += `&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
+    let rows = [];
+    try { rows = await sb.get(q) || []; } catch(e1) {
+      bodyEl.innerHTML = `<div class="empty">取得エラー(closeout_reviews): ${esc(e1.message)}</div>`;
+      return;
     }
-    ALL=rows.map(r=>{const wo=woMap[r.work_order_id]||{no:'–',tno:'–'};return{...r,'作業票番号':wo.no,'風車':wo.tno,'クローズ状態':r.review_status,'復旧状態':r.restoration_status||'–','報告要否':r.report_required,'報告種別':r.report_type,'報告期限':r.report_deadline,'証跡':r.evidence_status,'PTW終了':r.permit_closed,'LOTO解除':r.loto_released,'確認者':r.closed_by_name,'クローズ日時':r.closed_at,'重要事項':r.remaining_issue||r.comment||''};});
+
+    // Step2: work_order_no / turbine_no を結合
+    const woMap = {};
+    const woIds = [...new Set(rows.map(r => r.work_order_id).filter(Boolean))];
+    if(woIds.length) {
+      try {
+        const wos = await sb.get(`work_orders?id=in.(${woIds.join(',')})&select=id,work_order_no,turbine_id`) || [];
+        const tids = [...new Set(wos.map(w => w.turbine_id).filter(Boolean))];
+        const tMap = {};
+        if(tids.length) {
+          const ts = await sb.get(`turbines?id=in.(${tids.join(',')})&select=id,turbine_no`) || [];
+          ts.forEach(t => { tMap[t.id] = t.turbine_no; });
+        }
+        wos.forEach(w => { woMap[w.id] = { no: w.work_order_no || '–', tno: tMap[w.turbine_id] || '–' }; });
+      } catch(e2) { /* work_order結合失敗は無視して続行 */ }
+    }
+
+    // Step3: 表示用マッピング
+    ALL = rows.map(r => {
+      const wo = woMap[r.work_order_id] || { no: '–', tno: '–' };
+      return {
+        ...r,
+        '作業票番号': wo.no,
+        '風車':       wo.tno,
+        'クローズ状態': r.review_status   || '–',
+        '復旧状態':   r.restoration_status || '–',
+        '報告要否':   r.report_required,
+        '報告種別':   r.report_type,
+        '報告期限':   r.report_deadline,
+        '証跡':       r.evidence_status,
+        'PTW終了':    r.permit_closed,
+        'LOTO解除':   r.loto_released,
+        '確認者':     r.closed_by_name,
+        'クローズ日時': r.closed_at,
+        '重要事項':   r.remaining_issue || r.comment || ''
+      };
+    });
+
     render();
-  }catch(e){ document.getElementById('body').innerHTML='<div class="empty">取得エラー: '+esc(e.message)+'</div>'; }
+  } catch(e) {
+    bodyEl.innerHTML = `<div class="empty">予期しないエラー: ${esc(e.message)}</div>`;
+  }
 }
 async function loadCtx(){
   try{ const w=await sb.get(`work_orders?id=eq.${encodeURIComponent(WO_ID)}&select=work_order_no,turbine_id,defect_finding_id`);
