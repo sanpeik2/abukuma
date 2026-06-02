@@ -121,9 +121,8 @@
   <thead>
     <tr>
       <th>作業票番号</th><th>風車</th><th>種別</th><th>概要</th>
-      <th>優先度</th><th>状態</th>
-      <th>停止</th><th>停止時間(分)</th><th>逸失電力(kWh)</th><th>逸失売電額(円)</th><th>主任確認</th>
-      <th>添付</th><th>起票日時</th>
+      <th>優先度</th><th>状態</th><th>承認</th><th>安全要件</th>
+      <th>対応予定日</th><th>担当</th><th>重要事項</th><th>添付</th><th>起票日時</th>
     </tr>
   </thead>
   <tbody id="rows">
@@ -209,6 +208,32 @@ function chiefBadge(status){
 }
 function fmtYen(v){ return v>0 ? '¥'+Math.round(v).toLocaleString('ja-JP') : '–'; }
 function fmtNum(v, unit){ return (v!=null && v>0) ? v.toLocaleString('ja-JP')+(unit?'<small>'+unit+'</small>':'') : '–'; }
+function _woApprBadge(st){
+  st=st||'draft';
+  if(st==='approved') return '<span style="color:#7ee787;font-weight:700;font-size:11.5px;">🔒 承認済</span>';
+  if(st==='pending')  return '<span style="color:#e3b341;font-weight:700;font-size:11.5px;">⏳ 申請中</span>';
+  if(st==='returned') return '<span style="color:#ff9a92;font-weight:700;font-size:11.5px;">↩ 差戻し</span>';
+  return '<span style="color:#8b949e;font-size:11.5px;">未申請</span>';
+}
+function _woSafetyReq(r){
+  const chip=(l,c)=>`<span style="display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:2px;color:${c};border:1px solid ${c}66;background:${c}1a;">${l}</span>`;
+  let out='';
+  if(r['ptw_required']) out+=chip('PTW','#db61a2');
+  if(r['ky_required'])  out+=chip('KY','#e3b341');
+  if(r['loto_required'])out+=chip('LOTO','#ff9a92');
+  return out||'<span style="color:#6e7681;">–</span>';
+}
+function _woImportant(r,s){
+  const today=new Date().toISOString().slice(0,10);
+  const done=!!r['完了日時_jst'];
+  const T=(t,c)=>`<span style="font-size:10.5px;color:${c};border:1px solid ${c}80;border-radius:4px;padding:1px 5px;white-space:nowrap;">${t}</span>`;
+  const tags=[];
+  if(!done && r['対応予定日'] && r['対応予定日']<today) tags.push(T('🟥 期限超過','#ff5630'));
+  if(s && s.outage_occurred)                          tags.push(T('🔴 停止','#ff9a92'));
+  if(s && s.chief_engineer_review_status==='pending') tags.push(T('🟡 主任待ち','#e3b341'));
+  if(s && s.total_lost_revenue_jpy>0)                 tags.push(T('💴 逸失','#d29922'));
+  return tags.length?tags.join(' '):'<span style="color:#6e7681;">–</span>';
+}
 
 function render(d){
   const rows = document.getElementById('rows');
@@ -222,13 +247,13 @@ function render(d){
       <td class="desc">${sb.esc(r['異常概要']||r['関連異常タイトル'])||'–'}</td>
       <td>${sb.esc(r['優先度表示']||r['優先度'])||'–'}</td>
       <td>${sb.esc(r['状態表示']||r['状態'])||'–'}</td>
-      <td>${stopBadge(s)}</td>
-      <td>${s && s.total_downtime_minutes>0 ? s.total_downtime_minutes : '–'}</td>
-      <td>${s && s.total_lost_energy_kwh>0 ? s.total_lost_energy_kwh.toLocaleString('ja-JP') : '–'}</td>
-      <td>${s ? fmtYen(s.total_lost_revenue_jpy) : '–'}</td>
-      <td>${chiefBadge(s?.chief_engineer_review_status)}</td>
+      <td>${_woApprBadge(r['approval_status'])}</td>
+      <td>${_woSafetyReq(r)}</td>
+      <td style="white-space:nowrap;">${sb.esc(r['対応予定日'])||'–'}</td>
+      <td>${r['担当']?sb.esc(r['担当']):'<span style="color:#ff9a92;font-size:11px;">未割当</span>'}</td>
+      <td>${_woImportant(r,s)}</td>
       <td>${(r['添付数']||0)>0?('📎'+r['添付数']):'–'}</td>
-      <td>${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
+      <td style="white-space:nowrap;">${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
     </tr>`;
   }).join('');
 }
