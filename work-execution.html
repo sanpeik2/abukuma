@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 作業実施（ライブ）</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--work:#d29922;--ok:#3fb950;--ng:#f85149}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:17px}.topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px}
+  .wrap{padding:16px 14px 50px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button.r{background:#1f6feb;color:#fff;border:none;font-weight:700;font-size:13px;padding:9px 18px;border-radius:8px;cursor:pointer}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+  th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
+  th{color:var(--muted);font-size:11px;font-weight:700}
+  td.desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .no a{color:#58a6ff;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer}
+  .empty{color:var(--muted);text-align:center;padding:36px}
+  .badge{font-size:11px;font-weight:700;white-space:nowrap}
+  .ctx{margin:0 0 14px;padding:11px 14px;border:1px solid rgba(210,153,34,.45);border-radius:9px;background:rgba(210,153,34,.07);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  /* drawer */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none}.ov.open{display:block}
+  .pnl{position:fixed;top:0;right:0;width:480px;max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column}
+  .pnl.open{transform:none}
+  .pnl .hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .pnl .bd{flex:1;overflow:auto;padding:16px 18px}
+  .pnl .ft{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px}
+  .fld{margin-bottom:11px}.fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
+  .in{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 9px;border-radius:7px;font-size:13px;font-family:inherit}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .bs{background:#1f6feb;color:#fff;font-weight:700;border:none;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer}
+  .bc{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="mark">AW</div><div><h1>作業実施</h1><div class="sub">阿武隈OS — 作業票に対する実施実績の記録（Step 9）</div></div><a class="back" href="./menu.html">≡ メニューへ戻る</a></div>
+<div class="wrap">
+  <div id="ctxBanner"></div>
+  <div class="bar"><button class="r" onclick="openEdit('')">＋ 作業実施を記録</button><span id="cnt" style="color:var(--muted);font-size:12px"></span></div>
+  <div id="body"><div class="empty">読み込み中…</div></div>
+</div>
+
+<div class="ov" id="ov" onclick="closeEdit()"></div>
+<div class="pnl" id="pnl">
+  <div class="hd"><h3 id="pnlTitle" style="font-size:14px;color:#fff;flex:1">作業実施</h3><button class="bc" onclick="closeEdit()">✕</button></div>
+  <div class="bd" id="pnlBody"></div>
+  <div class="ft" id="pnlFt"></div>
+</div>
+
+<script src="./lib/supabase.js"></script>
+<script>
+const esc=s=>sb.esc(s==null?'':String(s));
+const WO_ID=new URLSearchParams(location.search).get('work_order_id');
+let ALL=[], WO_CTX=null;
+const RS=[['continued','🔧 継続'],['completed','✅ 完了'],['partial','🟡 一部完了'],['cancelled','✖ 中止']];
+
+async function load(){
+  try{
+    let q='v_work_execution_list?order=created_at.desc';
+    if(WO_ID){ q+=`&work_order_id=eq.${encodeURIComponent(WO_ID)}`; await loadCtx(); }
+    ALL=await sb.get(q)||[];
+    render();
+  }catch(e){ document.getElementById('body').innerHTML='<div class="empty">取得エラー: '+esc(e.message)+'</div>'; }
+}
+async function loadCtx(){
+  try{ const w=await sb.get(`work_orders?id=eq.${encodeURIComponent(WO_ID)}&select=work_order_no,turbine_id,status,anomaly_description`);
+    const r=w&&w[0]; if(!r) return; let tno=''; try{const t=await sb.get(`turbines?id=eq.${encodeURIComponent(r.turbine_id)}&select=turbine_no`);tno=(t&&t[0]&&t[0].turbine_no)||'';}catch(e){}
+    WO_CTX={work_order_no:r.work_order_no,turbine_no:tno,desc:(r.anomaly_description||'').split('\n')[0]};
+    document.getElementById('ctxBanner').className='ctx';
+    document.getElementById('ctxBanner').innerHTML=`<span style="color:#d29922;font-weight:700">🔧 作業票</span><b style="color:#fff">${esc(tno)}</b><span style="font-family:monospace;color:#9cd2ff;font-size:12px">${esc(r.work_order_no)}</span><span style="color:var(--muted);font-size:11.5px">${esc(WO_CTX.desc)}</span><a href="./work-orders.html" style="margin-left:auto;font-size:12px">← 作業票へ戻る</a>`;
+  }catch(e){}
+}
+function fmt(s){ return s?String(s).replace('T',' ').slice(0,16):'–'; }
+function render(){
+  const b=document.getElementById('body');
+  document.getElementById('cnt').textContent=ALL.length+'件';
+  if(!ALL.length){ b.innerHTML='<div class="empty">作業実施の記録はありません。「＋ 作業実施を記録」から登録してください。</div>'; return; }
+  const cg='<colgroup><col style="width:13%"><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:11%"><col style="width:11%"><col style="width:18%"><col style="width:14%"></colgroup>';
+  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>作業状態</th><th>実施担当</th><th>開始日時</th><th>完了日時</th><th>実施内容</th><th>次アクション</th></tr></thead><tbody>${
+    ALL.map(r=>`<tr>
+      <td class="no"><a onclick="openEdit('${r.id}')">${esc(r['作業票番号'])}</a></td>
+      <td style="white-space:nowrap"><b style="color:#fff">${esc(r['風車'])}</b></td>
+      <td class="badge">${esc(r['作業状態'])}</td>
+      <td>${esc(r['実施担当'])}</td>
+      <td style="white-space:nowrap">${fmt(r['開始日時'])}</td>
+      <td style="white-space:nowrap">${fmt(r['完了日時'])}</td>
+      <td class="desc" title="${esc(r['実施内容'])}">${esc((r['実施内容']||'').split('\n')[0])||'–'}</td>
+      <td class="desc" title="${esc(r['次アクション'])}">${esc(r['次アクション'])||'–'}</td>
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+async function openEdit(id){
+  let d={};
+  if(id){ try{ const r=await sb.get(`work_execution_results?id=eq.${encodeURIComponent(id)}&select=*`); d=(r&&r[0])||{}; }catch(e){} }
+  document.getElementById('pnlTitle').textContent = id?'作業実施を編集':'作業実施を記録';
+  const dt=s=>s?new Date(s).toISOString().slice(0,16):'';
+  document.getElementById('pnlBody').innerHTML=`
+    <div class="g2">
+      <div class="fld"><label>実施回</label><input id="f_no" class="in" type="number" min="1" value="${d.execution_no||(ALL.length+1)}"></div>
+      <div class="fld"><label>作業状態</label><select id="f_rs" class="in">${RS.map(s=>`<option value="${s[0]}" ${ (d.result_status||'continued')===s[0]?'selected':''}>${s[1]}</option>`).join('')}</select></div>
+      <div class="fld"><label>開始日時</label><input id="f_start" class="in" type="datetime-local" value="${dt(d.started_at)}"></div>
+      <div class="fld"><label>完了日時</label><input id="f_fin" class="in" type="datetime-local" value="${dt(d.finished_at)}"></div>
+      <div class="fld"><label>実施会社</label><input id="f_co" class="in" value="${esc(d.executed_by_company||'')}"></div>
+      <div class="fld"><label>実施担当者</label><input id="f_by" class="in" value="${esc(d.executed_by_name||'')}"></div>
+    </div>
+    <div class="fld"><label>実施内容</label><textarea id="f_sum" class="in" rows="3">${esc(d.work_summary||'')}</textarea></div>
+    <div class="fld"><label>未完了理由（未完了時）</label><textarea id="f_inc" class="in" rows="2">${esc(d.incomplete_reason||'')}</textarea></div>
+    <div class="fld"><label><input type="checkbox" id="f_adf" ${d.additional_defect_found?'checked':''}> 追加不具合あり</label></div>
+    <div class="fld"><label>次アクション</label><input id="f_next" class="in" value="${esc(d.next_action||'')}"></div>
+    <div id="f_msg" style="color:#ff9a92;font-size:12px;display:none"></div>`;
+  document.getElementById('pnlFt').innerHTML=`<button class="bs" onclick="save('${id}')">💾 保存</button><button class="bc" onclick="closeEdit()">閉じる</button>`;
+  document.getElementById('ov').classList.add('open');document.getElementById('pnl').classList.add('open');
+}
+function closeEdit(){document.getElementById('ov').classList.remove('open');document.getElementById('pnl').classList.remove('open');}
+async function save(id){
+  const g=i=>document.getElementById(i), v=i=>g(i).value, msg=g('f_msg');
+  if(!id && !WO_ID){ msg.style.display='block';msg.textContent='作業票が特定できません（work_order_id付きで開いてください）';return; }
+  const body={
+    execution_no:parseInt(v('f_no'),10)||1,
+    result_status:v('f_rs'),
+    started_at:v('f_start')?new Date(v('f_start')).toISOString():null,
+    finished_at:v('f_fin')?new Date(v('f_fin')).toISOString():null,
+    executed_by_company:v('f_co')||null, executed_by_name:v('f_by')||null,
+    work_summary:v('f_sum')||null, incomplete_reason:v('f_inc')||null,
+    additional_defect_found:g('f_adf').checked, next_action:v('f_next')||null,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    if(id){ const r=await fetch(`${sb.URL}/rest/v1/work_execution_results?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(body)}); if(!r.ok)throw new Error(await r.text()); }
+    else { body.work_order_id=WO_ID; await sb.write('POST','work_execution_results',body); }
+    closeEdit(); load();
+  }catch(e){ msg.style.display='block';msg.textContent='保存失敗: '+(e.message||e); }
+}
+sb.requireLogin({onReady:load});
+</script>
+</body>
+</html>
