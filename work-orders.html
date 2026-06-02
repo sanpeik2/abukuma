@@ -317,7 +317,8 @@ function buildSafetyHtml(id,s){
     </table>
     ${gateHtml}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
-      <a href="./ky-loto.html?work_order_id=${encodeURIComponent(id)}" style="font-size:12px;font-weight:700;color:#e3b341;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">⚠ 作業許可・KY/LOTOを開く</a>
+      <a href="./permits.html?work_order_id=${encodeURIComponent(id)}" style="font-size:12px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">🔒 PTWを申請/一覧</a>
+      <a href="./ky-loto.html?work_order_id=${encodeURIComponent(id)}" style="font-size:12px;font-weight:700;color:#e3b341;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">⚠ KY・LOTOを開く</a>
       ${act}
     </div>
   </div>`;
