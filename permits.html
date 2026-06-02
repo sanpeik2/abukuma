@@ -668,13 +668,37 @@
       } catch(e) { alert('申請エラー: ' + e.message); }
     }
 
+    /* ===== 作業票連携（?work_order_id=…） ===== */
+    const WO_ID = new URLSearchParams(location.search).get('work_order_id');
+    let WO_CTX = null;
+    async function loadWoCtx(){
+      if(!WO_ID) return;
+      try{
+        const wos = await sb.get(`work_orders?id=eq.${encodeURIComponent(WO_ID)}&select=id,work_order_no,turbine_id,work_type,anomaly_description,ptw_required`);
+        const w = wos&&wos[0]; if(!w) return;
+        let tno=''; try{ const ts=await sb.get(`turbines?id=eq.${encodeURIComponent(w.turbine_id)}&select=turbine_no`); tno=(ts&&ts[0]&&ts[0].turbine_no)||''; }catch(e){}
+        WO_CTX={ work_order_id:w.id, work_order_no:w.work_order_no, turbine_id:w.turbine_id, turbine_no:tno, desc:(w.anomaly_description||w.work_type||''), ptw_required:w.ptw_required };
+        renderWoBanner();
+      }catch(e){}
+    }
+    function renderWoBanner(){
+      if(!WO_CTX) return;
+      let el=document.getElementById('woCtxBanner');
+      const ref=document.getElementById('body');
+      if(!el){ el=document.createElement('div'); el.id='woCtxBanner'; if(ref&&ref.parentNode) ref.parentNode.insertBefore(el,ref); else document.body.prepend(el); }
+      el.style.cssText='margin:0 0 14px;padding:11px 14px;border:1px solid rgba(219,97,162,.45);border-radius:9px;background:rgba(219,97,162,.07);display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+      el.innerHTML=`<span style="color:#db61a2;font-weight:700;">🔧 作業票のPTW</span><b style="color:#fff;">${esc(WO_CTX.turbine_no||'')}</b><span style="font-family:monospace;color:#9cd2ff;font-size:12px;">${esc(WO_CTX.work_order_no||'')}</span>${WO_CTX.ptw_required?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:1px 7px;">PTW必要</span>':'<span style="font-size:11px;color:#8b949e;">PTW不要設定</span>'}<span style="color:var(--muted);font-size:11.5px;">この作業票のPTWのみ表示中</span><button onclick="openNewPtw()" style="margin-left:auto;background:#db61a2;color:#fff;border:none;font-weight:700;border-radius:7px;padding:6px 13px;font-size:12px;cursor:pointer;">＋ この作業票のPTWを起票</button><a href="./work-orders.html" style="font-size:12px;color:#58a6ff;text-decoration:none;">← 作業票へ戻る</a>`;
+    }
+
     function openNewPtw() {
       const sel = document.getElementById('np_turbine');
       if(sel && sel.options.length <= 1) {
         sb.get('turbines?select=id,turbine_no&order=turbine_no').then(rows => {
           rows.forEach(t => { const o = document.createElement('option'); o.value=t.id; o.textContent=t.turbine_no; sel.appendChild(o); });
+          if(WO_CTX){ sel.value=WO_CTX.turbine_id||''; }
         }).catch(()=>{});
-      }
+      } else if(WO_CTX && sel){ sel.value=WO_CTX.turbine_id||''; }
+      if(WO_CTX){ const dsc=document.getElementById('np_desc'); if(dsc && !dsc.value) dsc.value=WO_CTX.desc||''; }
       document.getElementById('newPtwOverlay').style.display = 'block';
       document.getElementById('newPtwPanel').style.transform = 'translateX(0)';
     }
@@ -698,6 +722,7 @@
           start_at:            document.getElementById('np_start').value ? new Date(document.getElementById('np_start').value).toISOString() : null,
           end_at:              document.getElementById('np_end').value   ? new Date(document.getElementById('np_end').value).toISOString()   : null,
           remarks:             document.getElementById('np_remarks').value || null,
+          work_order_id:       WO_ID || (WO_CTX && WO_CTX.work_order_id) || null,
           permit_status:       'draft'
         };
         await sb.write('POST', 'work_permits', body);
@@ -720,10 +745,7 @@
 
 
         state.rows = await sb.get("v_permits_full?order=作業開始_jst.desc.nullslast");
-
-
-
-
+        if(WO_ID){ await loadWoCtx(); state.rows = (state.rows||[]).filter(r => r.work_order_id === WO_ID); }
         render();
 
 
