@@ -180,6 +180,18 @@ const params = new URLSearchParams(location.search);
 const PLAN_ID = params.get('plan_id');
 const WO_ID   = params.get('work_order_id');
 const TID     = params.get('turbine_id');
+function woNav(cur){
+  if(!WO_ID) return '';
+  const q='?work_order_id='+encodeURIComponent(WO_ID);
+  const L=[
+    ['ptw',  './ky-loto.html'+q,        '🔒 PTW/KY/LOTO','#e3b341','rgba(210,153,34,.12)','rgba(210,153,34,.4)'],
+    ['exec', './work-execution.html'+q, '🔧 作業実施',    '#d29922','rgba(210,153,34,.12)','rgba(210,153,34,.4)'],
+    ['rest', './restoration.html'+q,    '✅ 復旧確認',     '#3fb950','rgba(63,185,80,.12)','rgba(63,185,80,.4)'],
+    ['close','./closeout.html'+q,       '🩷 クローズ',     '#db61a2','rgba(219,97,162,.12)','rgba(219,97,162,.4)']
+  ].filter(x=>x[0]!==cur);
+  return L.map(x=>`<a href="${x[1]}" style="font-size:11px;font-weight:700;color:${x[3]};background:${x[4]};border:1px solid ${x[5]};border-radius:6px;padding:4px 9px;text-decoration:none;white-space:nowrap">${x[2]}</a>`).join('')
+    + '<a href="./work-orders.html" style="font-size:12px;color:#58a6ff;text-decoration:none">← 作業票</a>';
+}
 
 let state = { turbineId: TID||null, planId: PLAN_ID||null, woId: WO_ID||null,
               kyId: null, lotoId: null, lotoStatus: 'locked' };
@@ -234,7 +246,7 @@ async function loadWoContext(){
     $('loto_work').value = workDesc;
     const banner = $('ctxBanner');
     banner.style.display='flex';
-    banner.innerHTML = `<span style="color:#d29922;font-weight:700;">🔧 作業票</span><b style="color:#fff;">${esc(tno)}</b><span style="color:var(--muted);">${esc(w.work_order_no||'')}</span><span style="color:var(--muted);">${esc(workDesc)}</span>`;
+    banner.innerHTML = `<span style="color:#d29922;font-weight:700;">🔧 作業票</span><b style="color:#fff;">${esc(tno)}</b><span style="color:var(--muted);">${esc(w.work_order_no||'')}</span><span style="color:var(--muted);">${esc(workDesc)}</span><span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${woNav('ptw')}</span>`;
     // 作業票の安全要件（要否）を読み込み、必須ゲートと次の操作を提示
     try{
       const ss = await sb.get(`v_work_order_safety_status?work_order_id=eq.${encodeURIComponent(WO_ID)}&select=*`);
