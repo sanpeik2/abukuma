@@ -81,9 +81,9 @@ function render(){
   const b=document.getElementById('body');
   document.getElementById('cnt').textContent=ALL.length+'件';
   if(!ALL.length){ b.innerHTML='<div class="empty">作業実施の記録はありません。「＋ 作業実施を記録」から登録してください。</div>'; return; }
-  const cg='<colgroup><col style="width:13%"><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:11%"><col style="width:11%"><col style="width:18%"><col style="width:14%"></colgroup>';
-  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>作業状態</th><th>実施担当</th><th>開始日時</th><th>完了日時</th><th>実施内容</th><th>次アクション</th></tr></thead><tbody>${
-    ALL.map(r=>`<tr>
+  const cg='<colgroup><col style="width:12%"><col style="width:5%"><col style="width:8%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:15%"><col style="width:15%"><col style="width:12%"></colgroup>';
+  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>作業状態</th><th>実施担当</th><th>開始日時</th><th>完了日時</th><th>実施内容</th><th>未完了理由</th><th>次アクション</th></tr></thead><tbody>${
+    ALL.map(r=>{const inc=r['未完了理由']||'';return `<tr>
       <td class="no"><a onclick="openEdit('${r.id}')">${esc(r['作業票番号'])}</a></td>
       <td style="white-space:nowrap"><b style="color:#fff">${esc(r['風車'])}</b></td>
       <td class="badge">${esc(r['作業状態'])}</td>
@@ -91,8 +91,9 @@ function render(){
       <td style="white-space:nowrap">${fmt(r['開始日時'])}</td>
       <td style="white-space:nowrap">${fmt(r['完了日時'])}</td>
       <td class="desc" title="${esc(r['実施内容'])}">${esc((r['実施内容']||'').split('\n')[0])||'–'}</td>
+      <td class="desc" title="${esc(inc)}" style="${inc?'color:#ff9a92':''}">${esc(inc.split('\n')[0])||'–'}</td>
       <td class="desc" title="${esc(r['次アクション'])}">${esc(r['次アクション'])||'–'}</td>
-    </tr>`).join('')
+    </tr>`;}).join('')
   }</tbody></table>`;
 }
 async function openEdit(id){
