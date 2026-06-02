@@ -285,6 +285,15 @@
 
   .kcard.span2{grid-column:1/-1}
 
+  /* ===== カルテ タブ ===== */
+  .ktabs{display:flex;gap:2px;flex-wrap:wrap;grid-column:1/-1;border-bottom:2px solid var(--line);padding-bottom:0;margin-bottom:4px}
+  .ktab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:12.5px;font-weight:600;padding:7px 15px;cursor:pointer;margin-bottom:-2px;border-radius:6px 6px 0 0;white-space:nowrap;transition:color .15s,background .15s}
+  .ktab:hover{color:var(--txt);background:rgba(255,255,255,.04)}
+  .ktab.act{color:#58a6ff;border-bottom-color:#58a6ff;font-weight:700}
+  .kpanel{grid-column:1/-1}
+  .ksummary{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+  .kscroll-lg{max-height:420px;overflow:auto}
+
 
 
 
@@ -1838,32 +1847,62 @@
 
 
 
-          <div class="kcard"><div class="dsec">🔧 コンポーネント健全度</div><div class="kscroll">${compRows}</div></div>
+          <!-- ===== タブナビゲーション ===== -->
+          <div class="ktabs">
+            <button class="ktab act" onclick="switchKarteTab('kt-summary',this)">📊 概要</button>
+            <button class="ktab" onclick="switchKarteTab('kt-alarm',this)">🚨 アラーム</button>
+            <button class="ktab" onclick="switchKarteTab('kt-insp',this)">📋 点検</button>
+            <button class="ktab" onclick="switchKarteTab('kt-defect',this)">🗂 故障・RCA</button>
+            <button class="ktab" onclick="switchKarteTab('kt-wo',this)">📝 作業票</button>
+            <button class="ktab" onclick="switchKarteTab('kt-parts',this)">🧰 部品・整備</button>
+          </div>
 
+          <!-- 概要タブ：重要情報を2カラムで -->
+          <div class="kpanel" id="kt-summary">
+            <div class="ksummary">
+              <div class="kcard"><div class="dsec">🚨 直近アラーム</div><div class="kscroll">${alarmRows}</div></div>
+              <div class="kcard"><div class="dsec">📋 直近点検</div><div class="kscroll">${inspRows}</div></div>
+              <div class="kcard"><div class="dsec">🗂 作業履歴</div><div class="kscroll">${histRows}</div></div>
+              <div class="kcard"><div class="dsec">📅 次回点検予定</div><div class="kscroll">${upRows}</div></div>
+            </div>
+          </div>
 
+          <!-- アラームタブ -->
+          <div class="kpanel" id="kt-alarm" style="display:none">
+            <div class="kcard"><div class="dsec">🚨 アラーム履歴（全件）</div><div class="kscroll kscroll-lg">${alarmRows}</div></div>
+          </div>
 
+          <!-- 点検タブ -->
+          <div class="kpanel" id="kt-insp" style="display:none">
+            <div class="ksummary">
+              <div class="kcard"><div class="dsec">📋 点検実績</div><div class="kscroll kscroll-lg">${inspRows}</div></div>
+              <div class="kcard"><div class="dsec">📅 今後の点検予定</div><div class="kscroll kscroll-lg">${upRows}</div></div>
+            </div>
+          </div>
 
-          <div class="kcard"><div class="dsec">🚨 アラーム履歴</div><div class="kscroll">${alarmRows}</div></div>
+          <!-- 故障・RCAタブ -->
+          <div class="kpanel" id="kt-defect" style="display:none">
+            <div class="kcard"><div class="dsec">🗂 故障・作業履歴（時系列）</div><div class="kscroll kscroll-lg">${histRows}</div></div>
+          </div>
 
+          <!-- 作業票タブ -->
+          <div class="kpanel" id="kt-wo" style="display:none">
+            <div class="kcard">
+              <div class="dsec">📝 この風車の作業票</div>
+              <div style="margin-bottom:10px">
+                <a href="./work-orders.html" style="font-size:12px;padding:6px 14px;background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.4);border-radius:7px;text-decoration:none;" onclick="event.stopPropagation()">📝 作業票一覧を開く →</a>
+              </div>
+              <div class="kscroll kscroll-lg">${histRows}</div>
+            </div>
+          </div>
 
-
-
-          <div class="kcard"><div class="dsec">📋 点検実績</div><div class="kscroll">${inspRows}</div></div>
-
-
-
-
-          <div class="kcard"><div class="dsec">🧰 整備・部品交換履歴</div><div class="kscroll">${maintRows}</div></div>
-
-
-
-
-          <div class="kcard"><div class="dsec">🗂 作業履歴</div><div class="kscroll">${histRows}</div></div>
-
-
-
-
-          <div class="kcard"><div class="dsec">📅 今後の点検予定</div><div class="kscroll">${upRows}</div></div>
+          <!-- 部品・整備タブ -->
+          <div class="kpanel" id="kt-parts" style="display:none">
+            <div class="ksummary">
+              <div class="kcard"><div class="dsec">🔧 コンポーネント健全度</div><div class="kscroll kscroll-lg">${compRows}</div></div>
+              <div class="kcard"><div class="dsec">🧰 整備・部品交換履歴</div><div class="kscroll kscroll-lg">${maintRows}</div></div>
+            </div>
+          </div>
 
 
 
@@ -2387,6 +2426,15 @@
 
 
 
+
+    /* ===== カルテ タブ切り替え ===== */
+    function switchKarteTab(tabId, btn){
+      document.querySelectorAll('.kpanel').forEach(p => { p.style.display = 'none'; });
+      const panel = document.getElementById(tabId);
+      if(panel) panel.style.display = 'block';
+      btn.closest('.ktabs').querySelectorAll('.ktab').forEach(b => b.classList.remove('act'));
+      btn.classList.add('act');
+    }
 
     sb.requireLogin({ onReady: loadAll });
 
