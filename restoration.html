@@ -59,6 +59,18 @@
 const esc=s=>sb.esc(s==null?'':String(s));
 const WO_ID=new URLSearchParams(location.search).get('work_order_id');
 let ALL=[], WO_CTX=null;
+function woNav(cur){
+  if(!WO_ID) return '';
+  const q='?work_order_id='+encodeURIComponent(WO_ID);
+  const L=[
+    ['ptw',  './ky-loto.html'+q,        '🔒 PTW/KY/LOTO','#e3b341','rgba(210,153,34,.12)','rgba(210,153,34,.4)'],
+    ['exec', './work-execution.html'+q, '🔧 作業実施',    '#d29922','rgba(210,153,34,.12)','rgba(210,153,34,.4)'],
+    ['rest', './restoration.html'+q,    '✅ 復旧確認',     '#3fb950','rgba(63,185,80,.12)','rgba(63,185,80,.4)'],
+    ['close','./closeout.html'+q,       '🩷 クローズ',     '#db61a2','rgba(219,97,162,.12)','rgba(219,97,162,.4)']
+  ].filter(x=>x[0]!==cur);
+  return L.map(x=>`<a href="${x[1]}" style="font-size:11px;font-weight:700;color:${x[3]};background:${x[4]};border:1px solid ${x[5]};border-radius:6px;padding:4px 9px;text-decoration:none;white-space:nowrap">${x[2]}</a>`).join('')
+    + '<a href="./work-orders.html" style="font-size:12px;color:#58a6ff;text-decoration:none">← 作業票</a>';
+}
 const OPT={
   restoration_status:[['pending','⏳ 確認中'],['restored','✅ 復旧済'],['rework','🔁 再作業'],['not_restored','🔴 復旧不可']],
   trial_run_status:[['','—'],['good','✅ 良好'],['recheck','🟡 要再確認'],['ng','🔴 NG']],
@@ -78,7 +90,7 @@ async function loadCtx(){
     const r=w&&w[0]; if(!r) return; let tno=''; try{const t=await sb.get(`turbines?id=eq.${encodeURIComponent(r.turbine_id)}&select=turbine_no`);tno=(t&&t[0]&&t[0].turbine_no)||'';}catch(e){}
     WO_CTX={turbine_id:r.turbine_id};
     document.getElementById('ctxBanner').className='ctx';
-    document.getElementById('ctxBanner').innerHTML=`<span style="color:#3fb950;font-weight:700">🔧 作業票</span><b style="color:#fff">${esc(tno)}</b><span style="font-family:monospace;color:#9cd2ff;font-size:12px">${esc(r.work_order_no)}</span><a href="./work-orders.html" style="margin-left:auto;font-size:12px">← 作業票へ戻る</a>`;
+    document.getElementById('ctxBanner').innerHTML=`<span style="color:#3fb950;font-weight:700">🔧 作業票</span><b style="color:#fff">${esc(tno)}</b><span style="font-family:monospace;color:#9cd2ff;font-size:12px">${esc(r.work_order_no)}</span><span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${woNav('rest')}</span>`;
   }catch(e){}
 }
 function fmt(s){return s?String(s).replace('T',' ').slice(0,16):'–';}
