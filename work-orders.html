@@ -369,6 +369,37 @@ async function changeWoStatus(id,newStatus){
 
 const WT_LABEL={corrective:'緊急補修',preventive:'予防保全',inspection:'点検',other:'その他'};
 function wtJa(v){ return v?(WT_LABEL[v]||v):'–'; }
+
+/* ===== 主任確認 要否判定 ===== */
+function chiefRequired(r, s){
+  const reasons=[];
+  if(s?.outage_occurred) reasons.push('停止影響あり');
+  if(r['loto_required']) reasons.push('LOTO解除');
+  if(['high','critical'].includes(r['severity'])) reasons.push('深刻度:'+({'high':'高','critical':'重大'}[r['severity']]));
+  if(r['ky_required']) reasons.push('KY実施あり');
+  const txt=[r['異常概要'],r['暫定処置'],r['恒久処置'],r['根本原因']].filter(Boolean).join(' ');
+  if(/増速機|主軸受|発電機|ピッチ制御|ヨー制御|ブレーキ/.test(txt)) reasons.push('主要機器復旧');
+  if(/系統|受電|送電|連系|遮断器|開閉器|継電器/.test(txt)) reasons.push('系統・受変電設備');
+  if(/高圧|特高|特別高圧/.test(txt)) reasons.push('高圧・特高設備');
+  if(/保護装置|保護継電器|リレー/.test(txt)) reasons.push('保護装置');
+  if(/再起動|復帰|運転再開/.test(txt)) reasons.push('再起動・運転復帰');
+  if(/事故|ヒヤリハット|火災|感電|落下/.test(txt)) reasons.push('安全事故・ヒヤリハット');
+  return {required:reasons.length>0, reasons};
+}
+function chiefEngineerBadge(r, s){
+  const c=chiefRequired(r,s);
+  const color=c.required?'#db61a2':'#3fb950';
+  const bg=c.required?'rgba(219,97,162,.08)':'rgba(63,185,80,.07)';
+  const border=c.required?'rgba(219,97,162,.4)':'rgba(63,185,80,.35)';
+  const label=c.required?'必要':'不要';
+  const reason=c.required?c.reasons.join(' / '):'設備操作なし / 停止影響なし / 安全機能影響なし';
+  return `<div style="margin-top:14px;padding:9px 12px;border:1px solid ${border};border-radius:8px;background:${bg};">
+    <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px;">主任確認</div>
+    <div style="font-size:13px;font-weight:800;color:${color};">${label}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:3px;">理由：${sb.esc(reason)}</div>
+  </div>`;
+}
+
 function buildDetailHtml(r, s){
   const id = r['id'];
   const tid = r['turbine_id']||'';
@@ -405,6 +436,19 @@ function buildDetailHtml(r, s){
     <div class="dsec">添付</div>
     <div class="dval${(r['添付数']||0)>0?'':' empty'}">${(r['添付数']||0)>0?('📎 '+r['添付数']+' 件'):'なし'}</div>
 
+    ${chiefEngineerBadge(r, s)}
+
+    <div class="dsec" style="margin-top:18px;">作業の進行（Step 9→11）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+      <a href="./work-execution.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#d29922;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">🔧 作業実施を記録</a>
+      <a href="./restoration.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#3fb950;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">✅ 復旧確認へ</a>
+      <a href="./closeout.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">🩷 クローズ・報告確認へ</a>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:14px;font-size:12.5px">
+      <a class="menu" href="./permits.html?work_order_id=${sb.esc(id)}">🔒 関連する作業許可(PTW)</a>
+      <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
+    </div>
+
     <!-- 停止・発電影響セクション -->
     <div class="dsec" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
       <span>停止・発電影響</span>
@@ -412,18 +456,7 @@ function buildDetailHtml(r, s){
     </div>
     ${outageSummaryHtml(s)}
     <div id="outageList" style="margin-top:8px"><div style="color:var(--muted);font-size:12px;">読み込み中…</div></div>
-    <div id="outageForm" style="display:none;"></div>
-
-    <div class="dsec" style="margin-top:20px;">作業の進行（Step 9→11）</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-      <a href="./work-execution.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#d29922;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">🔧 作業実施を記録</a>
-      <a href="./restoration.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#3fb950;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">✅ 復旧確認へ</a>
-      <a href="./closeout.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">🩷 クローズ・報告確認へ</a>
-    </div>
-    <div style="margin-top:16px;display:flex;gap:14px;font-size:12.5px">
-      <a class="menu" href="./permits.html?work_order_id=${sb.esc(id)}">🔒 関連する作業許可(PTW)</a>
-      <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
-    </div>`;
+    <div id="outageForm" style="display:none;"></div>`;
 }
 
 function outageSummaryHtml(s){
