@@ -1127,6 +1127,7 @@
 
 </div>
       ${woCta(r)}
+      <div id="rcaBox-${esc(r["故障id"])}" style="margin-top:10px;"><div style="color:var(--muted);font-size:12px;">RCA 読み込み中…</div></div>
       ${(r["approval_status"]==="draft"||r["approval_status"]==="returned"||!r["approval_status"])?`
       <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
         <button onclick="openFindingEdit('${esc(r["故障id"])}')" style="font-size:12px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:6px 12px;cursor:pointer;">✏ 異常判断を編集</button>
@@ -1179,6 +1180,108 @@ const createBtn = !isLocked
         ${!isLocked?'<div style="font-size:11.5px;color:#8b949e;">作業票を作成すると WTG・異常内容・判定が引き継がれます</div>':''}
       </div>`;
     }
+    /* ===== RCA（根本原因調査）起票・編集 ===== */
+    const RCA_METHODS=[['5why','なぜなぜ分析(5why)'],['fishbone','特性要因図'],['fault_tree','FTA'],['other','その他']];
+    const RCA_STATUS=[['open','📋 未着手'],['in_progress','🔧 調査中'],['done','✅ 完了'],['cancelled','✖ 中止']];
+    async function refreshRcaSection(defectId){
+      const box=document.getElementById('rcaBox-'+defectId);
+      if(!box) return;
+      try{
+        const rows=await sb.get(`rca_reports?defect_finding_id=eq.${encodeURIComponent(defectId)}&order=created_at.desc&limit=1`);
+        const rca=rows&&rows[0];
+        if(!rca){
+          box.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.35);">
+            <span style="color:#ff9a92;font-weight:700;font-size:12.5px;">🔬 根本原因調査（RCA）</span>
+            <span style="color:var(--muted);font-size:11.5px;">未起票</span>
+            <button onclick="openRcaPanel('${defectId}','')" style="margin-left:auto;background:#f85149;color:#fff;font-weight:700;border:none;border-radius:7px;padding:6px 13px;font-size:12px;cursor:pointer;">🔬 RCAを起票</button>
+          </div>`;
+        }else{
+          const st=(RCA_STATUS.find(x=>x[0]===rca.status)||['','—'])[1];
+          const mt=(RCA_METHODS.find(x=>x[0]===rca.method)||['','—'])[1];
+          box.innerHTML=`<div style="padding:10px 12px;border-radius:8px;background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.35);">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+              <span style="color:#ff9a92;font-weight:700;font-size:12.5px;">🔬 RCA</span>
+              <span style="font-family:monospace;font-size:11px;color:#9cd2ff;">${esc(rca.rca_no||'')}</span>
+              <span style="font-size:11.5px;color:#c9d1d9;">${st} ／ ${esc(mt)}</span>
+              <button onclick="openRcaPanel('${defectId}','${rca.id}')" style="margin-left:auto;background:rgba(88,166,255,.12);color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:5px 11px;font-size:12px;cursor:pointer;">✏ RCAを編集</button>
+            </div>
+            <div style="font-size:12px;color:#c9d1d9;"><b style="color:#8b949e;">根本原因：</b>${esc(rca.root_cause||'—')}</div>
+            <div style="font-size:12px;color:#c9d1d9;margin-top:3px;"><b style="color:#8b949e;">恒久対策：</b>${esc(rca.permanent_action||'—')}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">担当：${esc(rca.owner||'—')} ／ 期限：${esc(rca.due_date||'—')}</div>
+          </div>`;
+        }
+      }catch(e){ box.innerHTML='<div style="color:#f85149;font-size:12px;">RCA取得失敗: '+esc(e.message)+'</div>'; }
+    }
+    async function openRcaPanel(defectId, rcaId){
+      const box=document.getElementById('rcaBox-'+defectId);
+      if(!box) return;
+      box.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;">読み込み中…</div>';
+      let d={}, df={};
+      try{
+        const dfRows=await sb.get(`defect_findings?id=eq.${encodeURIComponent(defectId)}&select=turbine_id,finding_title`);
+        df=(dfRows&&dfRows[0])||{};
+        if(rcaId){ const rs=await sb.get(`rca_reports?id=eq.${encodeURIComponent(rcaId)}&select=*`); d=(rs&&rs[0])||{}; }
+      }catch(e){}
+      const inp='width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 9px;border-radius:7px;font-size:12.5px;font-family:inherit;box-sizing:border-box;';
+      const lab='display:block;color:#8b949e;font-size:11px;margin:0 0 3px;font-weight:600;';
+      const ta=(id,v,ph,rows)=>`<textarea id="${id}" rows="${rows||2}" placeholder="${ph||''}" style="${inp}resize:vertical;">${esc(v||'')}</textarea>`;
+      const why=(n)=>`<div><label style="${lab}">なぜ${n}</label><input id="rca_why${n}" value="${esc(d['why'+n]||'')}" style="${inp}"></div>`;
+      box.innerHTML=`<div style="padding:14px 16px;border-radius:10px;background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.4);">
+        <div style="font-size:13px;font-weight:700;color:#ff9a92;margin-bottom:10px;">🔬 ${rcaId?'RCAを編集':'RCAを起票'} <span style="font-size:11px;color:var(--muted);font-weight:400;">${esc(df.finding_title||'')}</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div><label style="${lab}">分析手法</label><select id="rca_method" style="${inp}">${RCA_METHODS.map(m=>`<option value="${m[0]}" ${(d.method||'5why')===m[0]?'selected':''}>${m[1]}</option>`).join('')}</select></div>
+          <div><label style="${lab}">状態</label><select id="rca_status" style="${inp}">${RCA_STATUS.map(m=>`<option value="${m[0]}" ${(d.status||'open')===m[0]?'selected':''}>${m[1]}</option>`).join('')}</select></div>
+        </div>
+        <div style="font-size:11px;color:#8b949e;font-weight:700;margin:4px 0 6px;border-left:3px solid #f85149;padding-left:7px;">なぜなぜ分析（5why）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">${why(1)}${why(2)}${why(3)}${why(4)}<div style="grid-column:1/3;">${why(5)}</div></div>
+        <div style="display:grid;grid-template-columns:1fr;gap:9px;">
+          <div><label style="${lab}">寄与要因</label>${ta('rca_factors',d.contributing_factors,'環境・人・設備・手順などの要因')}</div>
+          <div><label style="${lab}">根本原因</label>${ta('rca_root',d.root_cause,'特定した根本原因')}</div>
+          <div><label style="${lab}">恒久対策</label>${ta('rca_perm',d.permanent_action,'再発防止の恒久対策')}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+          <div><label style="${lab}">担当</label><input id="rca_owner" value="${esc(d.owner||'')}" placeholder="氏名" style="${inp}"></div>
+          <div><label style="${lab}">期限</label><input id="rca_due" type="date" value="${esc(d.due_date||'')}" style="${inp}"></div>
+        </div>
+        <div id="rca_msg" style="font-size:12px;color:#ff9a92;margin-top:8px;display:none;"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button onclick="saveRca('${defectId}','${rcaId}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;">💾 保存</button>
+          <button onclick="refreshRcaSection('${defectId}')" style="background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;">✕ キャンセル</button>
+        </div>
+      </div>`;
+      box._dfTurbine = df.turbine_id||null;
+    }
+    async function saveRca(defectId, rcaId){
+      const g=id=>document.getElementById(id);
+      const msg=g('rca_msg');
+      const box=document.getElementById('rcaBox-'+defectId);
+      const payload={
+        method:g('rca_method').value, status:g('rca_status').value,
+        why1:g('rca_why1').value||null, why2:g('rca_why2').value||null, why3:g('rca_why3').value||null,
+        why4:g('rca_why4').value||null, why5:g('rca_why5').value||null,
+        contributing_factors:g('rca_factors').value||null,
+        root_cause:g('rca_root').value||null,
+        permanent_action:g('rca_perm').value||null,
+        owner:g('rca_owner').value||null,
+        due_date:g('rca_due').value||null,
+        updated_at:new Date().toISOString()
+      };
+      try{
+        if(rcaId){
+          const res=await fetch(`${sb.URL}/rest/v1/rca_reports?id=eq.${encodeURIComponent(rcaId)}`,{method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(payload)});
+          if(!res.ok) throw new Error((await res.text())||('HTTP '+res.status));
+        }else{
+          payload.defect_finding_id=defectId;
+          payload.turbine_id=(box&&box._dfTurbine)||null;
+          payload.rca_no='RCA-'+new Date().toISOString().replace(/[^0-9]/g,'').slice(2,12)+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+          // 関連作業票があれば紐付け
+          try{ const wos=await sb.get(`work_orders?defect_finding_id=eq.${encodeURIComponent(defectId)}&select=id&limit=1`); if(wos&&wos[0]) payload.work_order_id=wos[0].id; }catch(e){}
+          const res=await sb.write('POST','rca_reports',payload);
+        }
+        await refreshRcaSection(defectId);
+      }catch(e){ if(msg){msg.style.display='block';msg.textContent='保存失敗: '+(e.message||e);} }
+    }
+
     function render(){
 
 
@@ -1445,6 +1548,8 @@ const createBtn = !isLocked
 
 
         }).join('') + '</tbody></table>';
+      // 展開中の行の RCA セクションを遅延ロード
+      Object.keys(state.open).forEach(function(did){ if(state.open[did]) refreshRcaSection(did); });
 
 
 
