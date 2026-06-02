@@ -326,8 +326,8 @@ function buildSafetyHtml(id,s){
       : `<button disabled title="${woApproved?'安全ゲート未完了':'作業票の承認が必要'}" style="${Bdis}">▶ 作業開始（${woApproved?'安全ゲート未完了':'要承認'}）</button>`;
   }else if(s.wo_status==='in_progress'){
     act = s.safety_ready_to_close
-      ? `<button onclick="changeWoStatus('${id}','completed')" style="${Bd}background:#1f6feb;color:#fff;">✅ 作業完了・クローズ</button>`
-      : `<button disabled title="LOTO解除等が未了" style="${Bdis}">✅ 完了（解除未了）</button>`;
+      ? `<button onclick="changeWoStatus('${id}','completed')" style="${Bd}background:#1f6feb;color:#fff;">✅ 作業完了</button>`
+      : `<button disabled title="LOTO解除等が未了" style="${Bdis}">✅ 作業完了（解除未了）</button>`;
   }else if(s.wo_status==='completed'){
     act = '<span style="color:#7ee787;font-size:12px;font-weight:700;">✅ 完了済</span>';
   }
