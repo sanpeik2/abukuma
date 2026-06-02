@@ -212,8 +212,18 @@ CREATE INDEX IF NOT EXISTS idx_rc_wo ON restoration_checks(work_order_id);
 
 
 -- ---------------------------------------------------------------------
--- Step 11. クローズ・報告確認（既存テーブルへ追加カラム）
+-- Step 11. クローズ・報告確認
+--   ※ まっさらな環境でも再現できるよう CREATE TABLE IF NOT EXISTS を先に実行。
+--      既存DB（旧スキーマの closeout_reviews）には後続 ALTER で不足カラムを追加。
 -- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS closeout_reviews (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  work_order_id uuid NOT NULL REFERENCES work_orders(id) ON DELETE CASCADE,
+  closed_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
 ALTER TABLE closeout_reviews
   ADD COLUMN IF NOT EXISTS restoration_check_id uuid REFERENCES restoration_checks(id),
   ADD COLUMN IF NOT EXISTS defect_finding_id uuid REFERENCES defect_findings(id),
@@ -247,15 +257,87 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_closeout_wo ON closeout_reviews(work_order_
 
 
 -- =====================================================================
---  ビュー定義は Supabase の pg_get_viewdef で取得した最新を正とする。
---  本ファイルで作成した主なビュー:
---   - v_plan_checklists / v_inspection_plan_list / v_inspection_results_list
---   - v_inspection_execution_list  (承認済み計画 + 単独実績の統合)
---   - v_work_order_safety_status   (KY/PTW/LOTO 要否・状態・ready/blocking)
---   - v_rca_list
---   - v_work_execution_list / v_restoration_check_list / v_closeout_review_list
---  ※ これらは CREATE OR REPLACE VIEW で定義。詳細は各マイグレーション参照。
+--  Step 9-11 一覧ビュー（実体定義）
+--  画面（work-execution.html / restoration.html / closeout.html）が直接読む。
 -- =====================================================================
+
+DROP VIEW IF EXISTS v_work_execution_list;
+CREATE VIEW v_work_execution_list AS
+SELECT e.id, e.work_order_id,
+  wo.work_order_no AS "作業票番号", t.turbine_no AS "風車", e.execution_no AS "実施回",
+  e.result_status,
+  CASE e.result_status WHEN 'completed' THEN '✅ 完了' WHEN 'partial' THEN '🟡 一部完了'
+    WHEN 'cancelled' THEN '✖ 中止' ELSE '🔧 継続' END AS "作業状態",
+  COALESCE(NULLIF(e.executed_by_name,''),'—') AS "実施担当",
+  e.executed_by_company AS "実施会社",
+  (e.started_at  AT TIME ZONE 'Asia/Tokyo') AS "開始日時",
+  (e.finished_at AT TIME ZONE 'Asia/Tokyo') AS "完了日時",
+  e.work_summary AS "実施内容", e.incomplete_reason AS "未完了理由",
+  e.additional_defect_found AS "追加不具合", e.next_action AS "次アクション",
+  (SELECT count(*) FROM attachments a WHERE a.target_type='work_execution_result' AND a.target_id=e.id) AS "添付数",
+  e.created_at
+FROM work_execution_results e
+JOIN work_orders wo ON wo.id=e.work_order_id
+LEFT JOIN turbines t ON t.id=wo.turbine_id
+ORDER BY e.created_at DESC;
+
+DROP VIEW IF EXISTS v_restoration_check_list;
+CREATE VIEW v_restoration_check_list AS
+SELECT r.id, r.work_order_id,
+  wo.work_order_no AS "作業票番号", t.turbine_no AS "風車", r.restoration_status,
+  CASE r.restoration_status WHEN 'restored' THEN '✅ 復旧済' WHEN 'rework' THEN '🔁 再作業'
+    WHEN 'not_restored' THEN '🔴 復旧不可' ELSE '⏳ 確認中' END AS "復旧状態",
+  CASE r.trial_run_status WHEN 'good' THEN '✅ 良好' WHEN 'recheck' THEN '🟡 要再確認' WHEN 'ng' THEN '🔴 NG' ELSE '—' END AS "試運転",
+  CASE r.alarm_status WHEN 'cleared' THEN '✅ 解消' WHEN 'remaining' THEN '🔴 残あり' ELSE '—' END AS "アラーム",
+  CASE r.scada_status WHEN 'normal' THEN '✅ 正常' WHEN 'abnormal' THEN '🔴 異常' WHEN 'unchecked' THEN '— 未確認' ELSE '—' END AS "SCADA",
+  CASE r.generation_restart_status WHEN 'ok' THEN '✅ 可' WHEN 'no' THEN '🔴 不可' WHEN 'conditional' THEN '🟡 条件付き' ELSE '—' END AS "発電再開",
+  CASE r.chief_review_status WHEN 'confirmed' THEN '✅ 済' WHEN 'pending' THEN '🟡 待ち' WHEN 'rejected' THEN '🔴 差戻し' ELSE '—' END AS "主任確認",
+  COALESCE(NULLIF(r.checked_by_name,''),'—') AS "確認者",
+  (r.checked_at AT TIME ZONE 'Asia/Tokyo') AS "確認日時",
+  r.final_downtime_minutes AS "確定停止min", r.final_lost_kwh AS "確定逸失kwh", r.final_lost_revenue_yen AS "確定逸失円",
+  array_to_string(array_remove(ARRAY[
+    CASE WHEN r.restoration_status='rework' THEN '🔁 再作業' END,
+    CASE WHEN r.restoration_status='not_restored' THEN '🔴 復旧不可' END,
+    CASE WHEN r.trial_run_status='ng' THEN '⚠ 試運転NG' END,
+    CASE WHEN r.alarm_status='remaining' THEN '⚠ アラーム残' END,
+    CASE WHEN r.generation_restart_status='no' THEN '⛔ 発電不可' END,
+    CASE WHEN r.chief_review_status='pending' THEN '🟡 主任待ち' END
+  ], NULL), ' / ') AS "重要事項",
+  r.execution_result_id, r.created_at
+FROM restoration_checks r
+JOIN work_orders wo ON wo.id=r.work_order_id
+LEFT JOIN turbines t ON t.id=wo.turbine_id
+ORDER BY r.created_at DESC;
+
+DROP VIEW IF EXISTS v_closeout_review_list;
+CREATE VIEW v_closeout_review_list AS
+SELECT c.id, c.work_order_id,
+  wo.work_order_no AS "作業票番号", t.turbine_no AS "風車", c.review_status,
+  CASE c.review_status WHEN 'closed' THEN '✅ クローズ済' WHEN 'in_review' THEN '🔍 確認中'
+    WHEN 'returned' THEN '↩ 差戻し' ELSE '📋 未確認' END AS "クローズ状態",
+  CASE rc.restoration_status WHEN 'restored' THEN '✅ 復旧済' WHEN 'rework' THEN '🔁 再作業'
+    WHEN 'not_restored' THEN '🔴 復旧不可' WHEN 'pending' THEN '⏳ 確認中' ELSE '—' END AS "復旧状態",
+  c.report_required AS "報告要否", c.report_type AS "報告種別", c.report_deadline AS "報告期限",
+  CASE c.evidence_status WHEN 'confirmed' THEN '✅ 確認済' ELSE '⚠ 不足' END AS "証跡",
+  c.permit_closed AS "PTW終了", c.loto_released AS "LOTO解除",
+  c.recurrence_action_required AS "再発防止要", c.remaining_issue AS "残課題",
+  COALESCE(NULLIF(c.closed_by_name,''),'—') AS "確認者",
+  (c.closed_at AT TIME ZONE 'Asia/Tokyo') AS "クローズ日時",
+  array_to_string(array_remove(ARRAY[
+    CASE WHEN c.report_required THEN '⚖ 報告要' END,
+    CASE WHEN c.report_required AND c.report_deadline IS NOT NULL AND c.report_deadline < current_date AND c.review_status<>'closed' THEN '🟥 報告期限超過' END,
+    CASE WHEN c.evidence_status='insufficient' THEN '⚠ 証跡不足' END,
+    CASE WHEN c.permit_closed=false THEN '🔒 PTW未終了' END,
+    CASE WHEN c.loto_released=false THEN '🔒 LOTO未解除' END,
+    CASE WHEN c.recurrence_action_required THEN '🔁 再発防止要' END,
+    CASE WHEN NULLIF(c.remaining_issue,'') IS NOT NULL THEN '📌 残課題あり' END
+  ], NULL), ' / ') AS "重要事項",
+  c.defect_finding_id, c.restoration_check_id, c.created_at
+FROM closeout_reviews c
+JOIN work_orders wo ON wo.id=c.work_order_id
+LEFT JOIN turbines t ON t.id=wo.turbine_id
+LEFT JOIN restoration_checks rc ON rc.id=c.restoration_check_id
+ORDER BY c.created_at DESC;
 
 -- =====================================================================
 --  ビュー定義（実DBから取得した最新 / pg_get_viewdef）
