@@ -40,6 +40,19 @@
 </head>
 <body>
 <div class="topbar"><div class="mark">AW</div><div><h1>作業実施</h1><div class="sub">阿武隈OS — 作業票に対する実施実績の記録（Step 9）</div></div><a class="back" href="./menu.html">≡ メニューへ戻る</a></div>
+<style>
+  .flow{display:flex;gap:3px;flex-wrap:wrap;align-items:flex-start;padding:9px 14px;border-bottom:1px solid var(--line);background:#0e1320}
+  .flow a{display:flex;flex-direction:column;align-items:center;text-decoration:none;min-width:54px;text-align:center}
+  .flow .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;border:2px solid #30363d;background:#0d1117;color:#6e7681}
+  .flow a.done .dot{background:#238636;border-color:#238636;color:#fff}
+  .flow a.cur .dot{background:#d29922;border-color:#d29922;color:#11161d;box-shadow:0 0 0 3px rgba(210,153,34,.25)}
+  .flow .lb{font-size:9px;margin-top:4px;color:#6e7681;max-width:60px;line-height:1.15}
+  .flow a.done .lb,.flow a.cur .lb{color:#c9d1d9}
+  .flow .ln{flex:1 1 5px;min-width:4px;height:2px;background:#30363d;border-radius:2px;margin-top:10px}
+  .flow .ln.done{background:#238636}
+</style>
+<div class="flow" id="flow"></div>
+<script>(function(){const STEPS=[['今日の管制塔','./index.html'],['監視','./live-board.html'],['点検計画','./inspection-plan.html'],['点検実施','./inspection-input.html'],['異常判断','./defect-rca.html'],['作業票','./work-orders.html'],['PTW/KY/LOTO','./permits.html'],['承認','./approvals.html'],['作業実施','./work-execution.html'],['復旧確認','./restoration.html'],['クローズ','./closeout.html']];const CUR=8;const el=document.getElementById('flow');el.innerHTML=STEPS.map((s,i)=>{const cls=i<CUR?'done':i===CUR?'cur':'';const a=`<a class="${cls}" href="${s[1]}" title="${s[0]}"><span class="dot">${i<CUR?'✓':(i+1)}</span><span class="lb">${s[0]}</span></a>`;return a+(i<STEPS.length-1?`<span class="ln ${i<CUR?'done':''}"></span>`:'');}).join('');})();</script>
 <div class="wrap">
   <div id="ctxBanner"></div>
   <div class="bar"><button class="r" onclick="openEdit('')">＋ 作業実施を記録</button><span id="cnt" style="color:var(--muted);font-size:12px"></span></div>
