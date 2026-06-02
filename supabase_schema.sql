@@ -505,6 +505,238 @@ JOIN  work_orders wo ON wo.id = r.work_order_id
 LEFT JOIN turbines t ON t.id  = wo.turbine_id
 ORDER BY r.created_at DESC;
 
+-- v_work_execution_list
+CREATE OR REPLACE VIEW v_work_execution_list AS
+SELECT
+  e.id, e.work_order_id,
+  wo.work_order_no                               AS "作業票番号",
+  t.turbine_no                                   AS "風車",
+  e.execution_no                                 AS "実施回",
+  e.result_status,
+  CASE e.result_status
+    WHEN 'completed' THEN '✅ 完了' WHEN 'partial' THEN '🟡 一部完了'
+    WHEN 'cancelled' THEN '✖ 中止'  ELSE '🔧 継続'
+  END                                            AS "作業状態",
+  COALESCE(NULLIF(e.executed_by_name,''),'—')   AS "実施担当",
+  e.executed_by_company                          AS "実施会社",
+  (e.started_at  AT TIME ZONE 'Asia/Tokyo')      AS "開始日時",
+  (e.finished_at AT TIME ZONE 'Asia/Tokyo')      AS "完了日時",
+  e.work_summary                                 AS "実施内容",
+  e.incomplete_reason                            AS "未完了理由",
+  e.additional_defect_found                      AS "追加不具合",
+  e.next_action                                  AS "次アクション",
+  (SELECT count(*) FROM attachments a
+   WHERE a.target_type='work_execution_result' AND a.target_id=e.id) AS "添付数",
+  e.created_at
+FROM work_execution_results e
+JOIN  work_orders wo ON wo.id = e.work_order_id
+LEFT JOIN turbines t ON t.id  = wo.turbine_id
+ORDER BY e.created_at DESC;
+
+-- v_work_orders_full
+CREATE OR REPLACE VIEW v_work_orders_full AS
+SELECT
+  wo.id,
+  wo.work_order_no                               AS "作業票番号",
+  t.turbine_no                                   AS "風車",
+  wo.work_type                                   AS "作業種別",
+  wo.source_type                                 AS "起票元",
+  wo.anomaly_description                         AS "異常概要",
+  wo.severity                                    AS "深刻度",
+  wo.priority                                    AS "優先度",
+  wo.status                                      AS "状態",
+  wo.planned_date                                AS "対応予定日",
+  wo.planned_start_at                            AS "作業開始予定",
+  wo.planned_end_at                              AS "作業終了予定",
+  wo.downtime_minutes                            AS "停止時間min",
+  wo.estimated_loss_kwh                          AS "逸失電力kwh",
+  wo.root_cause                                  AS "根本原因",
+  wo.temporary_action                            AS "暫定処置",
+  wo.permanent_action                            AS "恒久処置",
+  (wo.created_at   AT TIME ZONE 'Asia/Tokyo')   AS "起票日時_jst",
+  (wo.completed_at AT TIME ZONE 'Asia/Tokyo')   AS "完了日時_jst",
+  df.finding_title                               AS "関連異常タイトル",
+  (SELECT count(*) FROM attachments a
+   WHERE a.target_type='work_order' AND a.target_id=wo.id) AS "添付数",
+  CASE wo.priority
+    WHEN 'urgent' THEN '🔴 至急' WHEN 'high' THEN '🟠 高'
+    WHEN 'normal' THEN '🔵 通常' ELSE '⚪ 低'
+  END                                            AS "優先度表示",
+  CASE wo.status
+    WHEN 'open'          THEN '📬 未着手'  WHEN 'in_progress' THEN '🔧 作業中'
+    WHEN 'waiting_parts' THEN '📦 部品待ち' WHEN 'completed'   THEN '✅ 完了'
+    WHEN 'cancelled'     THEN '❌ 中止'    ELSE wo.status
+  END                                            AS "状態表示",
+  COALESCE(wo.approval_status,'draft')           AS approval_status,
+  COALESCE(wo.ky_required,   false)              AS ky_required,
+  COALESCE(wo.loto_required, false)              AS loto_required,
+  COALESCE(wo.ky_confirmed,  false)              AS ky_confirmed,
+  COALESCE(wo.loto_confirmed,false)              AS ky_confirmed2,
+  wo.turbine_id,
+  wo.defect_finding_id,
+  wo.result_id                                   AS inspection_result_id,
+  COALESCE(wo.ptw_required,  false)              AS ptw_required,
+  ou.name                                        AS "担当"
+FROM work_orders wo
+LEFT JOIN turbines       t  ON wo.turbine_id       = t.id
+LEFT JOIN defect_findings df ON wo.defect_finding_id = df.id
+LEFT JOIN om_users        ou ON ou.id               = wo.assigned_to
+ORDER BY
+  CASE wo.priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 ELSE 3 END,
+  wo.created_at DESC;
+
+-- v_report_candidates
+CREATE OR REPLACE VIEW v_report_candidates AS
+SELECT
+  df.id              AS defect_finding_id,
+  t.turbine_no,
+  df.finding_title,
+  df.detected_at,
+  df.safety_impact,
+  df.operation_impact,
+  df.regulation_impact,
+  df.initial_judgement,
+  df.status,
+  df.legal_judgement_class,
+  CASE df.legal_judgement_class
+    WHEN 'A' THEN 'A: 重大事故（法令報告必須）' WHEN 'B' THEN 'B: 重要設備故障'
+    WHEN 'C' THEN 'C: 設備異常'                WHEN 'D' THEN 'D: 異常検知'
+    WHEN 'E' THEN 'E: 軽微な不具合'            WHEN 'F' THEN 'F: 改善提案'
+    ELSE '— 未分類'
+  END                AS legal_judgement_label,
+  COALESCE(df.report_required_flag, false)   AS report_required_flag,
+  ra.recommended_action,
+  ra.urgency,
+  wo.work_order_no,
+  COALESCE(wos.total_downtime_minutes::integer, wo.downtime_minutes) AS downtime_minutes,
+  COALESCE(wos.total_lost_energy_kwh, wo.estimated_loss_kwh)         AS estimated_loss_kwh,
+  wos.total_lost_revenue_jpy,
+  COALESCE(wos.regulatory_report_candidate, false)                    AS outage_report_candidate,
+  wos.chief_engineer_review_status,
+  array_remove(ARRAY[
+    CASE WHEN df.legal_judgement_class IN ('A','B') THEN '⚖ 法令分類' || df.legal_judgement_class END,
+    CASE WHEN COALESCE(df.report_required_flag,false) THEN '🚨 報告候補フラグ' END,
+    CASE WHEN df.regulation_impact = 'yes'            THEN '保安規定影響あり' END,
+    CASE WHEN ra.recommended_action = 'stop'          THEN 'リスク評価(停止)判定' END,
+    CASE WHEN df.safety_impact IN ('high','critical')  THEN '安全影響:高/重大' END,
+    CASE WHEN df.operation_impact = 'stop'            THEN '運転影響:停止' END,
+    CASE WHEN COALESCE(wos.regulatory_report_candidate,false) THEN '停止記録・報告候補' END
+  ], NULL)           AS report_trigger,
+  CASE
+    WHEN df.legal_judgement_class IN ('A','B') OR COALESCE(df.report_required_flag,false)
+      THEN '🔴 要法令報告確認'
+    WHEN df.regulation_impact='yes' OR df.safety_impact IN ('high','critical')
+      OR df.operation_impact='stop' OR ra.recommended_action='stop'
+      OR COALESCE(wos.regulatory_report_candidate,false)
+      THEN '🟡 要主任技術者確認'
+    ELSE '🟢 社内記録のみ'
+  END                AS screening_class
+FROM defect_findings df
+LEFT JOIN turbines                   t   ON t.id   = df.turbine_id
+LEFT JOIN risk_assessments           ra  ON ra.target_type='defect_finding' AND ra.target_id=df.id
+LEFT JOIN work_orders                wo  ON wo.defect_finding_id=df.id
+LEFT JOIN v_work_order_outages_summary wos ON wos.work_order_id=wo.id
+WHERE df.regulation_impact='yes'
+   OR df.safety_impact IN ('high','critical')
+   OR df.operation_impact='stop'
+   OR ra.recommended_action='stop'
+   OR COALESCE(wos.regulatory_report_candidate,false)
+   OR COALESCE(df.report_required_flag,false)
+   OR df.legal_judgement_class IN ('A','B','C');
+
+-- v_case_pipeline  ※ v_defect_rca_list に依存（別途定義が必要）
+-- 本番DBから取得した定義をそのまま収録（DROP & REPLACE で安全）
+CREATE OR REPLACE VIEW v_case_pipeline AS
+WITH agg AS (
+  SELECT
+    COALESCE(w.defect_finding_id, w.source_id)                              AS def_id,
+    count(*)                                                                 AS cnt_wo,
+    bool_or(w.status IN ('in_progress','waiting_parts'))                     AS wo_active,
+    bool_or(w.status = 'completed')                                          AS wo_completed,
+    bool_or(p.permit_status = 'submitted')                                   AS permit_submitted,
+    bool_or(p.permit_status = 'draft')                                       AS permit_draft,
+    bool_or(p.permit_status IN ('approved','closed'))                        AS permit_ok,
+    bool_or(co.closed_at IS NOT NULL)                                        AS closeout_closed
+  FROM work_orders w
+  LEFT JOIN work_permits   p  ON p.work_order_id  = w.id
+  LEFT JOIN closeout_reviews co ON co.work_order_id = w.id
+  WHERE w.defect_finding_id IS NOT NULL
+     OR (w.source_type = 'defect_finding' AND w.source_id IS NOT NULL)
+  GROUP BY COALESCE(w.defect_finding_id, w.source_id)
+)
+SELECT
+  d.id         AS "案件id",
+  r."号機",
+  r."異常タイトル" AS "タイトル",
+  r."発見日時",
+  r."滞留日数",
+  CASE
+    WHEN d.status='closed' OR COALESCE(a.closeout_closed,false) THEN '8_closed'
+    WHEN COALESCE(a.wo_completed,false)                          THEN '7_recovery_check'
+    WHEN COALESCE(a.wo_active,false) OR COALESCE(a.permit_ok,false) THEN '6_in_progress'
+    WHEN COALESCE(a.permit_submitted,false)                      THEN '5_approval'
+    WHEN COALESCE(a.permit_draft,false)                          THEN '4_permit'
+    WHEN COALESCE(a.cnt_wo,0) > 0                               THEN '3_work_order'
+    WHEN d.initial_judgement IS NOT NULL AND d.initial_judgement<>'tbd' THEN '2_triaged'
+    ELSE '1_untriaged'
+  END          AS stage,
+  CASE
+    WHEN d.status='closed' OR COALESCE(a.closeout_closed,false) THEN 8
+    WHEN COALESCE(a.wo_completed,false)                          THEN 7
+    WHEN COALESCE(a.wo_active,false) OR COALESCE(a.permit_ok,false) THEN 6
+    WHEN COALESCE(a.permit_submitted,false)                      THEN 5
+    WHEN COALESCE(a.permit_draft,false)                          THEN 4
+    WHEN COALESCE(a.cnt_wo,0) > 0                               THEN 3
+    WHEN d.initial_judgement IS NOT NULL AND d.initial_judgement<>'tbd' THEN 2
+    ELSE 1
+  END          AS stage_no,
+  CASE
+    WHEN d.status='closed' OR COALESCE(a.closeout_closed,false) THEN 'クローズ'
+    WHEN COALESCE(a.wo_completed,false)                          THEN '復旧確認待ち'
+    WHEN COALESCE(a.wo_active,false) OR COALESCE(a.permit_ok,false) THEN '作業中'
+    WHEN COALESCE(a.permit_submitted,false)                      THEN '承認待ち'
+    WHEN COALESCE(a.permit_draft,false)                          THEN 'PTW/KY待ち'
+    WHEN COALESCE(a.cnt_wo,0) > 0                               THEN '作業票起票済'
+    WHEN d.initial_judgement IS NOT NULL AND d.initial_judgement<>'tbd' THEN '一次判断済'
+    ELSE '未評価'
+  END          AS "現在地",
+  CASE
+    WHEN d.status='closed' OR COALESCE(a.closeout_closed,false) THEN '完了 — 横展開要否のみ確認'
+    WHEN COALESCE(a.wo_completed,false)   THEN '復旧確認・再発有無を記録'
+    WHEN COALESCE(a.wo_active,false) OR COALESCE(a.permit_ok,false) THEN '作業結果を登録'
+    WHEN COALESCE(a.permit_submitted,false) THEN '電気主任技術者が承認/差戻し'
+    WHEN COALESCE(a.permit_draft,false)   THEN 'PTW作成・KY準備'
+    WHEN COALESCE(a.cnt_wo,0) > 0        THEN 'PTW/KY要否を確認'
+    WHEN d.initial_judgement IS NOT NULL AND d.initial_judgement<>'tbd'
+      THEN '作業票を起票、または記録クローズ'
+    ELSE '一次評価を実施（一次確認メモ→異常判断）'
+  END          AS "次アクション",
+  COALESCE(r."rca対象",false) OR EXISTS(
+    SELECT 1 FROM rca_investigations ri WHERE ri.defect_finding_id=d.id
+  )            AS is_rca_required,
+  COALESCE(d.report_required_flag,false)
+    OR d.regulation_impact IN ('yes','check_required') AS is_report_candidate,
+  d.legal_judgement_class IN ('A','B')               AS is_legal_report_required,
+  d.legal_judgement_class,
+  COALESCE(r."rca対象",false)
+    OR d.regulation_impact IN ('yes','check_required')
+    OR COALESCE(d.report_required_flag,false)         AS requires_chief_approval,
+  d.status<>'closed' AND COALESCE(r."滞留日数",0) >= CASE WHEN COALESCE(r."rca対象",false) THEN 14 ELSE 30 END
+                                                      AS is_overdue,
+  d.status<>'closed' AND (
+    CASE
+      WHEN d.status='closed' OR COALESCE(a.closeout_closed,false) THEN 9
+      WHEN COALESCE(a.wo_completed,false)      THEN 7
+      WHEN COALESCE(a.permit_submitted,false)  THEN 5
+      WHEN COALESCE(a.permit_draft,false)      THEN 4
+      ELSE 0
+    END > 0
+  ) AND COALESCE(r."滞留日数",0) >= CASE WHEN COALESCE(r."rca対象",false) THEN 7 ELSE 14 END
+                                                      AS is_stuck
+FROM defect_findings d
+JOIN  v_defect_rca_list r ON r."故障id" = d.id
+LEFT JOIN agg a ON a.def_id = d.id;
+
 -- =============================================================================
 -- RLS ポリシー（authenticated ユーザーは全操作可。anon はブロック）
 -- 2026-06-02 適用済み
