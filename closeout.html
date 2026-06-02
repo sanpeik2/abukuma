@@ -36,7 +36,7 @@
 <div class="topbar"><div class="mark">AW</div><div><h1>クローズ・報告確認</h1><div class="sub">阿武隈OS — 報告要否・証跡・再発防止・最終クローズの確認（Step 11）</div></div><a class="back" href="./menu.html">≡ メニューへ戻る</a></div>
 <div class="wrap">
   <div id="ctxBanner"></div>
-  <div class="bar"><button class="r" onclick="openEdit('')">＋ クローズ確認を作成</button><span id="cnt" style="color:var(--muted);font-size:12px"></span></div>
+  <div class="bar"><button class="r" id="newBtn" onclick="newOrEdit()">＋ クローズ確認を作成</button><span id="cnt" style="color:var(--muted);font-size:12px"></span></div>
   <div id="body"><div class="empty">読み込み中…</div></div>
 </div>
 <div class="ov" id="ov" onclick="closeEdit()"></div>
@@ -65,12 +65,22 @@ async function loadCtx(){
 }
 function fmt(s){return s?String(s).replace('T',' ').slice(0,16):'–';}
 function yn(b){return b?'✅':'–';}
+// 作業票ごとに1件のみ：既存があれば編集、無ければ新規
+function newOrEdit(){
+  if(WO_ID){ const ex=ALL.find(r=>r.work_order_id===WO_ID); if(ex){ openEdit(ex.id); return; } }
+  openEdit('');
+}
+function syncNewBtn(){
+  const btn=document.getElementById('newBtn'); if(!btn) return;
+  if(WO_ID && ALL.some(r=>r.work_order_id===WO_ID)){ btn.textContent='✏ クローズ確認を編集'; }
+  else { btn.textContent='＋ クローズ確認を作成'; }
+}
 function render(){
-  const b=document.getElementById('body'); document.getElementById('cnt').textContent=ALL.length+'件';
+  const b=document.getElementById('body'); document.getElementById('cnt').textContent=ALL.length+'件'; syncNewBtn();
   if(!ALL.length){ b.innerHTML='<div class="empty">クローズ確認の記録はありません。</div>'; return; }
-  const cg='<colgroup><col style="width:12%"><col style="width:6%"><col style="width:10%"><col style="width:9%"><col style="width:7%"><col style="width:11%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:9%"><col style="width:11%"></colgroup>';
-  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th></tr></thead><tbody>${
-    ALL.map(r=>`<tr>
+  const cg='<colgroup><col style="width:11%"><col style="width:5%"><col style="width:9%"><col style="width:8%"><col style="width:6%"><col style="width:10%"><col style="width:7%"><col style="width:6%"><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:15%"></colgroup>';
+  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th><th>重要事項</th></tr></thead><tbody>${
+    ALL.map(r=>{const imp=r['重要事項']||'';return `<tr>
       <td class="no"><a onclick="openEdit('${r.id}')">${esc(r['作業票番号'])}</a></td>
       <td style="white-space:nowrap"><b style="color:#fff">${esc(r['風車'])}</b></td>
       <td class="badge">${esc(r['クローズ状態'])}</td><td class="badge">${esc(r['復旧状態'])}</td>
@@ -78,7 +88,8 @@ function render(){
       <td>${esc(r['報告種別']||'–')}${r['報告期限']?'<br><span style="color:#e3b341;font-size:11px">期限 '+esc(r['報告期限'])+'</span>':''}</td>
       <td class="badge">${esc(r['証跡'])}</td><td class="badge">${yn(r['PTW終了'])}</td><td class="badge">${yn(r['LOTO解除'])}</td>
       <td>${esc(r['確認者'])}</td><td style="white-space:nowrap">${fmt(r['クローズ日時'])}</td>
-    </tr>`).join('')}</tbody></table>`;
+      <td style="${imp?'color:#ff9a92':''};font-size:11px">${esc(imp)||'–'}</td>
+    </tr>`;}).join('')}</tbody></table>`;
 }
 async function openEdit(id){
   let d={};
@@ -112,6 +123,8 @@ function closeEdit(){document.getElementById('ov').classList.remove('open');docu
 async function save(id){
   const g=i=>document.getElementById(i),v=i=>g(i).value,ck=i=>g(i).checked,msg=g('f_msg');
   if(!id && !WO_ID){ msg.style.display='block';msg.textContent='作業票が特定できません';return; }
+  // 既存があれば編集に切替（work_order_id ユニーク）
+  if(!id && WO_ID){ const ex=ALL.find(r=>r.work_order_id===WO_ID); if(ex) id=ex.id; }
   const body={
     review_status:v('f_rv'), report_required:ck('f_rep'), report_type:v('f_rept')||null, report_deadline:v('f_dl')||null,
     evidence_status:v('f_ev'), photo_attached:ck('f_photo'), work_record_attached:ck('f_rec'),
