@@ -58,7 +58,7 @@
 
 
 
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px;line-height:1.6;max-width:1200px;margin:0 auto}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:20px 24px;line-height:1.6;max-width:1600px;margin:0 auto}
 
 
 
@@ -138,27 +138,18 @@
 
 
 
-  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px}
-
-
-
-
-  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-
-
-
-
-  th{background:var(--panel2);color:#fff;font-size:11.5px;white-space:nowrap}
-
-
-
-
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px;table-layout:fixed}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:var(--panel2);color:#fff;font-size:11px;white-space:nowrap}
   tr:last-child td{border-bottom:none}
-
-
-
-
-  td.wtg{color:#fff;font-weight:600;white-space:nowrap}
+  tbody tr:hover td{background:rgba(255,255,255,.03)}
+  td.wtg{color:#fff;font-weight:700;white-space:nowrap;width:68px}
+  td.td-title{max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help;width:22%}
+  td.td-dt{white-space:nowrap;width:88px;color:var(--muted);font-size:11px}
+  td.td-cls{width:140px}
+  td.td-trig{width:130px}
+  td.td-num{width:62px;text-align:right}
+  td.td-wo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;width:10%;font-family:monospace;font-size:11px;color:#58a6ff}
 
 
 
@@ -594,52 +585,20 @@
 
 
 
-          <td>${sb.esc(r.finding_title)}</td>
-
-
-
-
-          <td>${sb.fmtDateTime(r.detected_at)}</td>
-
-
-
-
-          <td>${legalBadge}${reportFlag}${cls}</td>
-          <td>${trig||'–'}</td>
-
-
-
-
-          <td>${sb.esc(r.safety_impact)||'–'}</td>
-
-
-
-
-          <td>${sb.esc(r.operation_impact)||'–'}</td>
-
-
-
-
-          <td>${r.recommended_action==='stop'?'<span class="tag must">F</span>':'–'}</td>
-
-
-
-
-          <td>${r.downtime_minutes??'–'}</td>
-
-
-
-
-          <td>${r.estimated_loss_kwh??'–'}</td>
-          <td>${r.total_lost_revenue_jpy>0?'¥'+Math.round(r.total_lost_revenue_jpy).toLocaleString('ja-JP'):'–'}</td>
-          <td>${r.outage_report_candidate?'<span class="tag must">🔴 候補</span>':'–'}</td>
+          <td class="td-title" title="${sb.esc(r.finding_title||'')}">${sb.esc(r.finding_title||'–')}</td>
+          <td class="td-dt">${sb.fmtDateTime(r.detected_at)}</td>
+          <td class="td-cls">${legalBadge}${reportFlag}${cls}</td>
+          <td class="td-trig">${trig||'–'}</td>
+          <td style="white-space:nowrap">${sb.esc(r.safety_impact)||'–'}</td>
+          <td style="white-space:nowrap">${sb.esc(r.operation_impact)||'–'}</td>
+          <td style="text-align:center">${r.recommended_action==='stop'?'<span class="tag must">F</span>':'–'}</td>
+          <td class="td-num">${r.downtime_minutes??'–'}</td>
+          <td class="td-num">${r.estimated_loss_kwh??'–'}</td>
+          <td class="td-num">${r.total_lost_revenue_jpy>0?'¥'+Math.round(r.total_lost_revenue_jpy).toLocaleString('ja-JP'):'–'}</td>
+          <td style="text-align:center">${r.outage_report_candidate?'<span class="tag must">🔴</span>':'–'}</td>
           <td>${(()=>{const c=CHIEF_CFG[r.chief_engineer_review_status]||CHIEF_CFG.not_required;return'<span class="'+c.cls+'">'+c.text+'</span>';})()}</td>
-          <td>${sb.esc(r.work_order_no)||'–'}</td>
-
-
-
-
-          <td>${sb.esc(r.status)||'–'}</td>
+          <td class="td-wo" title="${sb.esc(r.work_order_no||'')}">${sb.esc(r.work_order_no)||'–'}</td>
+          <td style="white-space:nowrap;font-size:11px">${sb.esc(r.status)||'–'}</td>
 
 
 
