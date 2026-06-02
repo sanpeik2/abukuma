@@ -352,6 +352,16 @@
 
     <div id="body" class="loading">読み込み中…</div>
 
+    <!-- 主任確認セクション Step 10-11 -->
+    <div id="chiefSection" style="margin-top:32px;padding-top:24px;border-top:1px solid #30363d;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-size:14px;font-weight:700;color:#fff;">🩺 主任確認 — 復旧・クローズ（Step 10–11）</span>
+        <span id="chiefBadge" style="font-size:11px;background:rgba(219,97,162,.12);color:#db61a2;border:1px solid rgba(219,97,162,.4);border-radius:999px;padding:2px 9px;"></span>
+        <button onclick="loadChief()" style="margin-left:auto;background:#1c2128;border:1px solid #30363d;color:#8b949e;font-size:12px;padding:5px 12px;border-radius:7px;cursor:pointer;">↻ 更新</button>
+      </div>
+      <div id="chiefBody"><div style="color:#8b949e;font-size:13px;padding:20px 0;">読み込み中…</div></div>
+    </div>
+
 
 
 
@@ -873,6 +883,115 @@
 
 
 
+    /* ===== 主任確認セクション（Step 10-11 復旧・クローズ） ===== */
+    const CHIEF_ST = {
+      pending:      {label:'🔴 未承認',   color:'#f85149', bg:'rgba(248,81,73,.12)',  bd:'rgba(248,81,73,.35)'},
+      confirmed:    {label:'✅ 確認済み', color:'#3fb950', bg:'rgba(63,185,80,.12)',  bd:'rgba(63,185,80,.35)'},
+      rejected:     {label:'↩ 差戻し',    color:'#d29922', bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.4)'},
+      not_required: {label:'—',           color:'#8b949e', bg:'transparent',          bd:'transparent'},
+      open:         {label:'🔴 未承認',   color:'#f85149', bg:'rgba(248,81,73,.12)',  bd:'rgba(248,81,73,.35)'},
+      in_review:    {label:'🟡 承認済み', color:'#d29922', bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.4)'},
+      returned:     {label:'↩ 差戻し',    color:'#d29922', bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.4)'},
+      closed:       {label:'✅ 確認済み', color:'#3fb950', bg:'rgba(63,185,80,.12)',  bd:'rgba(63,185,80,.35)'}
+    };
+    function chiefBadge(st){
+      const s=CHIEF_ST[st]||{label:st||'—',color:'#8b949e',bg:'transparent',bd:'transparent'};
+      return `<span style="font-size:11px;font-weight:700;color:${s.color};background:${s.bg};border:1px solid ${s.bd};border-radius:6px;padding:2px 8px;white-space:nowrap;">${s.label}</span>`;
+    }
+
+    async function loadChief(){
+      const el=document.getElementById('chiefBody'), badge=document.getElementById('chiefBadge');
+      if(!el) return;
+      el.innerHTML='<div style="color:#8b949e;font-size:13px;padding:20px 0;">読み込み中…</div>';
+      try{
+        const [rests,closes]=await Promise.all([
+          sb.get('restoration_checks?chief_review_status=eq.pending&select=*&order=created_at.desc'),
+          sb.get('closeout_reviews?review_status=in.(open,in_review,returned)&select=*&order=created_at.desc')
+        ]);
+        const ar=rests||[], ac=closes||[];
+        const total=ar.length+ac.length;
+        if(badge) badge.textContent=total>0?`未確認 ${total}件`:'全件確認済み';
+
+        // work_order_no を一括取得
+        const woIds=[...new Set([...ar.map(r=>r.work_order_id),...ac.map(c=>c.work_order_id)].filter(Boolean))];
+        const woMap={};
+        if(woIds.length){
+          const wos=await sb.get(`work_orders?id=in.(${woIds.join(',')})&select=id,work_order_no,turbine_id`).catch(()=>[]);
+          (wos||[]).forEach(w=>{woMap[w.id]={no:w.work_order_no||'—',tid:w.turbine_id};});
+        }
+        renderChiefTable(ar,ac,woMap);
+      }catch(e){
+        if(el) el.innerHTML=`<div style="color:#f85149;font-size:13px;padding:14px;border:1px solid rgba(248,81,73,.3);border-radius:8px;background:rgba(248,81,73,.07);">取得エラー: ${esc(e.message)}</div>`;
+      }
+    }
+
+    function renderChiefTable(rests,closes,woMap){
+      const el=document.getElementById('chiefBody');
+      if(!rests.length&&!closes.length){
+        el.innerHTML='<div style="color:#7ee787;font-size:13px;padding:20px 0;">✅ 未確認の復旧確認・クローズはありません</div>';
+        return;
+      }
+      const th=s=>`<th style="padding:7px 8px;text-align:left;color:#8b949e;font-size:11px;border-bottom:1px solid #30363d;font-weight:700;">${s}</th>`;
+      const td=s=>`<td style="padding:7px 8px;vertical-align:middle;border-bottom:1px solid #21262d;">${s}</td>`;
+      const wtgLabel=tid=>esc(state.wtgMap[tid]||'—');
+
+      const restRows=rests.map(r=>{
+        const wo=woMap[r.work_order_id]||{};
+        const woNo=wo.no||r.work_order_id||'—';
+        return `<tr>
+          ${td(`<a href="./restoration.html?work_order_id=${esc(r.work_order_id)}" style="color:#58a6ff;font-family:monospace;font-size:11.5px;">${esc(woNo)}</a>`)}
+          ${td(`<span style="font-size:12px;">${wtgLabel(r.turbine_id)}</span>`)}
+          ${td('<span style="font-size:11px;background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.35);border-radius:6px;padding:2px 7px;">復旧確認</span>')}
+          ${td(chiefBadge(r.chief_review_status||'pending'))}
+          ${td(`<span style="font-size:11.5px;">${esc(r.restoration_status||'—')}</span>`)}
+          ${td(`<span style="font-size:11.5px;">${esc(r.chief_reviewer||'—')}</span>`)}
+          ${td(`<span style="font-size:11px;color:#8b949e;">${r.chief_reviewed_at?String(r.chief_reviewed_at).slice(5,16):'—'}</span>`)}
+          ${td(`<div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <button onclick="updateChief('restoration_checks','${esc(r.id)}','confirmed')" style="font-size:11px;padding:3px 9px;background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.4);border-radius:5px;cursor:pointer;">✅ 確認済み</button>
+            <button onclick="updateChief('restoration_checks','${esc(r.id)}','rejected')" style="font-size:11px;padding:3px 9px;background:rgba(248,81,73,.1);color:#f85149;border:1px solid rgba(248,81,73,.35);border-radius:5px;cursor:pointer;">↩ 差戻し</button>
+          </div>`)}
+        </tr>`;}).join('');
+
+      const closeRows=closes.map(c=>{
+        const wo=woMap[c.work_order_id]||{};
+        const woNo=wo.no||c.work_order_id||'—';
+        const st=c.review_status||'open';
+        return `<tr>
+          ${td(`<a href="./closeout.html?work_order_id=${esc(c.work_order_id)}" style="color:#58a6ff;font-family:monospace;font-size:11.5px;">${esc(woNo)}</a>`)}
+          ${td(`<span style="font-size:12px;">${wtgLabel(wo.tid)}</span>`)}
+          ${td('<span style="font-size:11px;background:rgba(219,97,162,.12);color:#db61a2;border:1px solid rgba(219,97,162,.35);border-radius:6px;padding:2px 7px;">クローズ</span>')}
+          ${td(chiefBadge(st))}
+          ${td(`<span style="font-size:11.5px;">${esc(c.report_type||'—')}</span>`)}
+          ${td(`<span style="font-size:11.5px;">${esc(c.reviewed_by||'—')}</span>`)}
+          ${td(`<span style="font-size:11px;color:#8b949e;">${c.updated_at?String(c.updated_at).slice(5,16):'—'}</span>`)}
+          ${td(`<div style="display:flex;gap:5px;flex-wrap:wrap;">
+            ${st==='open'?`<button onclick="updateChief('closeout_reviews','${esc(c.id)}','in_review')" style="font-size:11px;padding:3px 9px;background:rgba(210,153,34,.15);color:#d29922;border:1px solid rgba(210,153,34,.4);border-radius:5px;cursor:pointer;">🟡 承認済み</button>`:''}
+            <button onclick="updateChief('closeout_reviews','${esc(c.id)}','closed')" style="font-size:11px;padding:3px 9px;background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.4);border-radius:5px;cursor:pointer;">✅ 確認済み</button>
+            <button onclick="updateChief('closeout_reviews','${esc(c.id)}','returned')" style="font-size:11px;padding:3px 9px;background:rgba(248,81,73,.1);color:#f85149;border:1px solid rgba(248,81,73,.35);border-radius:5px;cursor:pointer;">↩ 差戻し</button>
+          </div>`)}
+        </tr>`;}).join('');
+
+      el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px;background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+        <thead style="background:#1c2128;"><tr>${['作業票','風車','種別','ステータス','状態','確認者','確認日時','操作'].map(th).join('')}</tr></thead>
+        <tbody>${restRows}${closeRows}</tbody>
+      </table>`;
+    }
+
+    async function updateChief(tbl,id,newStatus){
+      try{
+        if(!state.userId) state.userId=await getUserId();
+        const now=new Date().toISOString();
+        const patch=tbl==='restoration_checks'
+          ?{chief_review_status:newStatus,chief_reviewer:state.userId,chief_reviewed_at:now}
+          :{review_status:newStatus,reviewed_by:state.userId,updated_at:now};
+        const res=await fetch(`${sb.URL}/rest/v1/${tbl}?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+           body:JSON.stringify(patch)});
+        if(!res.ok){const t=await res.text();throw new Error(t||res.status);}
+        await loadChief();
+      }catch(e){alert('更新失敗: '+e.message);}
+    }
+
     async function loadAll(){
 
 
@@ -914,6 +1033,7 @@
 
 
         render();
+        loadChief();
 
 
 
