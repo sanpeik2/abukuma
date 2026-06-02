@@ -1030,7 +1030,13 @@ async function submitWoApproval(id){
     load();
   }catch(e){ alert('申請失敗: '+e.message); }
 }
-sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); } });
+function checkOpenParam(){
+  const openId = qparam('open');
+  if(!openId) return;
+  const found = ALL.find(x => String(x['id']) === String(openId));
+  if(found) openDetail(String(openId));
+}
+sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); checkOpenParam(); } });
 </script>
 </body>
 </html>
