@@ -302,7 +302,7 @@ function renderTable(){
       <td class="td-title" title="${esc(r.finding_title||'')}">${esc(r.finding_title||'–')}</td>
       <td class="td-dt">${esc(dtStr)}</td>
       <td class="td-stage">${stageBadge}</td>
-      <td class="td-wo" title="${esc(woNo)}">${woNo!=='–'?`<a href="./work-orders.html" onclick="event.stopPropagation()">${esc(woNo)}</a>`:'–'}</td>
+      <td class="td-wo" title="${esc(woNo)}">${woNo!=='–'&&wo?.id?`<a href="./work-orders.html?open=${encodeURIComponent(wo.id)}" onclick="event.stopPropagation()">${esc(woNo)}</a>`:esc(woNo)||'–'}</td>
       <td class="td-num" style="${days>7?'color:#f85149':days>3?'color:#d29922':''}">${days}日</td>
       <td class="td-flags">${flags.join('')||'–'}</td>
       <td class="td-act"><button onclick="event.stopPropagation();openDrawer('${esc(r.id)}')" style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;">経緯</button></td>
@@ -328,7 +328,7 @@ function openDrawer(id){
     const cls = isDone?'done':isCurrent?'current':'future';
     let content = '';
     if(s.no===1) content = `<div class="tl-content">異常タイトル: ${esc(r.finding_title||'–')}</div><div class="tl-meta">安全影響: ${esc(r.safety_impact||'–')} / 運転影響: ${esc(r.operation_impact||'–')}</div>`;
-    else if(s.no===3 && wo) content = `<div class="tl-content">作業票: <a href="./work-orders.html" style="color:#58a6ff">${esc(wo.work_order_no||'')}</a></div><div class="tl-meta">承認状態: ${esc(wo.approval_status||'–')}</div>`;
+    else if(s.no===3 && wo) content = `<div class="tl-content">作業票: <a href="./work-orders.html?open=${encodeURIComponent(wo.id)}" style="color:#58a6ff;font-family:monospace">${esc(wo.work_order_no||'')}</a></div><div class="tl-meta">承認状態: ${esc(wo.approval_status||'–')}</div>`;
     const icon = isDone?'✓':isCurrent?'▶':'';
     return `<div class="tl-item ${cls}">
       <div class="tl-step">${icon} Step ${s.no}: ${esc(s.key)}</div>
@@ -357,7 +357,7 @@ function openDrawer(id){
     <div class="timeline">${tl}</div>
     <div style="margin-top:20px;display:flex;gap:9px;flex-wrap:wrap;">
       <a href="./defect-rca.html?defect_id=${esc(id)}" style="font-size:12px;padding:6px 12px;background:rgba(88,166,255,.1);color:#58a6ff;border:1px solid rgba(88,166,255,.35);border-radius:7px;">📋 異常判断へ</a>
-      ${wo?`<a href="./work-orders.html?work_order_id=${esc(wo.id)}" style="font-size:12px;padding:6px 12px;background:rgba(210,153,34,.1);color:#d29922;border:1px solid rgba(210,153,34,.35);border-radius:7px;">📝 作業票へ</a>`:''}
+      ${wo?`<a href="./work-orders.html?open=${encodeURIComponent(wo.id)}" style="font-size:12px;padding:6px 12px;background:rgba(210,153,34,.1);color:#d29922;border:1px solid rgba(210,153,34,.35);border-radius:7px;">📝 作業票（詳細）</a>`:''}
       ${stg?`<a href="${stg.link}${wo?'?work_order_id='+encodeURIComponent(wo.id):''}" style="font-size:12px;padding:6px 12px;background:${color}1a;color:${color};border:1px solid ${color}44;border-radius:7px;">▶ 現在地へ</a>`:''}
     </div>`;
 
