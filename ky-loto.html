@@ -288,9 +288,8 @@ async function loadExistingRecords(){
   // KY 既存
   try{
     let q = 'ky_records?order=created_at.desc&limit=5';
-    if(PLAN_ID) q += `&plan_id=eq.${encodeURIComponent(PLAN_ID)}`;
-    else if(WO_ID) q += `&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
-    else return;
+    if(WO_ID) q += `&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
+    else if(!PLAN_ID) return;
     const kyRows = await sb.get(q);
     if(kyRows && kyRows.length){
       const latest = kyRows[0];
@@ -311,9 +310,8 @@ async function loadExistingRecords(){
   // LOTO 既存
   try{
     let q2 = 'loto_records?order=created_at.desc&limit=5';
-    if(PLAN_ID) q2 += `&plan_id=eq.${encodeURIComponent(PLAN_ID)}`;
-    else if(WO_ID) q2 += `&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
-    else return;
+    if(WO_ID) q2 += `&work_order_id=eq.${encodeURIComponent(WO_ID)}`;
+    else if(!PLAN_ID) return;
     const ltRows = await sb.get(q2);
     if(ltRows && ltRows.length){
       const latest = ltRows[0];
@@ -352,7 +350,6 @@ async function saveKy(status){
   const btn = $('kyConfirmBtn');
   btn.disabled=true;
   const payload = {
-    plan_id: PLAN_ID||null,
     work_order_id: WO_ID||null,
     turbine_id: state.turbineId||null,
     executed_date: $('ky_date').value,
@@ -430,7 +427,6 @@ async function saveLoto(){
   const btn = $('lotoSaveBtn');
   btn.disabled=true;
   const payload = {
-    plan_id: PLAN_ID||null,
     work_order_id: WO_ID||null,
     turbine_id: state.turbineId||null,
     executed_date: $('loto_date').value,
