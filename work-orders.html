@@ -414,8 +414,14 @@ function buildDetailHtml(r, s){
     <div id="outageList" style="margin-top:8px"><div style="color:var(--muted);font-size:12px;">読み込み中…</div></div>
     <div id="outageForm" style="display:none;"></div>
 
-    <div style="margin-top:20px;display:flex;gap:14px;font-size:12.5px">
-      <a class="menu" href="./permits.html">🔒 関連する作業許可(PTW)</a>
+    <div class="dsec" style="margin-top:20px;">作業の進行（Step 9→11）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+      <a href="./work-execution.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#d29922;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">🔧 作業実施を記録</a>
+      <a href="./restoration.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#3fb950;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">✅ 復旧確認へ</a>
+      <a href="./closeout.html?work_order_id=${sb.esc(id)}" style="font-size:12px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:7px;padding:6px 12px;text-decoration:none;">🩷 クローズ・報告確認へ</a>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:14px;font-size:12.5px">
+      <a class="menu" href="./permits.html?work_order_id=${sb.esc(id)}">🔒 関連する作業許可(PTW)</a>
       <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
     </div>`;
 }
