@@ -129,6 +129,57 @@
     </table>
   </div>
 
+  <!-- ===== リレーション（ER）と導線 ===== -->
+  <h1 style="font-size:19px;margin:34px 0 4px;">リレーション（ER）と導線</h1>
+  <div class="sub">異常・作業票・作業許可(PTW)・KY・LOTO のテーブル関係と、画面間のつながりです。</div>
+
+  <div class="step" style="border-left-color:var(--work)">
+    <div class="shead"><span class="snum" style="background:var(--work);color:#11161d">ER</span><span class="stitle">テーブル関係図</span></div>
+    <pre style="font-family:monospace;font-size:11.5px;color:#c9d1d9;background:#0d1117;border:1px solid var(--line);border-radius:9px;padding:14px;overflow-x:auto;line-height:1.5;">
+inspection_results ─(result_id)──────┐
+inspection_plans ───(source_id・多態)─┤
+                                      ▼
+defect_findings ─(defect_finding_id)─► <b style="color:#d29922">work_orders</b> ─┬─(work_order_id)─► <b style="color:#db61a2">work_permits</b>  PTW
+   (異常)              1 : N           (作業票)  1│N    └ permit_status / approved_at
+                                              │
+                                              ├─(work_order_id)─► <b style="color:#3fb950">ky_records</b>   KY
+                                              │     └ confirmed_at ／ permit_id ─► work_permits
+                                              │
+                                              └─(work_order_id)─► <b style="color:#58a6ff">loto_records</b> LOTO
+                                                    └ status(locked/unlocked) ／ plan_id ─► inspection_plans
+
+          集約ビュー: <b style="color:#9cd2ff">v_work_order_safety_status</b>（KY/PTW/LOTO の要否・状態・ready/ブロック理由）</pre>
+  </div>
+
+  <div class="step" style="border-left-color:var(--legal)">
+    <div class="shead"><span class="snum" style="background:var(--legal);color:#11161d">FK</span><span class="stitle">外部キーと多重度</span></div>
+    <table>
+      <tr><th>親 → 子</th><th>FKカラム</th><th>多重度</th><th>現状データ</th></tr>
+      <tr><td>defect_findings → work_orders</td><td><code>work_orders.defect_finding_id</code>（NULL可）</td><td><b>1 : N</b>（UNIQUEなし）</td><td>11異常=11作業票（実質1:1）</td></tr>
+      <tr><td>inspection_results → work_orders</td><td><code>work_orders.result_id</code></td><td>1 : N</td><td>点検結果起点の作業票</td></tr>
+      <tr><td>work_orders → work_permits（PTW）</td><td><code>work_permits.work_order_id</code></td><td><b>1 : N</b></td><td>10許可 / 8作業票（複数許可あり）</td></tr>
+      <tr><td>work_orders → ky_records（KY）</td><td><code>ky_records.work_order_id</code></td><td>1 : N</td><td>0件（KY未記録）</td></tr>
+      <tr><td>work_permits → ky_records</td><td><code>ky_records.permit_id</code></td><td>1 : N（任意）</td><td>KYを許可に紐付け可</td></tr>
+      <tr><td>work_orders → loto_records（LOTO）</td><td><code>loto_records.work_order_id</code></td><td>1 : N</td><td>0件（LOTO未記録）</td></tr>
+      <tr><td>inspection_plans → loto_records</td><td><code>loto_records.plan_id</code></td><td>1 : N（任意）</td><td>点検計画起点のLOTOも可</td></tr>
+    </table>
+  </div>
+
+  <div class="step" style="border-left-color:var(--work)">
+    <div class="shead"><span class="snum" style="background:var(--work);color:#11161d">↔</span><span class="stitle">作業票 ⇄ 作業許可・KY/LOTO の導線</span></div>
+    <table>
+      <tr><th>向き</th><th>きっかけ / ボタン</th><th>遷移・連携</th></tr>
+      <tr><td>作業票 → 作業許可</td><td><span class="btn b-amber">⚠ 作業許可・KY/LOTOを開く</span></td><td class="dest">ky-loto.html?work_order_id=…（要否を読み込み）</td></tr>
+      <tr><td>作業許可で記録</td><td>KY記録／PTW申請・承認／LOTO施錠・解除</td><td class="dest">ky_records / work_permits / loto_records に証跡保存（work_order_id で紐付け）</td></tr>
+      <tr><td>作業許可 → 作業票（戻り）</td><td>記録すると自動反映</td><td class="dest">作業票詳細「安全実施状況サマリ」＝ v_work_order_safety_status を再取得</td></tr>
+      <tr><td>ゲート判定</td><td><span class="btn b-go">▶ 作業開始</span> / <span class="btn b-blue">✅ 完了・クローズ</span></td><td class="dest">safety_ready_to_start / safety_ready_to_close で有効化</td></tr>
+    </table>
+    <div class="gate">
+      <b>ポイント</b>：作業票は<b>要否（ky/ptw/loto_required）</b>を持ち、PTW/KY/LOTOの<b>実施証跡</b>は各記録テーブルが <code>work_order_id</code> で作業票にぶら下がります。<br>
+      作業票は実施チェックを持たず（二重管理なし）、<code>v_work_order_safety_status</code> が3つの証跡を集約して状態を返します。
+    </div>
+  </div>
+
   <footer>
     要否は<b>作業票</b>、実施・承認・解除の証跡は<b>作業許可/KY・LOTO</b>。同じ実施チェックを二重管理しません。<br>
     安全ゲート判定ビュー：<code>v_work_order_safety_status</code>（ky/ptw/loto の要否・状態・<code>safety_ready_to_start</code>・<code>safety_ready_to_close</code>・<code>blocking_reasons</code>）。
