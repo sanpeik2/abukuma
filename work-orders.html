@@ -243,7 +243,7 @@ function render(d){
     const full = (r['異常概要']||r['関連異常タイトル']||'').trim();
     const oneline = full.split('\n')[0] || '–';
     return `<tr data-woid="${sb.esc(r['id'])}" onclick="openDetail('${sb.esc(r['id'])}')">
-      <td class="no">${sb.esc(r['作業票番号'])}</td>
+      <td class="no"><a onclick="event.stopPropagation();openDetail('${sb.esc(r['id'])}')" style="color:#58a6ff;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;">${sb.esc(r['作業票番号'])}</a></td>
       <td>${sb.esc(r['風車'])||'–'}</td>
       <td>${sb.esc(wtJa(r['作業種別']))}</td>
       <td class="desc" title="${sb.esc(full)}">${sb.esc(oneline)||'–'}</td>
