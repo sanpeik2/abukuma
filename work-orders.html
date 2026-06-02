@@ -218,7 +218,7 @@ function render(d){
     return `<tr data-woid="${sb.esc(r['id'])}" onclick="openDetail('${sb.esc(r['id'])}')">
       <td class="no">${sb.esc(r['作業票番号'])}</td>
       <td>${sb.esc(r['風車'])||'–'}</td>
-      <td>${sb.esc(r['作業種別'])||'–'}</td>
+      <td>${sb.esc(wtJa(r['作業種別']))}</td>
       <td class="desc">${sb.esc(r['異常概要']||r['関連異常タイトル'])||'–'}</td>
       <td>${sb.esc(r['優先度表示']||r['優先度'])||'–'}</td>
       <td>${sb.esc(r['状態表示']||r['状態'])||'–'}</td>
@@ -340,6 +340,8 @@ async function changeWoStatus(id,newStatus){
   }catch(e){ alert('更新失敗: '+(e.message||e)); }
 }
 
+const WT_LABEL={corrective:'緊急補修',preventive:'予防保全',inspection:'点検',other:'その他'};
+function wtJa(v){ return v?(WT_LABEL[v]||v):'–'; }
 function buildDetailHtml(r, s){
   const id = r['id'];
   const tid = r['turbine_id']||'';
@@ -349,7 +351,7 @@ function buildDetailHtml(r, s){
       <span class="dpill">${sb.esc(r['状態表示']||r['状態']||'')}</span>
       <span class="dpill">${sb.esc(r['優先度表示']||r['優先度']||'')}</span>
       ${r['深刻度']?`<span class="dpill">深刻度 ${sb.esc(r['深刻度'])}</span>`:''}
-      ${r['作業種別']?`<span class="dpill">${sb.esc(r['作業種別'])}</span>`:''}
+      ${r['作業種別']?`<span class="dpill">${sb.esc(wtJa(r['作業種別']))}</span>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
       ${(r['approval_status']||'draft')==='approved'?'<span style="font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;">🔒 承認済</span>':''}
