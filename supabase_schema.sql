@@ -771,6 +771,8 @@ ALTER TABLE near_miss_reports
   ADD COLUMN IF NOT EXISTS closed_by_name  text,
   ADD COLUMN IF NOT EXISTS close_reason    text;
 
+-- status は3段階に統一（旧 investigating 制約は撤去）
+ALTER TABLE near_miss_reports DROP CONSTRAINT IF EXISTS near_miss_reports_status_check;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='near_miss_status_chk') THEN
     ALTER TABLE near_miss_reports ADD CONSTRAINT near_miss_status_chk
@@ -778,6 +780,14 @@ DO $$ BEGIN
   END IF;
 END $$;
 ALTER TABLE near_miss_reports ALTER COLUMN status SET DEFAULT 'open';
+
+-- severity / potential_severity は critical まで許可
+ALTER TABLE near_miss_reports DROP CONSTRAINT IF EXISTS near_miss_reports_severity_check;
+ALTER TABLE near_miss_reports ADD CONSTRAINT near_miss_reports_severity_check
+  CHECK (severity IN ('low','medium','high','critical'));
+ALTER TABLE near_miss_reports DROP CONSTRAINT IF EXISTS near_miss_reports_potential_severity_check;
+ALTER TABLE near_miss_reports ADD CONSTRAINT near_miss_reports_potential_severity_check
+  CHECK (potential_severity IS NULL OR potential_severity IN ('low','medium','high','critical'));
 
 -- v_safety_incidents（near_miss_reports を SafetyIncident として公開）
 CREATE OR REPLACE VIEW v_safety_incidents AS
