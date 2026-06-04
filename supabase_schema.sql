@@ -738,8 +738,105 @@ JOIN  v_defect_rca_list r ON r."故障id" = d.id
 LEFT JOIN agg a ON a.def_id = d.id;
 
 -- =============================================================================
+-- 安全・異常管理（独立ドメイン / Bounded Context）
+--   near_miss_reports を SafetyIncident として再利用。新規業務テーブルは作らない。
+--   状態は open / in_progress / closed の3段階。
+--   RCA・是正処置・効果確認は既存 rca_investigations / corrective_actions へリンク。
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS near_miss_reports (
+  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  turbine_id         uuid REFERENCES turbines(id),
+  reported_by        uuid,
+  occurred_at        timestamptz,
+  location           text,
+  event_type         text,   -- near_miss / accident / equipment_anomaly / environmental_event / work_deviation / improvement_proposal
+  severity           text,
+  potential_severity text,
+  description        text,
+  root_cause         text,
+  immediate_action   text,
+  preventive_action  text,
+  lessons_learned    text,
+  status             text DEFAULT 'open',
+  closed_at          timestamptz,
+  created_at         timestamptz DEFAULT now(),
+  updated_at         timestamptz DEFAULT now()
+);
+
+-- MVP 追加カラム（nullable・非破壊）
+ALTER TABLE near_miss_reports
+  ADD COLUMN IF NOT EXISTS work_order_id   uuid REFERENCES work_orders(id),
+  ADD COLUMN IF NOT EXISTS assigned_to     uuid REFERENCES om_users(id),
+  ADD COLUMN IF NOT EXISTS due_date        date,
+  ADD COLUMN IF NOT EXISTS closed_by_name  text,
+  ADD COLUMN IF NOT EXISTS close_reason    text;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='near_miss_status_chk') THEN
+    ALTER TABLE near_miss_reports ADD CONSTRAINT near_miss_status_chk
+      CHECK (status IN ('open','in_progress','closed'));
+  END IF;
+END $$;
+ALTER TABLE near_miss_reports ALTER COLUMN status SET DEFAULT 'open';
+
+-- v_safety_incidents（near_miss_reports を SafetyIncident として公開）
+CREATE OR REPLACE VIEW v_safety_incidents AS
+SELECT
+  n.id, n.work_order_id, n.turbine_id,
+  wo.work_order_no                              AS "作業票番号",
+  t.turbine_no                                  AS "風車",
+  n.event_type,
+  CASE n.event_type
+    WHEN 'near_miss'           THEN '⚠ ヒヤリハット'
+    WHEN 'accident'            THEN '🚑 事故・労災'
+    WHEN 'equipment_anomaly'   THEN '🔧 設備異常'
+    WHEN 'environmental_event' THEN '🌿 環境事象'
+    WHEN 'work_deviation'      THEN '📐 作業逸脱'
+    WHEN 'improvement_proposal' THEN '💡 改善提案'
+    ELSE COALESCE(n.event_type,'—')
+  END                                           AS "種別",
+  n.severity,
+  CASE n.severity
+    WHEN 'critical' THEN '🔴 重大' WHEN 'high' THEN '🟠 高'
+    WHEN 'medium'   THEN '🟡 中'   WHEN 'low'  THEN '⚪ 低' ELSE '—'
+  END                                           AS "重要度",
+  n.potential_severity,
+  (n.severity IN ('high','critical') OR n.potential_severity IN ('high','critical')) AS is_critical,
+  n.status,
+  CASE n.status
+    WHEN 'open' THEN '📥 未対応' WHEN 'in_progress' THEN '🔧 対応中'
+    WHEN 'closed' THEN '✅ クローズ' ELSE n.status
+  END                                           AS "状態",
+  n.location                                    AS "発生場所",
+  n.description                                 AS "概要",
+  n.immediate_action                            AS "応急処置",
+  n.preventive_action                           AS "再発防止",
+  n.root_cause                                  AS "原因",
+  n.lessons_learned                             AS "教訓",
+  n.due_date                                    AS "対応期限",
+  rep.name                                      AS "報告者",
+  asg.name                                      AS "担当者",
+  n.closed_by_name                              AS "確認者",
+  n.close_reason                                AS "クローズ理由",
+  (n.occurred_at AT TIME ZONE 'Asia/Tokyo')     AS "発生日時_jst",
+  (n.closed_at   AT TIME ZONE 'Asia/Tokyo')     AS "クローズ日時_jst",
+  (SELECT count(*) FROM corrective_actions ca WHERE ca.work_order_id = n.work_order_id) AS ca_count,
+  (SELECT count(*) FROM rca_investigations ri WHERE ri.work_order_id = n.work_order_id) AS rca_count,
+  n.created_at, n.updated_at
+FROM near_miss_reports n
+LEFT JOIN work_orders wo ON wo.id = n.work_order_id
+LEFT JOIN turbines    t  ON t.id  = n.turbine_id
+LEFT JOIN om_users    rep ON rep.id = n.reported_by
+LEFT JOIN om_users    asg ON asg.id = n.assigned_to
+ORDER BY
+  CASE n.status WHEN 'open' THEN 1 WHEN 'in_progress' THEN 2 ELSE 3 END,
+  (n.severity IN ('high','critical')) DESC,
+  n.occurred_at DESC;
+
+-- =============================================================================
 -- RLS ポリシー（authenticated ユーザーは全操作可。anon はブロック）
 -- 2026-06-02 適用済み
+-- 追加: near_miss_reports, corrective_actions, rca_investigations
 -- =============================================================================
 -- 対象テーブル:
 --   work_orders, defect_findings, work_order_outages, closeout_reviews,
