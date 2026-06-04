@@ -94,6 +94,7 @@
 
 <div style="display:flex;gap:0;border-bottom:2px solid #30363d;margin:10px 0 18px;">
   <span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:700;color:#d29922;border-bottom:2px solid #d29922;margin-bottom:-2px;white-space:nowrap;">📝 作業票一覧</span>
+  <a href="./safety-incidents.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">⚠ 安全・異常</a>
   <a href="./report-candidates.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">⚖ 報告候補</a>
   <a href="./workflow-status.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">🗺 ワークフロー</a>
 </div>
@@ -282,6 +283,25 @@ async function openDetail(id){
   refreshOutageSection(id, r['turbine_id']||null);
   // 安全実施状況サマリ（v_work_order_safety_status）を取得して表示
   refreshSafetySection(id);
+  // 安全・異常報告（v_safety_incidents）を取得して表示
+  refreshIncidentSection(id);
+}
+
+async function refreshIncidentSection(id){
+  const box=document.getElementById('safetyList');
+  if(!box || box.getAttribute('data-woid')!==String(id)) return;
+  try{
+    const rows=await sb.get(`v_safety_incidents?work_order_id=eq.${encodeURIComponent(id)}&select=*`);
+    if(!rows || !rows.length){ box.innerHTML='<span style="color:var(--muted);font-size:12px;">この作業票に紐づく安全・異常報告はありません</span>'; return; }
+    box.innerHTML = rows.map(r=>{
+      const crit = r.is_critical ? '<span style="font-size:10px;color:#ff7b72;border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.15);border-radius:4px;padding:0 5px;margin-left:5px;">重大</span>' : '';
+      return `<a href="./safety-incidents.html?work_order_id=${sb.esc(id)}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;margin-bottom:5px;text-decoration:none;background:#0d1117;">
+        <span style="font-size:12px;color:#e3b341;font-weight:700;white-space:nowrap;">${sb.esc(r['種別'])}</span>
+        <span style="font-size:11.5px;color:#c9d1d9;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sb.esc(r['概要'])||''}</span>
+        <span style="font-size:11px;color:var(--muted);white-space:nowrap;">${sb.esc(r['状態'])}</span>${crit}
+      </a>`;
+    }).join('');
+  }catch(e){ box.innerHTML='<span style="color:#f85149;font-size:12px;">取得失敗: '+sb.esc(e.message)+'</span>'; }
 }
 
 /* ===== 安全実施状況サマリ（要否は作業票、実施証跡は作業許可/KY/LOTO） ===== */
@@ -454,6 +474,13 @@ function buildDetailHtml(r, s){
       <a class="menu" href="./permits.html?work_order_id=${sb.esc(id)}">🔒 関連する作業許可(PTW)</a>
       <a class="menu" href="./report-candidates.html">⚖ 報告候補を確認</a>
     </div>
+
+    <!-- 安全・異常セクション -->
+    <div class="dsec" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
+      <span>⚠ 安全・異常</span>
+      <a href="./safety-incidents.html?work_order_id=${sb.esc(id)}" style="font-size:11px;font-weight:700;color:#e3b341;background:rgba(227,160,8,.12);border:1px solid rgba(227,160,8,.4);border-radius:6px;padding:4px 10px;text-decoration:none;">＋ 安全・異常を報告</a>
+    </div>
+    <div id="safetyList" data-woid="${sb.esc(id)}" style="margin-top:6px;font-size:12px;color:var(--muted);">読み込み中…</div>
 
     <!-- 停止・発電影響セクション -->
     <div class="dsec" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
