@@ -146,8 +146,8 @@
   td.wtg{color:#fff;font-weight:700;white-space:nowrap;width:68px}
   td.td-title{max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help;width:22%}
   td.td-dt{white-space:nowrap;width:88px;color:var(--muted);font-size:11px}
-  td.td-cls{width:140px}
-  td.td-trig{width:130px}
+  td.td-cls{width:160px;white-space:normal}
+  td.td-trig{width:160px;white-space:normal}
   td.td-num{width:62px;text-align:right}
   td.td-wo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;width:10%;font-family:monospace;font-size:11px;color:#58a6ff}
 
@@ -594,8 +594,8 @@
 
           <td class="td-title" title="${sb.esc(r.finding_title||'')}">${sb.esc(r.finding_title||'–')}</td>
           <td class="td-dt">${sb.fmtDateTime(r.detected_at)}</td>
-          <td class="td-cls">${legalBadge}${reportFlag}${cls}</td>
-          <td class="td-trig">${trig||'–'}</td>
+          <td class="td-cls"><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start">${legalBadge}${reportFlag}${cls}</div></td>
+          <td class="td-trig"><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start">${trig||'–'}</div></td>
           <td style="white-space:nowrap">${sb.esc(r.safety_impact)||'–'}</td>
           <td style="white-space:nowrap">${sb.esc(r.operation_impact)||'–'}</td>
           <td style="text-align:center">${r.recommended_action==='stop'?'<span class="tag must">F</span>':'–'}</td>
