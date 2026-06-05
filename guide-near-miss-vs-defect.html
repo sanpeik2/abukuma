@@ -227,20 +227,34 @@
 
   <p style="font-size:13px;color:var(--muted);margin-bottom:14px">ヒヤリハットと異常報告は独立していますが、<b style="color:#fff">設備対応が必要</b>と判断されたとき、または<b style="color:#fff">安全事象の原因が設備</b>のときにつながります。</p>
 
-  <!-- ヒヤリハット → 設備対応が必要 → 異常報告 -->
-  <h3>パターン①：ヒヤリハットから異常報告を起票</h3>
-  <div class="flow-row">
-    <div class="flow-box fb-nm">⚠ ヒヤリハット記録</div>
-    <span class="arr">→</span>
-    <div class="cond">設備に問題あり</div>
-    <span class="arr">→</span>
-    <div class="flow-box fb-df">🔧 異常報告を別途起票</div>
-    <span class="arr">→</span>
-    <div class="flow-box fb-wo">📝 作業票</div>
-    <span class="arr">→</span>
-    <div class="flow-box fb-ap">✅ 承認 → 是正作業</div>
+  <!-- ヒヤリハット → 設備対応が必要 → 異常報告（独立） -->
+  <h3>パターン①：ヒヤリハットと同時に設備異常も発見した場合</h3>
+
+  <!-- ヒヤリの流れ（独立して完結） -->
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:700;letter-spacing:.05em">ヒヤリハットの流れ（独立して完結）</div>
+    <div class="flow-row" style="margin:0">
+      <div class="flow-box fb-nm">⚠ ヒヤリハット記録</div>
+      <span class="arr">→</span>
+      <div class="flow-box fb-muted">再発防止策を記録</div>
+      <span class="arr">→</span>
+      <div class="flow-box fb-muted">クローズ</div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)">
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:7px">↓ 同時に設備異常も見つかった場合 → <b style="color:#fff">別途、異常報告を独立して起票する</b></div>
+      <div class="flow-row" style="margin:0">
+        <div class="flow-box fb-df">🔧 異常報告（別途起票）</div>
+        <span class="arr">→</span>
+        <div class="flow-box fb-wo">📝 作業票</div>
+        <span class="arr">→</span>
+        <div class="flow-box fb-ap">✅ 承認 → 是正作業</div>
+      </div>
+    </div>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin:4px 0 14px">例：点検中にKY未実施に気づいた（ヒヤリ）→ 同時にギアボックス異音も発見（設備） → 異常報告を起票して作業票へ</p>
+  <div class="note" style="margin:6px 0 14px;padding:9px 14px">
+    <span style="color:#9cd2ff;font-weight:700">ポイント：</span>ヒヤリハットから作業票は<b style="color:#fff">生まれない</b>。ヒヤリはヒヤリで完結。作業票が必要な設備問題は<b style="color:#ff9492">異常報告から別の流れ</b>で起票する。
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:4px 0 14px">例：KY未実施で現場入り（ヒヤリ）＋ 同時にギアボックス異音も発見（設備異常）→ 2つを独立して記録。ヒヤリは再発防止でクローズ。設備は異常報告→作業票へ</p>
 
   <!-- 異常報告 → 作業中リスク → ヒヤリハット -->
   <h3>パターン②：作業対応中にヒヤリハット発生</h3>
@@ -284,8 +298,8 @@
     <li><span class="ck">□</span><div>何が起きたか（事象の説明）を具体的に書く</div></li>
     <li><span class="ck">□</span><div>誰が・どこで・何をしていたときか</div></li>
     <li><span class="ck">□</span><div>なぜ危なかったか（なぜ事故にならなかったか）</div></li>
-    <li><span class="ck">□</span><div>設備への影響がないか確認 → あれば異常報告も起票</div></li>
-    <li><span class="ck">□</span><div>再発防止策を記録してクローズする</div></li>
+    <li><span class="ck">□</span><div>設備への影響がないか確認 → あれば<b>異常報告を別途・独立して</b>起票する（ヒヤリから作業票は生まれない）</div></li>
+    <li><span class="ck">□</span><div>再発防止策を記録してクローズする（作業票なしで完結）</div></li>
   </ul>
 
   <h3 style="color:#ff9492;margin-top:18px">🔧 異常報告を記録するとき</h3>
