@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>安全・異常報告 — 阿武隈OS</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--warn:#e3b341;--ng:#f85149;--ok:#3fb950}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.5;padding:0}
+a{color:var(--master);text-decoration:none}
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+.topbar .mark{width:32px;height:32px;border-radius:7px;background:#e3a008;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px;flex-shrink:0}
+.topbar h1{font-size:16px}.topbar .sub{font-size:11px;color:var(--muted)}.topbar .back{margin-left:auto;font-size:12.5px}
+.wrap{padding:16px 20px 60px;max-width:1500px;margin:0 auto}
+
+/* タブ */
+.tabbar{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:18px}
+.tabbar a,.tabbar span{display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;text-decoration:none}
+.tabbar a{color:var(--muted)}.tabbar a:hover{color:var(--txt)}
+.tabbar .cur{color:var(--warn);border-bottom-color:var(--warn);font-weight:700}
+
+/* KPI */
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.kpi{flex:1;min-width:110px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 14px}
+.kpi .v{font-size:22px;font-weight:700;color:#fff}.kpi .l{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi.ng .v{color:var(--ng)}.kpi.warn .v{color:var(--warn)}
+
+/* クイック報告 */
+.qbox{background:linear-gradient(135deg,rgba(227,160,8,.06),var(--panel));border:1px solid rgba(227,160,8,.4);border-radius:11px;padding:0;margin-bottom:16px;overflow:hidden}
+.qhd{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer}
+.qhd b{font-size:14px;color:#fff}.qhd .tag{font-size:10.5px;color:var(--warn);background:rgba(227,160,8,.12);border:1px solid rgba(227,160,8,.4);border-radius:999px;padding:2px 9px}
+.qhd .chev{margin-left:auto;color:var(--muted);transition:transform .2s}
+.qbox.open .qhd .chev{transform:rotate(180deg)}
+.qbody{display:none;padding:0 16px 16px}
+.qbox.open .qbody{display:block}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px}
+.fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.in{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 9px;border-radius:7px;font-size:13px;font-family:inherit}
+.in:focus{outline:none;border-color:var(--master)}
+textarea.in{resize:vertical;min-height:60px}
+.span2{grid-column:1/-1}
+
+/* フィルタ */
+.fbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.fbar input{flex:1;min-width:180px;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 11px;border-radius:8px;font-size:12.5px}
+.fbar button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:11.5px;padding:5px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.fbar button.act{background:rgba(88,166,255,.15);border-color:rgba(88,166,255,.6);color:#58a6ff;font-weight:700}
+.fbar .sep{color:var(--line)}
+
+/* テーブル */
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px;table-layout:fixed}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:var(--panel2);font-size:11px;color:#fff;white-space:nowrap;font-weight:700}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer}tbody tr:hover td{background:rgba(255,255,255,.025)}
+.t-type{width:110px;white-space:nowrap}
+.t-wtg{width:64px;font-weight:700;color:#fff;white-space:nowrap}
+.t-sev{width:70px;white-space:nowrap}
+.t-st{width:90px;white-space:nowrap}
+.t-loc{width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
+.t-desc{width:24%;max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
+.t-asg{width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
+.t-due{width:84px;white-space:nowrap;font-size:11px}
+.t-dt{width:96px;white-space:nowrap;font-size:11px;color:var(--muted)}
+.crit{box-shadow:inset 3px 0 0 var(--ng)}
+.empty{text-align:center;color:var(--muted);padding:40px;font-size:13px}
+.badge-c{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:rgba(248,81,73,.18);color:#ff7b72;border:1px solid rgba(248,81,73,.4);margin-left:4px}
+
+/* ドロワー */
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:none}#ov.show{display:block}
+#drawer{position:fixed;top:0;right:0;width:min(52vw,820px);height:100%;background:var(--panel);border-left:1px solid var(--line);overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
+#ov.show #drawer{transform:none}
+.dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:15px 22px;display:flex;align-items:center;gap:12px;z-index:2}
+.dhd h2{font-size:16px;color:#fff;flex:1}.dhd .x{background:none;border:none;color:var(--muted);font-size:25px;cursor:pointer;line-height:1}
+.dbody{padding:20px 24px 50px}
+.dsec{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin:18px 0 7px;border-left:3px solid var(--warn);padding-left:8px}
+.dval{font-size:13.5px;color:var(--txt);white-space:pre-wrap}.dval.empty{color:var(--muted)}
+.dpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.dpill{font-size:12px;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.warnbox{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:9px;padding:11px 14px;margin:14px 0;font-size:12.5px;color:#ff9a92}
+.linkrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:8px}
+.linkrow a{font-size:12px;padding:6px 12px;border-radius:7px}
+.bs{background:#1f6feb;color:#fff;font-weight:700;border:none;border-radius:8px;padding:9px 18px;font-size:13px;cursor:pointer}
+.bc{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer}
+.bok{background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.4);border-radius:8px;padding:8px 14px;font-size:12.5px;cursor:pointer;font-weight:700}
+.bprog{background:rgba(210,153,34,.15);color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:8px;padding:8px 14px;font-size:12.5px;cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark">AW</div>
+  <div><h1>安全・異常報告</h1><div class="sub">阿武隈OS — ヒヤリハット・事故・設備異常・環境事象・作業逸脱・改善提案（独立管理 / v_safety_incidents）</div></div>
+  <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+</div>
+
+<div class="wrap">
+
+  <div class="tabbar">
+    <a href="./work-orders.html">📝 作業票一覧</a>
+    <span class="cur">⚠ 安全・異常</span>
+    <a href="./report-candidates.html">⚖ 報告候補</a>
+    <a href="./workflow-status.html">🗺 ワークフロー</a>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kTotal">–</div><div class="l">報告（合計）</div></div>
+    <div class="kpi ng"><div class="v" id="kOpen">–</div><div class="l">未対応</div></div>
+    <div class="kpi warn"><div class="v" id="kProg">–</div><div class="l">対応中</div></div>
+    <div class="kpi ng"><div class="v" id="kCrit">–</div><div class="l">重大事象（未クローズ）</div></div>
+    <div class="kpi warn"><div class="v" id="kOver">–</div><div class="l">期限超過</div></div>
+  </div>
+
+  <!-- クイック報告 -->
+  <div class="qbox open" id="qbox">
+    <div class="qhd" onclick="document.getElementById('qbox').classList.toggle('open')">
+      <b>＋ クイック報告</b><span class="tag">60秒で登録</span>
+      <span class="chev">▾</span>
+    </div>
+    <div class="qbody">
+      <div class="qgrid">
+        <div class="fld"><label>種別 *</label>
+          <select id="q_type" class="in">
+            <option value="near_miss">⚠ ヒヤリハット</option>
+            <option value="accident">🚑 事故・労災</option>
+            <option value="equipment_anomaly">🔧 設備異常</option>
+            <option value="environmental_event">🌿 環境事象</option>
+            <option value="work_deviation">📐 作業逸脱</option>
+            <option value="improvement_proposal">💡 改善提案</option>
+          </select>
+        </div>
+        <div class="fld"><label>重要度 *</label>
+          <select id="q_sev" class="in">
+            <option value="low">⚪ 低</option>
+            <option value="medium" selected>🟡 中</option>
+            <option value="high">🟠 高</option>
+            <option value="critical">🔴 重大</option>
+          </select>
+        </div>
+        <div class="fld"><label>潜在重要度（もし悪化したら）</label>
+          <select id="q_pot" class="in">
+            <option value="">—</option>
+            <option value="low">⚪ 低</option>
+            <option value="medium">🟡 中</option>
+            <option value="high">🟠 高</option>
+            <option value="critical">🔴 重大</option>
+          </select>
+        </div>
+        <div class="fld"><label>対象風車（任意）</label>
+          <select id="q_wtg" class="in"><option value="">—（風車に紐づかない）</option></select>
+        </div>
+        <div class="fld"><label>発生場所</label><input id="q_loc" class="in" placeholder="例: T03ナセル内 / 構内道路 / 事務所"></div>
+        <div class="fld"><label>発生日時</label><input id="q_at" type="datetime-local" class="in"></div>
+        <div class="fld span2"><label>何が起きたか *</label><textarea id="q_desc" class="in" placeholder="状況を簡潔に。原因や対策は後で追記できます。"></textarea></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="bs" onclick="submitQuick()" id="q_btn">📥 報告する</button>
+        <span id="q_msg" style="font-size:12.5px;color:var(--muted)"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- フィルタ -->
+  <div class="fbar">
+    <input id="q" placeholder="🔍 概要・場所・風車で絞り込み" oninput="render()">
+    <button class="act" data-f="all" onclick="setF('all',this)">すべて</button>
+    <button data-f="open" onclick="setF('open',this)">未対応</button>
+    <button data-f="in_progress" onclick="setF('in_progress',this)">対応中</button>
+    <button data-f="closed" onclick="setF('closed',this)">クローズ</button>
+    <span class="sep">|</span>
+    <button data-f="critical" onclick="setF('critical',this)">🔴 重大のみ</button>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th class="t-type">種別</th>
+      <th class="t-wtg">風車</th>
+      <th class="t-sev">重要度</th>
+      <th class="t-st">状態</th>
+      <th class="t-loc">発生場所</th>
+      <th class="t-desc">概要</th>
+      <th class="t-asg">担当者</th>
+      <th class="t-due">対応期限</th>
+      <th class="t-dt">発生日時</th>
+    </tr></thead>
+    <tbody id="rows"><tr><td colspan="9" class="empty">読み込み中…</td></tr></tbody>
+  </table>
+
+</div>
+
+<div id="ov" onclick="if(event.target.id==='ov')closeD()">
+  <div id="drawer">
+    <div class="dhd"><h2 id="dTitle">安全・異常 詳細</h2><button class="x" onclick="closeD()">×</button></div>
+    <div class="dbody" id="dBody"></div>
+  </div>
+</div>
+
+<script src="./lib/supabase.js"></script>
+<script>
+const esc = sb.esc;
+const WO_ID = new URLSearchParams(location.search).get('work_order_id');
+let ALL = [], WTG = [], curF = 'all';
+
+const TYPE_OPT = [['near_miss','⚠ ヒヤリハット'],['accident','🚑 事故・労災'],['equipment_anomaly','🔧 設備異常'],['environmental_event','🌿 環境事象'],['work_deviation','📐 作業逸脱'],['improvement_proposal','💡 改善提案']];
+
+async function load(){
+  document.getElementById('rows').innerHTML = '<tr><td colspan="9" class="empty">取得中…</td></tr>';
+  try{
+    const [rows, turbines] = await Promise.all([
+      sb.get('v_safety_incidents?select=*'),
+      sb.get('turbines?select=id,turbine_no&order=turbine_no')
+    ]);
+    ALL = rows||[]; WTG = turbines||[];
+    // 風車セレクト初期化
+    const sel = document.getElementById('q_wtg');
+    sel.innerHTML = '<option value="">—（風車に紐づかない）</option>' +
+      WTG.map(t=>`<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`).join('');
+    // 発生日時の初期値=今
+    const now = new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    document.getElementById('q_at').value = now;
+    renderKpi(); render();
+  }catch(e){
+    document.getElementById('rows').innerHTML = `<tr><td colspan="9" class="empty">取得エラー: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+function renderKpi(){
+  document.getElementById('kTotal').textContent = ALL.length;
+  document.getElementById('kOpen').textContent  = ALL.filter(r=>r.status==='open').length;
+  document.getElementById('kProg').textContent  = ALL.filter(r=>r.status==='in_progress').length;
+  document.getElementById('kCrit').textContent  = ALL.filter(r=>r.is_critical && r.status!=='closed').length;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('kOver').textContent  = ALL.filter(r=>r['対応期限'] && r['対応期限']<today && r.status!=='closed').length;
+}
+
+function setF(f, btn){ curF=f; document.querySelectorAll('.fbar button[data-f]').forEach(b=>b.classList.remove('act')); btn.classList.add('act'); render(); }
+
+function render(){
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  let d = ALL;
+  if(curF==='open'||curF==='in_progress'||curF==='closed') d = d.filter(r=>r.status===curF);
+  if(curF==='critical') d = d.filter(r=>r.is_critical);
+  if(q) d = d.filter(r=>[r['概要'],r['発生場所'],r['風車']].some(v=>(v||'').toLowerCase().includes(q)));
+
+  const rows = document.getElementById('rows');
+  if(!d.length){ rows.innerHTML = '<tr><td colspan="9" class="empty">該当する報告はありません</td></tr>'; return; }
+  const today = new Date().toISOString().slice(0,10);
+  rows.innerHTML = d.map(r=>{
+    const over = r['対応期限'] && r['対応期限']<today && r.status!=='closed';
+    const dt = r['発生日時_jst'] ? String(r['発生日時_jst']).slice(5,16).replace('T',' ') : '–';
+    return `<tr class="${r.is_critical?'crit':''}" onclick="openD('${esc(r.id)}')">
+      <td class="t-type">${esc(r['種別'])}</td>
+      <td class="t-wtg">${esc(r['風車'])||'–'}</td>
+      <td class="t-sev">${esc(r['重要度'])}${r.is_critical?'<span class="badge-c">重大</span>':''}</td>
+      <td class="t-st">${esc(r['状態'])}</td>
+      <td class="t-loc" title="${esc(r['発生場所']||'')}">${esc(r['発生場所'])||'–'}</td>
+      <td class="t-desc" title="${esc(r['概要']||'')}">${esc(r['概要'])||'–'}</td>
+      <td class="t-asg" title="${esc(r['担当者']||'')}">${esc(r['担当者'])||'–'}</td>
+      <td class="t-due" style="${over?'color:#f85149;font-weight:700':''}">${esc(r['対応期限'])||'–'}</td>
+      <td class="t-dt">${esc(dt)}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ===== クイック報告 ===== */
+async function submitQuick(){
+  const g=id=>document.getElementById(id), msg=g('q_msg'), btn=g('q_btn');
+  const desc=g('q_desc').value.trim();
+  if(!desc){ msg.style.color='#f85149'; msg.textContent='「何が起きたか」を入力してください'; return; }
+  btn.disabled=true; msg.style.color='#8b949e'; msg.textContent='登録中…';
+  const body={
+    event_type: g('q_type').value,
+    severity: g('q_sev').value,
+    potential_severity: g('q_pot').value||null,
+    turbine_id: g('q_wtg').value||null,
+    work_order_id: WO_ID||null,
+    location: g('q_loc').value.trim()||null,
+    description: desc,
+    occurred_at: g('q_at').value ? new Date(g('q_at').value).toISOString() : new Date().toISOString(),
+    status: 'open',
+    created_at: new Date().toISOString()
+  };
+  try{
+    await sb.write('POST','near_miss_reports',body);
+    msg.style.color='#7ee787'; msg.textContent='✔ 報告しました';
+    g('q_desc').value=''; g('q_loc').value='';
+    await load();
+    setTimeout(()=>{ if(msg) msg.textContent=''; }, 2500);
+  }catch(e){ msg.style.color='#f85149'; msg.textContent='登録失敗: '+e.message; }
+  finally{ btn.disabled=false; }
+}
+
+/* ===== 詳細ドロワー ===== */
+function fld(label,val){ const e=val==null||val===''; return `<div class="dsec">${label}</div><div class="dval${e?' empty':''}">${e?'（記載なし）':esc(val)}</div>`; }
+
+function openD(id){
+  const r = ALL.find(x=>String(x.id)===String(id));
+  if(!r) return;
+  document.getElementById('dTitle').textContent = (r['風車']?r['風車']+' ':'') + r['種別'];
+  const woId = r.work_order_id;
+  // 重大かつ未クローズの警告
+  const critWarn = (r.is_critical && r.status!=='closed')
+    ? `<div class="warnbox">🔴 <b>重大事象です。</b>クローズ前に RCA・主任技術者確認・水平展開・効果確認の完了を推奨します（MVPでは警告のみ・理由入力でクローズ可）。</div>` : '';
+  document.getElementById('dBody').innerHTML = `
+    <div class="dpills">
+      <span class="dpill">${esc(r['状態'])}</span>
+      <span class="dpill">${esc(r['重要度'])}</span>
+      ${r['潜在重要度']?`<span class="dpill">潜在 ${esc(r['潜在重要度'])}</span>`:''}
+      ${woId?'<span class="dpill" style="color:#9cd2ff">作業票連携</span>':'<span class="dpill" style="color:var(--muted)">独立報告</span>'}
+    </div>
+    ${critWarn}
+    <div class="dgrid" style="margin-top:8px">
+      <div><div class="dsec" style="margin-top:0">発生日時</div><div class="dval">${esc(String(r['発生日時_jst']||'').replace('T',' ').slice(0,16))||'–'}</div></div>
+      <div><div class="dsec" style="margin-top:0">発生場所</div><div class="dval">${esc(r['発生場所'])||'–'}</div></div>
+    </div>
+    ${fld('何が起きたか', r['概要'])}
+    ${fld('応急処置', r['応急処置'])}
+    ${fld('原因（任意・後追記可）', r['原因'])}
+    ${fld('再発防止（任意）', r['再発防止'])}
+    ${fld('教訓・水平展開メモ', r['教訓'])}
+
+    <div class="dsec">一次評価 ・ 担当割当</div>
+    <div class="dgrid">
+      <div class="fld"><label style="font-size:11px;color:var(--muted)">重要度</label>
+        <select id="e_sev" class="in">${['low|⚪ 低','medium|🟡 中','high|🟠 高','critical|🔴 重大'].map(o=>{const[v,t]=o.split('|');return `<option value="${v}" ${r.severity===v?'selected':''}>${t}</option>`}).join('')}</select></div>
+      <div class="fld"><label style="font-size:11px;color:var(--muted)">担当者</label>
+        <select id="e_asg" class="in"><option value="">—</option>${WTG.length?'':''}<!--users filled below--></select></div>
+      <div class="fld"><label style="font-size:11px;color:var(--muted)">対応期限</label>
+        <input id="e_due" type="date" class="in" value="${esc(r['対応期限']||'')}"></div>
+      <div class="fld"><label style="font-size:11px;color:var(--muted)">対象風車</label>
+        <select id="e_wtg" class="in"><option value="">—</option>${WTG.map(t=>`<option value="${esc(t.id)}" ${r.turbine_id===t.id?'selected':''}>${esc(t.turbine_no)}</option>`).join('')}</select></div>
+    </div>
+    <div style="margin-top:10px"><button class="bs" onclick="saveEval('${esc(id)}')">💾 評価を保存</button> <span id="e_msg" style="font-size:12px;color:var(--muted)"></span></div>
+
+    <div class="dsec">状態</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+      ${r.status==='open'?`<button class="bprog" onclick="setStatus('${esc(id)}','in_progress')">🔧 対応中にする</button>`:''}
+      ${r.status!=='closed'?`<button class="bok" onclick="openClose('${esc(id)}')">✅ クローズする</button>`:''}
+      ${r.status==='closed'?`<span style="font-size:12.5px;color:#7ee787">✅ クローズ済 — ${esc(r['確認者']||'')} / ${esc(String(r['クローズ日時_jst']||'').replace('T',' ').slice(0,16))}</span>`:''}
+    </div>
+    <div id="closeForm" style="display:none;margin-top:12px;padding:12px 14px;border:1px solid rgba(63,185,80,.4);border-radius:9px;background:rgba(63,185,80,.05)">
+      <div class="fld"><label style="font-size:11px;color:var(--muted)">クローズ理由 *（監査ログに残ります）</label><textarea id="c_reason" class="in" placeholder="例: 是正処置完了・効果確認済み / 軽微につき記録のみ"></textarea></div>
+      <div class="fld" style="margin-top:8px"><label style="font-size:11px;color:var(--muted)">確認者 *</label><input id="c_by" class="in" placeholder="氏名"></div>
+      <div style="margin-top:10px"><button class="bok" onclick="doClose('${esc(id)}')">クローズを確定</button> <button class="bc" onclick="document.getElementById('closeForm').style.display='none'">キャンセル</button> <span id="c_msg" style="font-size:12px;color:var(--muted)"></span></div>
+    </div>
+
+    <div class="dsec">関連（既存テーブルへリンク）</div>
+    <div class="linkrow">
+      ${woId?`<a href="./work-orders.html?open=${esc(woId)}" style="background:rgba(210,153,34,.1);color:#d29922;border:1px solid rgba(210,153,34,.4)">📝 作業票（${esc(r['作業票番号']||'')}）</a>`:'<span style="font-size:12px;color:var(--muted)">作業票に紐づいていません</span>'}
+      ${woId?`<a href="./defect-rca.html" style="background:rgba(188,140,255,.1);color:#bc8cff;border:1px solid rgba(188,140,255,.4)">🔬 RCA調査（${r.rca_count||0}）</a>`:''}
+      ${woId?`<a href="./work-orders.html?open=${esc(woId)}" style="background:rgba(63,185,80,.1);color:#3fb950;border:1px solid rgba(63,185,80,.4)">🔧 是正処置（${r.ca_count||0}）</a>`:''}
+    </div>
+    ${r['クローズ理由']?`<div class="dsec">クローズ理由（監査）</div><div class="dval">${esc(r['クローズ理由'])}</div>`:''}
+  `;
+  // 担当者セレクトを埋める
+  fillUsers('e_asg', r.assigned_to);
+  document.getElementById('ov').classList.add('show');
+}
+
+async function fillUsers(selId, cur){
+  try{
+    const us = await sb.get('om_users?select=id,name&order=name');
+    const sel = document.getElementById(selId);
+    if(sel) sel.innerHTML = '<option value="">—</option>' + (us||[]).map(u=>`<option value="${esc(u.id)}" ${cur===u.id?'selected':''}>${esc(u.name)}</option>`).join('');
+  }catch(e){}
+}
+
+async function saveEval(id){
+  const g=i=>document.getElementById(i), msg=g('e_msg');
+  const patch={ severity:g('e_sev').value, assigned_to:g('e_asg').value||null, due_date:g('e_due').value||null, turbine_id:g('e_wtg').value||null, updated_at:new Date().toISOString() };
+  msg.style.color='#8b949e'; msg.textContent='保存中…';
+  try{ await patchNM(id,patch); msg.style.color='#7ee787'; msg.textContent='✔ 保存'; await load(); openD(id); }
+  catch(e){ msg.style.color='#f85149'; msg.textContent='失敗: '+e.message; }
+}
+
+async function setStatus(id, st){
+  try{ await patchNM(id,{status:st,updated_at:new Date().toISOString()}); await load(); openD(id); }
+  catch(e){ alert('更新失敗: '+e.message); }
+}
+
+function openClose(id){ const f=document.getElementById('closeForm'); if(f) f.style.display='block'; }
+
+async function doClose(id){
+  const g=i=>document.getElementById(i), msg=g('c_msg');
+  const reason=g('c_reason').value.trim(), by=g('c_by').value.trim();
+  if(!reason||!by){ msg.style.color='#f85149'; msg.textContent='クローズ理由と確認者は必須です（監査ログ）'; return; }
+  msg.style.color='#8b949e'; msg.textContent='処理中…';
+  try{
+    await patchNM(id,{ status:'closed', close_reason:reason, closed_by_name:by, closed_at:new Date().toISOString(), updated_at:new Date().toISOString() });
+    await load(); openD(id);
+  }catch(e){ msg.style.color='#f85149'; msg.textContent='失敗: '+e.message; }
+}
+
+async function patchNM(id, body){
+  const res = await fetch(`${sb.URL}/rest/v1/near_miss_reports?id=eq.${encodeURIComponent(id)}`,
+    {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(body)});
+  if(!res.ok){ throw new Error((await res.text())||('HTTP '+res.status)); }
+}
+
+function closeD(){ document.getElementById('ov').classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeD(); });
+
+sb.requireLogin({ onReady: load });
+</script>
+</body>
+</html>

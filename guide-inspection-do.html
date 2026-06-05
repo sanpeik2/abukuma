@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 点検実行の基本</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--ai:#ff7b72;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.7}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:24px 22px 60px;max-width:860px;margin:0 auto}
+  .purpose{border:1px solid var(--insp);background:rgba(63,185,80,.08);border-radius:10px;padding:15px 18px;margin-bottom:8px}
+  .purpose .l{font-size:11px;color:#7ee787;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+  .purpose p{font-size:15px;color:#fff}
+  .when{font-size:13px;color:var(--muted);margin:14px 0 6px}
+  .when b{color:#f0c674}
+  h2{font-size:14px;color:#fff;margin:26px 0 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:7px}
+  .kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:12px 0}
+  .kind{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:var(--panel)}
+  .kind .t{font-size:13.5px;color:#fff;font-weight:700;margin-bottom:3px} .kind .d{font-size:12px;color:var(--muted)}
+  ol.steps{list-style:none;counter-reset:s;margin:8px 0}
+  ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 40px;font-size:14px;border-bottom:1px solid var(--line)}
+  ol.steps li:last-child{border-bottom:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;background:rgba(88,166,255,.15);color:#9cd2ff;font-weight:800;font-size:13px;display:grid;place-items:center}
+  .tip,.warn{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .tip{border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.06)} .tip .h{color:#7ee787;font-weight:700;margin-bottom:5px}
+  .warn{border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.06)} .warn .h{color:#ff9a92;font-weight:700;margin-bottom:5px}
+  .tip ul,.warn ul{margin:0;padding-left:18px} .tip li,.warn li{margin:3px 0}
+  .confirm{border:1px solid var(--work);background:rgba(210,153,34,.08);border-radius:9px;padding:11px 15px;font-size:12.5px;color:#f0c674;margin:14px 0}
+  .links{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+  .links a{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--master);background:var(--panel)}
+  .footer{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:11.5px}
+  code{color:var(--master);background:#0d1117;padding:1px 6px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div><h1>② 点検実行の基本</h1><div class="sub">阿武隈OS 業務の考え方 — 現地で見る・記録する</div></div>
+    <a class="back" href="./menu.html">≡ メニュー</a>
+  </div>
+  <div class="wrap">
+    <div class="purpose"><div class="l">この業務の目的</div><p>計画した点検を現地で実施し、機器の状態を「記録」する。<b style="color:#7ee787">記録が証拠</b>になる。</p></div>
+    <div class="when">📌 <b>いつ</b>：計画日に実施。アラーム・故障が出たときは随時。</div>
+
+    <h2>現地で見るポイント</h2>
+    <div class="kinds">
+      <div class="kind"><div class="t">異音・振動</div><div class="d">いつもと違う音／揺れがないか。</div></div>
+      <div class="kind"><div class="t">油漏れ・温度</div><div class="d">ギアボックス・油圧の漏れ、過熱。</div></div>
+      <div class="kind"><div class="t">締結・外観</div><div class="d">ボルトのゆるみ、ブレード・塗装の傷。</div></div>
+    </div>
+
+    <h2>記録のしかた（項目別チェック）</h2>
+    <div class="kinds">
+      <div class="kind"><div class="t">測定項目</div><div class="d">測定値を入力。<b style="color:#7ee787">基準値と自動照合してOK/NG</b>を判定（人が判定を間違えない）。例：主軸受 振動 4.8mm/s（基準0〜4.5）→NG。</div></div>
+      <div class="kind"><div class="t">目視項目</div><div class="d">基準（例「漏れなし」）に対しOK/NGを選ぶ。</div></div>
+      <div class="kind"><div class="t">対象外</div><div class="d">今回点検しない項目は「対象外」に。未入力では登録できない＝見落とし防止。</div></div>
+    </div>
+
+    <h2>進め方（手順）</h2>
+    <ol class="steps">
+      <li>必要なら作業許可（PTW/LOTO）を確認してから着手</li>
+      <li>点検セットを選ぶ（駆動系・電気／目視巡視）→ 項目が出る</li>
+      <li>項目ごとに測定値を入力（基準と自動でOK/NG判定）・目視はOK/NG選択</li>
+      <li>NGの項目は内容と写真を記録する</li>
+      <li>全項目を入力（未入力ゼロ）→ 内容を確認して登録する</li>
+    </ol>
+
+    <div class="tip"><div class="h">✓ ポイント</div><ul><li>「異常なし（OK）」も項目ごとに記録する（やった証拠）</li><li>測定値は基準と自動照合される。迷ったら基準値を確認</li><li>前回値と比べて傾向（トレンド）を見る</li><li>写真は後で証拠になる。判断に迷う箇所ほど撮る</li></ul></div>
+    <div class="warn"><div class="h">✕ やってはいけない</div><ul><li>見ていない項目を推測で「OK」にする</li><li>点検していないのに「対象外」で飛ばす</li><li>異常を口頭だけで済ませ記録しない</li></ul></div>
+
+    <div class="links">
+      <a href="./inspection-input.html">▶ 点検実績入力（LIVE）</a>
+      <a href="./box-upload-flow.html">証拠写真アップロード設計</a>
+      <a href="./guide-defect-judge.html">次：③ 是正判断の基本</a>
+      <a href="./om-os-flow-map.html">業務フロー図</a>
+    </div>
+    <div class="footer">業務の考え方シリーズ ②／⑥ — 作業者向け早見。詳細・基準は保安規定／電気主任技術者の確認が優先。</div>
+  </div>
+</body>
+</html>

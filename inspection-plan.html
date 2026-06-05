@@ -1,0 +1,1481 @@
+﻿<!DOCTYPE html>
+
+
+
+
+<html lang="ja">
+
+
+
+
+<head>
+
+
+
+
+<meta charset="UTF-8">
+
+
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+
+<title>阿武隈OS — 点検計画（ライブ）</title>
+
+
+
+
+<style>
+
+
+
+
+  :root{
+
+
+
+
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+
+
+
+
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+
+
+
+
+  }
+
+
+
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+
+
+
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+
+
+
+
+  a{color:var(--master);text-decoration:none}
+
+
+
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+
+
+
+
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+
+
+
+
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+
+
+
+
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+
+
+
+
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+
+
+
+
+  .wrap{padding:18px 22px 50px}
+
+
+
+
+  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+
+
+
+
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 16px;min-width:120px}
+
+
+
+
+  .kpi .v{font-size:22px;font-weight:800;color:#fff} .kpi .l{font-size:11px;color:var(--muted)}
+
+
+
+
+  .kpi.warn .v{color:#ff9a92} .kpi.today .v{color:#9cd2ff}
+
+
+
+
+  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+
+
+
+
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+
+
+
+
+  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
+
+
+
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+
+
+
+
+  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;white-space:nowrap}
+
+
+
+
+  th{color:var(--muted);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--bg)}
+
+
+
+
+  tr.overdue td{background:rgba(248,81,73,.06)}
+
+
+
+
+  tr.today td{background:rgba(88,166,255,.06)}
+
+
+
+
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+
+
+
+
+  .p-nen{color:#ff9a92;border-color:var(--defect);background:rgba(248,81,73,.1)}
+
+
+
+
+  .p-teiki{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.1)}
+
+
+
+
+  .p-zuiji{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.1)}
+
+
+
+
+  .p-other{color:var(--muted);border-color:var(--line)}
+
+
+
+
+  .wtg{font-family:monospace;color:#fff;font-weight:600}
+
+
+
+
+  .loading,.empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+
+
+
+
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+
+
+
+
+  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
+
+
+
+
+</style>
+
+
+
+
+</head>
+
+
+
+
+<body>
+
+
+
+
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:14px 18px 12px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;"><span style="display:flex;flex-direction:column;line-height:1.15;border-left:3px solid rgb(63,185,80);padding-left:9px;flex:0 0 auto;"><b style="color:#e6edf3;font-size:12.5px;font-weight:800;letter-spacing:.04em;">業務フロー</b><span style="color:#6e7681;font-size:10px;">現在地</span></span><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(63,185,80);background:rgba(63,185,80,.13);border:1px solid rgba(63,185,80,.45);">🟢 点検フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">3 / 11</span><span style="flex:0 0 auto;display:inline-block;width:120px;max-width:30vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:20%;border-radius:999px;background:rgb(63,185,80);"></span></span></div><div style="display:flex;align-items:flex-start;flex-wrap:wrap;row-gap:6px;"><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./index.html" title="今日の管制塔（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">今日の管制塔</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./live-board.html" title="監視（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">監視</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><div title="現在この画面です" aria-current="step" style="display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:rgb(63,185,80);color:#11161d;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:2px solid rgb(63,185,80);box-shadow:0 0 0 4px rgba(63,185,80,.22);box-sizing:border-box;">3</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#fff;font-weight:800;max-width:78px;word-break:break-word;">点検計画</span></div></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-input.html" title="点検実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">4</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">点検実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="異常判断（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">5</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">異常判断</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業票（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">6</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業票</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./permits.html" title="PTW/KY（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">7</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">PTW/KY</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./approvals.html" title="承認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">8</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">承認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">9</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="復旧確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">10</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">復旧確認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./report-candidates.html" title="クローズ・報告確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">11</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">クローズ・報告確認</span></a></div></div></nav>
+
+
+
+
+  <div class="topbar">
+
+
+
+
+    <div class="mark">AW</div>
+
+
+
+
+    <div>
+
+
+
+
+      <h1>点検計画</h1>
+
+
+
+
+      <div class="sub">阿武隈OS ライブ盤 — 年次/定期/随時の計画・期限管理</div>
+
+
+
+
+    </div>
+
+
+
+
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="wrap">
+
+
+
+
+    <div class="note">点検計画の承認管理画面です。<b>承認済みになると点検実施が可能</b>になります。実施・結果確認は <a href="./inspection-input.html">点検実施</a> へ。PTW が必要な点検は承認前に PTW 番号を記録してください。</div>
+
+
+
+
+    <div class="kpis" id="kpis"></div>
+
+
+
+
+    <div class="filters" id="filters">
+
+
+
+
+      <button data-f="all" class="active">すべて</button>
+      <span style="color:var(--line);margin:0 4px;">｜</span>
+      <button data-f="draft">📋 計画中</button>
+      <button data-f="pending">📨 申請中</button>
+      <button data-f="approved">✅ 承認済</button>
+      <button data-f="returned">↩ 差戻し</button>
+      <span style="color:var(--line);margin:0 4px;">｜</span>
+      <button data-f="ku_年次">年次</button>
+      <button data-f="ku_定期">定期</button>
+      <button data-f="ku_随時緊急">随時/緊急</button>
+      <button data-f="ku_その他">その他</button>
+
+
+
+
+    </div>
+
+
+
+
+    <div id="body" class="loading">読み込み中…</div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button onclick="openNewPlanPanel()" style="background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;">＋ 新規点検計画を起票（定期・年次）</button>
+      <a href="./inspection-rules.html" style="background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.4);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;text-decoration:none;display:inline-block;">📋 マスタから一括生成</a>
+      <button onclick="openCsvImportPanel()" style="background:rgba(139,148,158,.1);color:#8b949e;border:1px solid rgba(139,148,158,.35);font-weight:700;font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;">📂 CSVで一括起票</button>
+    </div>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <script src="./lib/supabase.js"></script>
+
+
+
+
+  <script>
+
+
+
+
+    const esc = sb.esc;
+
+
+
+
+    const state = { rows: [], filter: "all" };
+
+
+
+
+    const pillClass = { "年次":"p-nen", "定期":"p-teiki", "随時/緊急":"p-zuiji", "その他":"p-other" };
+
+
+
+
+
+
+
+
+
+    function renderKpis(){
+
+
+
+
+      const rows = state.rows;
+
+
+
+
+      const cntDraft    = rows.filter(r => (r["approval_status"]||"draft") === "draft").length;
+      const cntPending  = rows.filter(r => r["approval_status"] === "pending").length;
+      const cntApproved = rows.filter(r => r["approval_status"] === "approved").length;
+      const cntReturned = rows.filter(r => r["approval_status"] === "returned").length;
+      const cntOverdue  = rows.filter(r => r["期限超過"]).length;
+
+      document.getElementById("kpis").innerHTML =
+        `<div class="kpi"><div class="v">${rows.length}</div><div class="l">計画 総数</div></div>
+         <div class="kpi"><div class="v">${cntDraft}</div><div class="l">📋 未申請</div></div>
+         <div class="kpi today"><div class="v">${cntPending}</div><div class="l">📨 申請中</div></div>
+         <div class="kpi"><div class="v">${cntApproved}</div><div class="l">✅ 承認済</div></div>
+         <div class="kpi warn"><div class="v">${cntReturned}</div><div class="l">↩ 差戻し</div></div>
+         <div class="kpi warn"><div class="v">${cntOverdue}</div><div class="l">⚠ 要対応</div></div>`;
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function unifiedStatusBadge(s){
+      const M = {
+        planning:        {lbl:'📋 計画中',        c:'#8b949e', bg:'rgba(139,148,158,.10)', bd:'#30363d'},
+        plan_pending:    {lbl:'⏳ 計画承認待ち',  c:'#e3b341', bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
+        returned:        {lbl:'↩ 差戻し中',       c:'#ff9a92', bg:'rgba(248,81,73,.10)',  bd:'rgba(248,81,73,.5)'},
+        ready:           {lbl:'✅ 実施待ち',      c:'#7ee787', bg:'rgba(63,185,80,.12)',  bd:'rgba(63,185,80,.5)'},
+        inspecting:      {lbl:'🔧 点検中',        c:'#9cd2ff', bg:'rgba(88,166,255,.12)', bd:'rgba(88,166,255,.5)'},
+        result_recorded: {lbl:'📝 結果記録済',    c:'#c9d1d9', bg:'rgba(201,209,217,.08)', bd:'#30363d'},
+        result_pending:  {lbl:'⏳ 結果承認待ち',  c:'#e3b341', bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
+        result_approved: {lbl:'✅ 結果承認済',    c:'#7ee787', bg:'rgba(63,185,80,.12)',  bd:'rgba(63,185,80,.5)'},
+        anomaly_open:    {lbl:'⚠ 異常判断中',     c:'#ff9a92', bg:'rgba(248,81,73,.10)',  bd:'rgba(248,81,73,.5)'},
+        anomaly_approved:{lbl:'🔴 異常・承認済',  c:'#ff7b72', bg:'rgba(255,123,114,.10)', bd:'rgba(255,123,114,.5)'},
+        work_ordered:    {lbl:'🔧 作業票化',      c:'#d29922', bg:'rgba(210,153,34,.15)', bd:'rgba(210,153,34,.6)'},
+        cancelled:       {lbl:'✖ 中止',           c:'#6e7681', bg:'transparent',           bd:'#30363d'}
+      };
+      const d = M[s] || M.planning;
+      return `<span style="font-size:11px;font-weight:700;color:${d.c};background:${d.bg};border:1px solid ${d.bd};border-radius:6px;padding:3px 9px;white-space:nowrap;">${d.lbl}</span>`;
+    }
+
+    function ptwBadge(r){
+      const req = r["ptw_required"];
+      const num = r["ptw番号"]||"";
+      const appSt = r["approval_status"]||"draft";
+      const canAct = (appSt==="draft"||appSt==="returned");
+      if(!req){
+        // PTW不要
+        return '<span style="font-size:11px;color:var(--muted);">不要</span>';
+      }
+      if(num){
+        // PTW要・番号あり → クリックで詳細カード
+        return `<button onclick="openPtwCard('${esc(num)}',event)" style="font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);border-radius:5px;padding:2px 7px;white-space:nowrap;cursor:pointer;font-family:monospace;">✅ ${esc(num)}</button>`;
+      }
+      // PTW要・番号なし → 申請ボタン
+      const btn = canAct
+        ? '<button onclick="event.stopPropagation();openPtwInput(\''+esc(r["計画id"]||'')+'\')" style="font-size:11px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.10);border:1px solid rgba(219,97,162,.5);border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;">📋 PTW申請</button>'
+        : '<span style="font-size:11px;color:#db61a2;border:1px solid rgba(219,97,162,.4);border-radius:5px;padding:2px 7px;">PTW未取得</span>';
+      return btn;
+    }
+    function deadlineBadge(s){
+      if(!s || s === '—') return '<span style="color:var(--muted);">—</span>';
+      if(s === '🔵 本日') return '<span style="font-size:11px;font-weight:700;color:#58a6ff;border:1px solid rgba(88,166,255,.5);border-radius:5px;padding:2px 7px;">🔵 本日</span>';
+      if(s === '⚪ 予定') return '<span style="font-size:11px;color:var(--muted);">⚪ 予定</span>';
+      // 警告系（⚠ から始まる）
+      const label = s.replace(/^⚠\s*/,'');
+      return '<span style="font-size:11px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:5px;padding:2px 7px;white-space:nowrap;">⚠ '+label+'</span>';
+    }
+    function planApprovalBadge(s){
+      const lbl={draft:'📋 計画中',pending:'📨 申請中',approved:'✅ 承認済',returned:'↩ 差戻し'};
+      const col={draft:'#8b949e',pending:'#e3b341',approved:'#7ee787',returned:'#ff9a92'};
+      const bg ={draft:'rgba(139,148,158,.10)',pending:'rgba(210,153,34,.12)',approved:'rgba(63,185,80,.12)',returned:'rgba(248,81,73,.10)'};
+      const bd ={draft:'#30363d',pending:'rgba(210,153,34,.5)',approved:'rgba(63,185,80,.5)',returned:'rgba(248,81,73,.5)'};
+      const k=s||'draft';
+      return '<span style="font-size:11px;font-weight:700;color:'+(col[k]||col.draft)+';background:'+(bg[k]||bg.draft)+';border:1px solid '+(bd[k]||bd.draft)+';border-radius:6px;padding:3px 9px;white-space:nowrap;">'+(lbl[k]||lbl.draft)+'</span>';
+    }
+    function execMiniTag(us){
+      const T={
+        ready:          '<span style="font-size:10px;color:var(--muted);margin-left:5px;">/ 未実施</span>',
+        inspecting:     '<span style="font-size:10px;color:#9cd2ff;margin-left:5px;">/ 実施中</span>',
+        result_recorded:'<span style="font-size:10px;color:#c9d1d9;margin-left:5px;">/ 完了</span>',
+        result_pending: '<span style="font-size:10px;color:#e3b341;margin-left:5px;">/ 結果承認待ち</span>',
+        result_approved:'<span style="font-size:10px;color:#7ee787;margin-left:5px;">/ 結果承認済</span>',
+        anomaly_open:   '<span style="font-size:10px;color:#ff9a92;margin-left:5px;">/ ⚠ 異常あり</span>',
+        anomaly_approved:'<span style="font-size:10px;color:#ff7b72;margin-left:5px;">/ 異常・承認済</span>',
+        work_ordered:   '<span style="font-size:10px;color:#d29922;margin-left:5px;">/ 作業票化</span>'
+      };
+      return T[us]||'';
+    }
+    function render(){
+
+
+
+
+      const body = document.getElementById("body");
+
+
+
+
+      let rows = state.rows.slice();
+
+
+
+
+      const f = state.filter;
+
+
+
+
+      if(f === "all")                   { /* 全件 */ }
+      else if(f === "ku_年次")          rows = rows.filter(r => r["点検区分"] === "年次");
+      else if(f === "ku_定期")          rows = rows.filter(r => r["点検区分"] === "定期");
+      else if(f === "ku_随時緊急")      rows = rows.filter(r => r["点検区分"] === "随時/緊急");
+      else if(f === "ku_その他")        rows = rows.filter(r => r["点検区分"] === "その他");
+      else                              rows = rows.filter(r => (r["approval_status"]||"draft") === f);
+
+
+
+
+      if(!rows.length){ body.innerHTML = '<div class="empty">該当する計画はありません</div>'; return; }
+
+
+
+
+      body.innerHTML = '<table><thead><tr>' +
+
+
+
+
+        ['計画番号','申請日','計画日','号機','点検区分','作業種別','チェックリスト','計画承認','安全準備','時間','責任者','人数','次アクション'].map(h=>`<th>${h}</th>`).join('') +
+
+
+
+
+        '</tr></thead><tbody>' + rows.map(r => {
+
+
+
+
+          const ku = r["点検区分"]||"";
+
+
+
+
+          const cls = r["期限超過"] ? "overdue" : (r["期限表示"]==="🔵 本日" ? "today" : "");
+
+
+
+
+          const time = (r["開始"]||"")+(r["終了"]?("〜"+r["終了"]):"");
+
+
+
+
+          return `<tr class="${cls}" data-plan-id="${esc(r["計画id"]||"")}">
+
+
+
+
+            <td style="white-space:nowrap;"><a onclick="event.stopPropagation();openEditPanel('${esc(r["計画id"]||"")}')" style="font-family:monospace;font-size:12px;font-weight:700;color:#58a6ff;cursor:pointer;">${esc(r["plan_no"]||"—")}</a></td>
+            <td style="color:var(--muted);white-space:nowrap;font-size:11px;">${r["申請日"] ? esc(r["申請日"]) : "—"}</td>
+            <td style="white-space:nowrap;font-size:11px;">${esc(r["計画日"]||"")}</td>
+            <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
+            <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
+            <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;font-size:12px;">${esc(r["作業種別"]||"")}</td>
+            <td style="font-size:11px;color:#9cd2ff;">${r["チェックリスト名"] ? (esc(r["チェックリスト名"]) + ((r["点検票数"]||0)>1 ? ` <span style="color:#7ee787;font-weight:700;">📋${r["点検票数"]}種</span>` : '')) : '<span style="color:var(--muted);">—</span>'}</td>
+            <td style="white-space:nowrap;">${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]==="approved"?execMiniTag(r["unified_status"]||"ready"):""}${(r["approval_status"]==="draft"||r["approval_status"]==="returned")?`<button onclick="event.stopPropagation();submitApproval('${esc(r["計画id"]||"")}')" style="margin-left:6px;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;">${r["approval_status"]==="returned"?"📨 再申請":"📨 承認申請"}</button>`:""}</td>
+            <td style="white-space:nowrap;">${safetyBadge(r)}</td>
+
+
+
+
+            <td>${esc(time)}</td>
+
+
+
+
+            <td style="font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;">${esc(r["実施責任者"]||"—")}</td>
+
+
+
+
+            <td>${esc(r["作業人数"]??"—")}</td>
+
+
+
+
+            <td style="white-space:nowrap;">${nextActionCell(r)}</td>
+
+
+
+
+          </tr>`;
+
+
+
+
+        }).join('') + '</tbody></table>';
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    document.querySelectorAll("#filters button").forEach(btn =>
+
+
+
+
+      btn.addEventListener("click", () => {
+
+
+
+
+        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
+
+
+
+
+        btn.classList.add("active");
+
+
+
+
+        state.filter = btn.dataset.f;
+
+
+
+
+        render();
+
+
+
+
+      }));
+
+
+
+
+
+
+
+
+
+    let _CHECKLIST_TEMPLATES = [];
+
+    async function loadAll(){
+
+
+
+
+      try{
+        // チェックリストテンプレートを先に取得（編集パネルのセレクトに使用）
+        _CHECKLIST_TEMPLATES = await sb.get('inspection_checklist_templates?is_active=eq.true&order=sort_order.asc').catch(()=>[]);
+
+        state.rows = await sb.get("v_inspection_plan_list?order=計画日.asc");
+
+
+
+
+        renderKpis();
+
+
+
+
+        render();
+
+
+
+
+      }catch(e){
+
+
+
+
+        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+
+
+
+
+      }
+
+
+
+
+    }
+
+
+
+
+    /* ===== 操作ボタン（ステータス×異常有無で切り替え） ===== */
+    const BTN = {
+      start:    'text-decoration:none;display:inline-block;font-size:11px;font-weight:700;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+      cont:     'text-decoration:none;display:inline-block;font-size:11px;font-weight:700;color:#9cd2ff;border:1px solid rgba(88,166,255,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+      view:     'text-decoration:none;display:inline-block;font-size:11px;color:#8b949e;border:1px solid var(--line);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+      anomaly:  'text-decoration:none;display:inline-block;font-size:11px;font-weight:700;color:#f0c674;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+      wo:       'text-decoration:none;display:inline-block;font-size:11px;color:#8b949e;border:1px solid var(--line);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+      planWo:   'text-decoration:none;display:inline-block;font-size:11px;font-weight:700;color:#9cd2ff;border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+      approve: 'display:inline-block;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
+      revise:  'display:inline-block;font-size:11px;color:#e3b341;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
+      edit:    'display:inline-block;font-size:11px;color:#9cd2ff;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;cursor:pointer;',
+      locked:  'display:inline-block;font-size:11px;color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;',
+    };
+    // 補修・停止が事前に決まっている計画のキーワード判定
+    const REPAIR_KW = ['補修','停止','修理','交換','清掃作業'];
+
+    /* ===== 安全準備バッジ ===== */
+    function safetyBadge(r){
+      const parts = [];
+      if(r['ptw_required']){
+        if(r['ptw番号'])
+          parts.push(`<button onclick="event.stopPropagation();openPtwCard('${esc(r['ptw番号'])}',event)" style="font-size:10px;color:#7ee787;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);border-radius:3px;padding:1px 6px;cursor:pointer;font-family:monospace;">PTW ✅</button>`);
+        else
+          parts.push('<span style="font-size:10px;color:#ff9a92;border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 5px;white-space:nowrap;">PTW ⚠未</span>');
+      }
+      if(r['ky_required'])   parts.push('<span style="font-size:10px;color:#e3b341;border:1px solid rgba(210,153,34,.35);border-radius:3px;padding:1px 5px;">KY</span>');
+      if(r['loto_required']) parts.push('<span style="font-size:10px;color:#ff9a92;border:1px solid rgba(248,81,73,.35);border-radius:3px;padding:1px 5px;">LOTO</span>');
+      return parts.length ? parts.join('&nbsp;') : '<span style="font-size:10px;color:var(--muted);">—</span>';
+    }
+
+    /* ===== 次アクションセル ===== */
+    function nextActionCell(r){
+      const appSt = r["approval_status"] || "draft";
+      const us    = r["unified_status"] || "planning";
+      const pid   = encodeURIComponent(r["計画id"] || "");
+      const rid   = r["最新inspection_result_id"] ? encodeURIComponent(r["最新inspection_result_id"]) : "";
+      const S     = 'text-decoration:none;font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;margin:1px 2px 1px 0;display:inline-block;white-space:nowrap;';
+      let b = '';
+      if(appSt === 'approved'){
+        const preInspection = ['planning','ready','inspecting'].includes(us);
+        if(['ready','inspecting'].includes(us))
+          b += `<a href="./inspection-input.html?plan_id=${pid}" style="${S}color:#7ee787;border:1px solid rgba(63,185,80,.5);">🔧 点検実施</a>`;
+        else if(['done_anomaly','anomaly_open'].includes(us))
+          b += `<a href="./defect-rca.html?plan_id=${pid}" style="${S}color:#f0c674;border:1px solid rgba(210,153,34,.5);">⚠ 異常判断</a>`;
+        else if(['result_recorded','result_pending','result_approved','anomaly_approved'].includes(us))
+          b += `<a href="./inspection-input.html?plan_id=${pid}&readonly=1" style="${S}color:#8b949e;border:1px solid var(--line);">📋 結果</a>`;
+        // 安全準備（KY/LOTO）は「必要で、かつ点検実施前」のときだけ補助表示（点検実施のゲートではない）
+        if((r['ky_required'] || r['loto_required']) && preInspection)
+          b += `<a href="./ky-loto.html?plan_id=${pid}" style="${S}color:#e3b341;border:1px solid rgba(210,153,34,.4);">⚠ KY/LOTO準備</a>`;
+      }
+      return b || '<span style="font-size:11px;color:var(--muted);">—</span>';
+    }
+    /* ===== PTW番号 クイック入力 ===== */
+    async function openPtwInput(id){
+      const num = prompt('PTW番号を入力してください（例: PTW-2026-001）:','');
+      if(num === null) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+           body:JSON.stringify({ptw_number:num.trim()||null, ptw_required:true})});
+        location.reload();
+      }catch(e){ alert('PTW番号保存失敗: '+e.message); }
+    }
+
+    async function submitApproval(id){
+      if(!confirm('この点検計画を承認申請しますか？承認画面（Step 8）に表示されます。')) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'pending'})});
+        alert('承認申請しました。承認画面（Step 8）で承認してください。');
+        location.reload();
+      }catch(e){ alert('申請失敗: '+e.message); }
+    }
+
+    async function requestRevision(id){
+      const reason = prompt('差戻し理由を入力してください（証跡として保存されます）:','');
+      if(reason === null) return;
+      try{
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'returned'})});
+        alert('差戻し完了。担当者が修正後、再申請できます。');
+        location.reload();
+      }catch(e){ alert('差戻し失敗: '+e.message); }
+    }
+
+    /* ===== インライン編集パネル ===== */
+    let _editPanel = null;
+
+    async function openEditPanel(id){
+      if(_editPanel === id){ closeEditPanel(); return; }
+      _editPanel = id;
+      // 対象行の直後に編集パネルを挿入
+      const allRows = document.querySelectorAll('tr[data-plan-id]');
+      let targetRow = null;
+      allRows.forEach(tr => { if(tr.dataset.planId === id) targetRow = tr; });
+      if(!targetRow) return;
+      // 既存パネルを閉じる
+      document.querySelectorAll('.edit-panel-row').forEach(el => el.remove());
+      // データ取得
+      try{
+        const rows = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=*`);
+        const d = rows && rows[0];
+        if(!d) return;
+        const locked = d.approval_status === 'approved' || d.approval_status === 'pending';
+        // 点検票（チェックリスト構成）を junction から取得
+        const attached = await sb.get(`v_plan_checklists?inspection_plan_id=eq.${encodeURIComponent(id)}&select=template_id,template_name,item_count,sort_order&order=sort_order.asc`).catch(()=>[]);
+        const attachedIds = new Set((attached||[]).map(a=>a.template_id));
+        const panel = document.createElement('tr');
+        panel.className = 'edit-panel-row';
+        const colCount = targetRow.children.length;
+        panel.innerHTML = `<td colspan="${colCount}" style="padding:0;background:var(--panel2);border-bottom:2px solid rgba(88,166,255,.4);">
+          <div style="padding:16px 20px;">
+            <div style="font-size:13px;font-weight:700;color:#9cd2ff;margin-bottom:12px;">
+              ✏ 点検計画を編集
+              ${locked ? '<span style="margin-left:8px;font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.4);border-radius:4px;padding:1px 6px;">'+d.approval_status==='pending'?'⏳ 承認待ち（編集不可）':'🔒 承認済（編集不可）'+'</span>' : ''}
+            </div>
+            <!-- ■ 基本情報 -->
+            <div style="font-size:11px;color:#9cd2ff;font-weight:700;margin-bottom:8px;border-left:3px solid #9cd2ff;padding-left:8px;">基本情報</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;">
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">計画日</label>
+                <input id="ep_date" type="date" value="${esc(d.planned_date||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">作業種別</label>
+                <input id="ep_wtype" type="text" value="${esc(d.work_type||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">実施責任者</label>
+                <input id="ep_resp" type="text" value="${esc(d.responsible_person||'')}" ${locked?'disabled':''} placeholder="氏名" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">開始時刻</label>
+                <input id="ep_tstart" type="time" value="${esc((d.time_start||'').substring(0,5))}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">終了時刻</label>
+                <input id="ep_tend" type="time" value="${esc((d.time_end||'').substring(0,5))}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">作業人数</label>
+                <input id="ep_workers" type="number" min="1" max="30" value="${d.worker_count||''}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">必要資格</label>
+                <input id="ep_qual" type="text" value="${esc(d.required_qualification||'')}" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+            </div>
+
+            <!-- ■ 点検内容 -->
+            <div style="font-size:11px;color:#9cd2ff;font-weight:700;margin-bottom:8px;border-left:3px solid #9cd2ff;padding-left:8px;">点検内容</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">点検目的</label>
+                <textarea id="ep_purpose" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.inspection_purpose||'')}</textarea>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">点検範囲</label>
+                <textarea id="ep_scope" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.inspection_scope||'')}</textarea>
+              </div>
+              <div style="grid-column:1/3">
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">備考</label>
+                <textarea id="ep_notes" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.notes||'')}</textarea>
+              </div>
+              <div style="grid-column:1/3">
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">特記事項</label>
+                <textarea id="ep_special" rows="2" ${locked?'disabled':''} style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;">${esc(d.special_notes||'')}</textarea>
+              </div>
+            </div>
+
+            <!-- ■ 点検票を準備（チェックリスト構成） -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="font-size:11px;color:#7ee787;font-weight:700;border-left:3px solid #7ee787;padding-left:8px;">📋 点検票を準備（チェックリスト構成）</div>
+              ${locked ? '<span style="font-size:11px;color:#e3b341;">🔒 承認後は構成変更不可</span>' : '<span style="font-size:11px;color:var(--muted);">複数選択可。実施画面はこの構成で点検票を表示します</span>'}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(126,231,135,.3);border-radius:8px;background:rgba(126,231,135,.04);">
+              ${(_CHECKLIST_TEMPLATES||[]).map(t=>{
+                const on = attachedIds.has(t.id);
+                return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:${locked?'default':'pointer'};padding:6px 8px;border:1px solid ${on?'rgba(126,231,135,.5)':'var(--line)'};border-radius:7px;background:${on?'rgba(126,231,135,.08)':'transparent'};">
+                  <input type="checkbox" class="ep_cl_chk" value="${esc(t.id)}" ${on?'checked':''} ${locked?'disabled':''}>
+                  <span style="flex:1;">${esc(t.template_name)}<span style="color:var(--muted);font-size:11px;margin-left:6px;">${esc(t.inspection_type||'')}</span></span>
+                </label>`;
+              }).join('') || '<span style="font-size:12px;color:var(--muted);">点検票マスタがありません</span>'}
+            </div>
+
+            <!-- ■ 安全・停止 -->
+            <div style="font-size:11px;color:#e3b341;font-weight:700;margin-bottom:8px;border-left:3px solid #e3b341;padding-left:8px;">安全要件・停止影響</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(210,153,34,.3);border-radius:8px;background:rgba(210,153,34,.04);">
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW 要否</label>
+                <div style="display:flex;gap:8px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ptw_req_y" name="ep_ptw_req" value="1" ${d.ptw_required?'checked':''} ${locked?'disabled':''}> 要</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ptw_req_n" name="ep_ptw_req" value="0" ${!d.ptw_required?'checked':''} ${locked?'disabled':''}> 不要</label>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">PTW番号</label>
+                <input id="ep_ptw" type="text" value="${esc(d.ptw_number||'')}" ${locked?'disabled':''} placeholder="PTW-2026-MMDD-NN" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">KY（危険予知）</label>
+                <div style="display:flex;gap:12px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ky_y" name="ep_ky" value="1" ${d.ky_required?'checked':''} ${locked?'disabled':''}> 要</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_ky_n" name="ep_ky" value="0" ${!d.ky_required?'checked':''} ${locked?'disabled':''}> 不要</label>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">LOTO（施錠・タグアウト）</label>
+                <div style="display:flex;gap:12px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_loto_y" name="ep_loto" value="1" ${d.loto_required?'checked':''} ${locked?'disabled':''}> 要</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_loto_n" name="ep_loto" value="0" ${!d.loto_required?'checked':''} ${locked?'disabled':''}> 不要</label>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">停止要否</label>
+                <div style="display:flex;gap:8px;margin-top:2px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_out_y" name="ep_out" value="1" ${d.outage_required?'checked':''} ${locked?'disabled':''}> 停止あり</label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="radio" id="ep_out_n" name="ep_out" value="0" ${!d.outage_required?'checked':''} ${locked?'disabled':''}> 停止なし</label>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">予定停止時間（分）</label>
+                <input id="ep_outmin" type="number" min="0" value="${d.estimated_outage_minutes||''}" ${locked?'disabled':''} placeholder="例: 120" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">風速上限 (m/s)</label>
+                <input id="ep_wind" type="number" step="0.1" min="0" value="${d.wind_speed_limit_ms||''}" ${locked?'disabled':''} placeholder="例: 10" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">天候条件</label>
+                <input id="ep_weather" type="text" value="${esc(d.weather_condition||'')}" ${locked?'disabled':''} placeholder="例: 晴・曇のみ（雨天中止）" style="width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;">
+              </div>
+            </div>
+            <div id="ep_msg" style="font-size:12px;color:#ff9a92;margin-bottom:8px;display:none;"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              ${!locked ? `<button id="ep_save" onclick="saveEditPanel('${esc(id)}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">💾 保存</button>` : ''}
+              <a href="./print.html?type=plan&id=${esc(id)}" target="_blank" style="font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;background:var(--panel2);color:var(--muted);border:1px solid var(--line);text-decoration:none;">🖨 印刷</a>
+              <button onclick="closeEditPanel()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 閉じる</button>
+              ${!locked ? `<span style="font-size:11px;color:var(--muted);">revision_no: ${d.revision_no||1}</span>` : ''}
+            </div>
+          </div>
+        </td>`;
+        targetRow.insertAdjacentElement('afterend', panel);
+      }catch(e){ alert('データ取得失敗: '+e.message); }
+    }
+
+    function closeEditPanel(){
+      document.querySelectorAll('.edit-panel-row').forEach(el => el.remove());
+      _editPanel = null;
+    }
+
+    async function saveEditPanel(id){
+      const btn = document.getElementById('ep_save');
+      const msgEl = document.getElementById('ep_msg');
+      if(btn) btn.disabled = true;
+      const gep = id => document.getElementById(id);
+      const patch = {
+        planned_date:             gep('ep_date')?.value    || null,
+        work_type:                gep('ep_wtype')?.value   || null,
+        responsible_person:       gep('ep_resp')?.value    || null,
+        time_start:               gep('ep_tstart')?.value  || null,
+        time_end:                 gep('ep_tend')?.value     || null,
+        worker_count:             gep('ep_workers')?.value ? Number(gep('ep_workers').value) : null,
+        required_qualification:   gep('ep_qual')?.value    || null,
+        inspection_purpose:       gep('ep_purpose')?.value || null,
+        inspection_scope:         gep('ep_scope')?.value   || null,
+        notes:                    gep('ep_notes')?.value   || null,
+        special_notes:            gep('ep_special')?.value || null,
+        ptw_required:             gep('ep_ptw_req_y')?.checked  ?? false,
+        ptw_number:               gep('ep_ptw')?.value     || null,
+        ky_required:              gep('ep_ky_y')?.checked   ?? false,
+        loto_required:            gep('ep_loto_y')?.checked ?? false,
+        outage_required:          gep('ep_out_y')?.checked  ?? false,
+        estimated_outage_minutes: gep('ep_outmin')?.value  ? Number(gep('ep_outmin').value) : null,
+        wind_speed_limit_ms:      gep('ep_wind')?.value    ? Number(gep('ep_wind').value)   : null,
+        weather_condition:        gep('ep_weather')?.value || null,
+        updated_at:               new Date().toISOString()
+      };
+      // revision_no を +1
+      try{
+        const cur = await sb.get(`inspection_plans?id=eq.${encodeURIComponent(id)}&select=revision_no,approval_status`);
+        const d = cur && cur[0];
+        if(d && (d.approval_status === 'approved' || d.approval_status === 'pending')){
+          if(msgEl){ msgEl.textContent = 'このレコードは ' + d.approval_status + ' のため編集できません。'; msgEl.style.display='block'; }
+          if(btn) btn.disabled = false;
+          return;
+        }
+        patch.revision_no = (d?.revision_no || 1) + 1;
+        // 選択された点検票（チェックリスト構成）
+        const selIds = Array.from(document.querySelectorAll('.ep_cl_chk:checked')).map(c=>c.value);
+        patch.checklist_template_id = selIds[0] || null; // 後方互換（印刷の主チェックリスト）
+        await fetch(`${sb.URL}/rest/v1/inspection_plans?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
+        // junction を同期：全削除→再挿入（承認前のみ編集可）
+        await fetch(`${sb.URL}/rest/v1/inspection_plan_checklists?inspection_plan_id=eq.${encodeURIComponent(id)}`,
+          {method:'DELETE',headers:sb.headers({'Prefer':'return=minimal'})});
+        if(selIds.length){
+          const ins = selIds.map((tid,i)=>({inspection_plan_id:id, template_id:tid, sort_order:i+1}));
+          await fetch(`${sb.URL}/rest/v1/inspection_plan_checklists`,
+            {method:'POST',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(ins)});
+        }
+        closeEditPanel();
+        location.reload();
+      }catch(e){
+        if(msgEl){ msgEl.textContent = '保存失敗: ' + (e.message||String(e)); msgEl.style.display='block'; }
+        if(btn) btn.disabled = false;
+      }
+    }
+/* ===== CSV 一括起票 ===== */
+
+// CSVテンプレートをダウンロード
+function downloadCsvTemplate(){
+  const header = '号機,点検区分,作業種別,計画日,開始時刻,終了時刻,作業人数,PTW要否,KY要否,LOTO要否,必要資格,備考';
+  const sample = [
+    'WTG-01,年次,年次定期点検,2026-10-01,09:00,17:00,3,不要,要,不要,電気主任技術者,ブレード・ナセル・タワー全点検',
+    'WTG-02,年次,年次定期点検,2026-10-03,09:00,17:00,3,不要,要,不要,電気主任技術者,',
+    'WTG-01,定期,月次定期点検,2026-07-01,09:00,12:00,2,不要,要,不要,,',
+  ].join('\n');
+  const bom = '﻿'; // Excel用BOM
+  const blob = new Blob([bom + header + '\n' + sample], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='点検計画_テンプレート.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// CSV行をパース（ダブルクォート対応）
+function parseCsvLine(line){
+  const result=[]; let cur='', inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){ inQ=!inQ; continue; }
+    if(ch===','&&!inQ){ result.push(cur.trim()); cur=''; continue; }
+    cur+=ch;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function csvYN(v){ return (v||'').trim()==='要'; }
+
+function openCsvImportPanel(){
+  const existing = document.getElementById('csvImportPanel');
+  if(existing){ existing.remove(); return; }
+
+  const panel = document.createElement('div');
+  panel.id = 'csvImportPanel';
+  panel.style.cssText = 'background:var(--panel2);border:1px solid rgba(63,185,80,.4);border-radius:10px;padding:18px 20px;margin-bottom:16px;';
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-size:14px;font-weight:700;color:#3fb950;">📂 CSVで一括起票</span>
+      <button onclick="downloadCsvTemplate()" style="font-size:12px;color:#58a6ff;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.4);border-radius:7px;padding:5px 12px;cursor:pointer;">⬇ テンプレートDL</button>
+      <button onclick="document.getElementById('csvImportPanel').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;">✕</button>
+    </div>
+
+    <div style="background:rgba(88,166,255,.05);border:1px solid rgba(88,166,255,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);">
+      <b style="color:#9cd2ff;">📋 CSV形式:</b>
+      号機, 点検区分（年次/定期/随時/その他）, 作業種別, 計画日（YYYY-MM-DD）,
+      開始時刻（HH:MM）, 終了時刻, 作業人数, PTW要否（要/不要）, KY要否, LOTO要否, 必要資格, 備考
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;">CSVファイルを選択 <span style="color:#f85149">*</span></label>
+      <input type="file" id="csvFile" accept=".csv,text/csv" onchange="onCsvFileChange(event)"
+        style="background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;width:100%;box-sizing:border-box;">
+    </div>
+
+    <div id="csvPreview" style="display:none;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:#9cd2ff;margin-bottom:8px;">
+        プレビュー（登録内容の確認）— <span id="csvRowCount">0</span>件
+      </div>
+      <div style="overflow-x:auto;max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;">
+        <table id="csvPreviewTable" style="width:100%;border-collapse:collapse;font-size:11.5px;min-width:700px;">
+          <thead>
+            <tr style="position:sticky;top:0;background:var(--panel2);">
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;white-space:nowrap;">#</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">号機</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">点検区分</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">作業種別</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">計画日</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">時刻</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">人数</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">PTW/KY/LOTO</th>
+              <th style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;color:var(--muted);font-size:10.5px;">状態</th>
+            </tr>
+          </thead>
+          <tbody id="csvPreviewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="csvImportProgress" style="display:none;margin-bottom:10px;">
+      <div id="csvProgressBar" style="height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:6px;">
+        <div id="csvProgressFill" style="height:100%;width:0%;background:#3fb950;border-radius:3px;transition:width .2s;"></div>
+      </div>
+      <div id="csvProgressLabel" style="font-size:12px;color:var(--muted);"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button id="csvRegisterBtn" onclick="registerCsvData()" disabled
+        style="background:#238636;color:#fff;font-weight:700;border:none;padding:9px 22px;border-radius:8px;font-size:13px;cursor:pointer;opacity:.4;">
+        ✅ まとめて登録する
+      </button>
+      <button onclick="document.getElementById('csvImportPanel').remove()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
+      <span id="csvMsg" style="font-size:12px;color:var(--muted);"></span>
+    </div>`;
+
+  const bodyEl = document.getElementById('body');
+  bodyEl.parentElement.insertBefore(panel, bodyEl);
+  panel.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+let _csvParsed = []; // パース済み行データ
+
+async function onCsvFileChange(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const msgEl = document.getElementById('csvMsg');
+  msgEl.style.color='#8b949e'; msgEl.textContent='読み込み中…';
+
+  // 号機キャッシュ確保
+  if(!_TURBINE_CACHE.length){
+    try{
+      const ts = await sb.get('turbines?select=id,turbine_no&order=turbine_no');
+      _TURBINE_CACHE.push(...(ts||[]));
+    }catch(e){}
+  }
+  const turbineMap = {};
+  _TURBINE_CACHE.forEach(t => { turbineMap[t.turbine_no] = t.id; });
+
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+
+  // ヘッダー行スキップ（「号機」「WTG」どちらでも）
+  const dataLines = lines.filter(l => !l.trim().startsWith('号機') && l.trim() !== '');
+
+  _csvParsed = [];
+  const previewRows = [];
+  let errCount = 0;
+
+  for(let i=0; i<dataLines.length; i++){
+    const cols = parseCsvLine(dataLines[i]);
+    if(cols.length < 4){ continue; } // 最低限チェック
+    const [turbineNo, ku, workType, plannedDate, tStart, tEnd, workers, ptwYN, kyYN, lotoYN, qual, notes] = cols;
+
+    const turbine_id = turbineMap[turbineNo?.trim()] || null;
+    const errs = [];
+    if(!turbineNo?.trim()) errs.push('号機なし');
+    if(!turbine_id) errs.push(`号機"${turbineNo}"不明`);
+    if(!plannedDate?.trim()) errs.push('計画日なし');
+    if(!workType?.trim()) errs.push('作業種別なし');
+
+    const row = {
+      turbine_id,
+      turbine_no: turbineNo?.trim()||'—',
+      ku: ku?.trim()||'',
+      work_type: workType?.trim()||'',
+      planned_date: plannedDate?.trim()||'',
+      time_start: tStart?.trim()||null,
+      time_end: tEnd?.trim()||null,
+      worker_count: workers?.trim() ? parseInt(workers.trim(),10) : null,
+      ptw_required: csvYN(ptwYN),
+      ky_required:  csvYN(kyYN),
+      loto_required:csvYN(lotoYN),
+      required_qualification: qual?.trim()||null,
+      notes: notes?.trim()||null,
+      _errs: errs,
+      _ok: errs.length===0
+    };
+    _csvParsed.push(row);
+    if(!row._ok) errCount++;
+
+    // プレビューHTML
+    const safety = [
+      row.ptw_required ? 'PTW' : '',
+      row.ky_required  ? 'KY'  : '',
+      row.loto_required? 'LOTO': ''
+    ].filter(Boolean).join(' / ') || '—';
+    const statusCell = row._ok
+      ? '<span style="color:#7ee787;font-size:11px;">✔ OK</span>'
+      : `<span style="color:#ff9a92;font-size:11px;">⚠ ${esc(errs.join(', '))}</span>`;
+    previewRows.push(`<tr style="${!row._ok?'background:rgba(248,81,73,.06)':''}">
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);color:var(--muted);">${i+1}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;">${esc(row.turbine_no)}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);">${esc(row.ku)}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);">${esc(row.work_type)}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${esc(row.planned_date)}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--muted);">${esc((row.time_start||'')+(row.time_end?'〜'+row.time_end:''))}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);">${row.worker_count||'—'}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);font-size:11px;">${esc(safety)}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--line);">${statusCell}</td>
+    </tr>`);
+  }
+
+  const okCount = _csvParsed.filter(r=>r._ok).length;
+
+  document.getElementById('csvPreviewBody').innerHTML = previewRows.join('');
+  document.getElementById('csvRowCount').textContent = _csvParsed.length + '件（有効: ' + okCount + '件）';
+  document.getElementById('csvPreview').style.display = 'block';
+
+  const btn = document.getElementById('csvRegisterBtn');
+  if(okCount > 0){
+    btn.disabled = false; btn.style.opacity='1';
+    btn.textContent = `✅ 有効 ${okCount}件 をまとめて登録する`;
+    msgEl.style.color='#7ee787';
+    msgEl.textContent = errCount>0 ? `⚠ ${errCount}件にエラーがあります（エラー行はスキップされます）` : `${okCount}件を確認しました`;
+  } else {
+    btn.disabled=true; btn.style.opacity='.4';
+    msgEl.style.color='#ff9a92'; msgEl.textContent = 'エラー: 有効な行がありません';
+  }
+}
+
+async function registerCsvData(){
+  const targets = _csvParsed.filter(r=>r._ok);
+  if(!targets.length){ alert('登録対象がありません'); return; }
+
+  const btn   = document.getElementById('csvRegisterBtn');
+  const msg   = document.getElementById('csvMsg');
+  const prog  = document.getElementById('csvImportProgress');
+  const fill  = document.getElementById('csvProgressFill');
+  const label = document.getElementById('csvProgressLabel');
+
+  btn.disabled=true; btn.style.opacity='.6';
+  prog.style.display='block';
+
+  let ok=0, ng=0;
+  for(let i=0; i<targets.length; i++){
+    const r = targets[i];
+    fill.style.width = Math.round((i+1)/targets.length*100)+'%';
+    label.textContent = `登録中… ${i+1} / ${targets.length}（成功:${ok} 失敗:${ng}）`;
+    try{
+      await sb.write('POST','inspection_plans',{
+        turbine_id:             r.turbine_id,
+        planned_date:           r.planned_date,
+        work_type:              r.work_type,
+        time_start:             r.time_start || null,
+        time_end:               r.time_end   || null,
+        worker_count:           r.worker_count || null,
+        required_qualification: r.required_qualification || null,
+        ptw_required:           r.ptw_required,
+        ky_required:            r.ky_required,
+        loto_required:          r.loto_required,
+        notes:                  r.notes || null,
+        source_type:            'periodic',
+        status:                 'planned',
+        approval_status:        'draft',
+        created_at:             new Date().toISOString(),
+        updated_at:             new Date().toISOString()
+      });
+      ok++;
+    }catch(e){ ng++; console.warn('CSV登録失敗:', r.turbine_no, r.planned_date, e.message); }
+  }
+
+  fill.style.width='100%';
+  label.textContent = `完了: 成功 ${ok}件 / 失敗 ${ng}件`;
+  msg.style.color = ng>0?'#e3b341':'#7ee787';
+  msg.textContent = `登録完了: ${ok}件成功${ng>0?' / '+ng+'件失敗':''}`;
+
+  _csvParsed = [];
+  setTimeout(async()=>{
+    document.getElementById('csvImportPanel')?.remove();
+    await loadAll();
+  }, 1500);
+}
+
+/* ===== PTW 詳細カード ===== */
+async function openPtwCard(pno, ev) {
+  ev.stopPropagation();
+  document.querySelectorAll('.ptw-detail-card').forEach(el => el.remove());
+
+  const card = document.createElement('div');
+  card.className = 'ptw-detail-card';
+  Object.assign(card.style, {
+    position:'fixed', zIndex:'900',
+    background:'var(--panel)', border:'1px solid var(--line)',
+    borderRadius:'10px', padding:'16px',
+    minWidth:'340px', maxWidth:'430px',
+    boxShadow:'0 8px 32px rgba(0,0,0,.65)', fontSize:'12.5px'
+  });
+  const rect = ev.currentTarget.getBoundingClientRect();
+  const top = Math.min(rect.bottom + 6, window.innerHeight - 340);
+  card.style.top  = Math.max(top, 10) + 'px';
+  card.style.left = Math.max(Math.min(rect.left - 80, window.innerWidth - 450), 10) + 'px';
+  card.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px;">読み込み中…</div>';
+  document.body.appendChild(card);
+
+  setTimeout(() => {
+    document.addEventListener('click', function outside(e) {
+      if(!card.contains(e.target)){ card.remove(); document.removeEventListener('click', outside); }
+    });
+  }, 60);
+
+  try {
+    const rows = await sb.get(`work_permits?permit_no=eq.${encodeURIComponent(pno)}&select=*`);
+    if(!rows || !rows.length){
+      card.innerHTML = `<div style="color:#ff9a92;padding:8px;">PTW <b>${esc(pno)}</b> が見つかりません。<br><a href="./permits.html" style="color:var(--master);">PTW一覧で確認</a></div>`;
+      return;
+    }
+    const r = rows[0];
+    const tmap = {electrical:'電気',height:'高所',lifting:'揚重',hot_work:'火気',confined_space:'閉所',inspection:'点検',maintenance:'保全'};
+    const smap = {draft:'下書き',submitted:'⏳ 申請中',approved:'✅ 承認済',closed:'クローズ'};
+    const scol = {draft:'#8b949e',submitted:'#e3b341',approved:'#7ee787',closed:'#8b949e'};
+    const st = r.permit_status || 'draft';
+    const fdt = v => v ? String(v).replace('T',' ').replace('+09:00','').replace(/\.\d{3}/,'').slice(0,16) : '—';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+        <span style="font-family:monospace;font-size:13px;color:#58a6ff;font-weight:700;">${esc(r.permit_no||pno)}</span>
+        <span style="font-size:11px;font-weight:700;color:${scol[st]};">${smap[st]||st}</span>
+        <button onclick="this.closest('.ptw-detail-card').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;margin-left:auto;line-height:1;padding:0 4px;">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:10px;">
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">許可種別</div><b style="color:#fff;">${esc(tmap[r.permit_type]||r.permit_type||'—')}</b></div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">リスク</div><b>${r.risk_level==='high'?'🔴 高':r.risk_level==='medium'?'🟡 中':'🟢 低'}</b></div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">作業開始</div>${esc(fdt(r.start_at))}</div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">作業終了</div>${esc(fdt(r.end_at))}</div>
+        <div style="grid-column:1/3"><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">作業内容</div><div style="color:#fff;white-space:pre-wrap;max-height:80px;overflow-y:auto;">${esc(r.work_description||'—')}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">LOTO</div>${r.loto_required?'<span style="color:#f0c674;font-weight:700;">要</span>':'不要'}</div>
+        <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;">隔離</div>${r.isolations_required?'<span style="color:#f0c674;font-weight:700;">要</span>':'不要'}</div>
+      </div>
+      ${r.remarks?`<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding:8px 0;">${esc(r.remarks)}</div>`:''}
+      <div style="padding-top:8px;border-top:1px solid var(--line);display:flex;gap:8px;">
+        <a href="./print.html?type=ptw&id=${esc(r.id)}" target="_blank" style="font-size:11px;color:#8b949e;border:1px solid var(--line);border-radius:6px;padding:4px 9px;text-decoration:none;">🖨 印刷</a>
+        <a href="./permits.html" style="font-size:11px;color:var(--master);border:1px solid rgba(88,166,255,.4);border-radius:6px;padding:4px 9px;text-decoration:none;">📋 PTW一覧へ</a>
+      </div>`;
+  } catch(e) {
+    card.innerHTML = `<div style="color:#ff9a92;font-size:12px;padding:8px;">取得エラー: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ===== 新規点検計画起票パネル ===== */
+const _TURBINE_CACHE = [];
+
+async function openNewPlanPanel() {
+  const existing = document.getElementById('newPlanPanel');
+  if(existing){ existing.remove(); return; }
+
+  if(!_TURBINE_CACHE.length){
+    try{
+      const ts = await sb.get('turbines?select=id,turbine_no&order=turbine_no');
+      _TURBINE_CACHE.push(...(ts||[]));
+    }catch(e){}
+  }
+
+  const turbineOpts = ['<option value="">— 号機を選択 —</option>']
+    .concat(_TURBINE_CACHE.map(t=>`<option value="${esc(t.id)}">${esc(t.turbine_no)}</option>`))
+    .join('');
+
+  const inp = 'width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;';
+  const lbl = 'display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;';
+
+  const panel = document.createElement('div');
+  panel.id = 'newPlanPanel';
+  panel.style.cssText = 'background:var(--panel2);border:1px solid rgba(88,166,255,.4);border-radius:10px;padding:18px 20px;margin-bottom:16px;';
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <span style="font-size:14px;font-weight:700;color:#9cd2ff;">📋 新規点検計画を起票</span>
+      <span style="font-size:11px;color:var(--muted);">定期・年次点検計画の登録（下書き保存後に承認申請できます）</span>
+      <button onclick="document.getElementById('newPlanPanel').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;">
+      <div>
+        <label style="${lbl}">号機 <span style="color:#f85149">*</span></label>
+        <select id="np_turbine" style="${inp}">${turbineOpts}</select>
+      </div>
+      <div>
+        <label style="${lbl}">点検区分 <span style="color:#f85149">*</span></label>
+        <select id="np_ku" style="${inp}" onchange="npSyncWorktype()">
+          <option value="年次">年次点検</option>
+          <option value="定期" selected>定期点検</option>
+          <option value="随時">随時/緊急点検</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div>
+        <label style="${lbl}">作業種別・内容 <span style="color:#f85149">*</span></label>
+        <input id="np_wtype" type="text" style="${inp}" value="定期点検" placeholder="例: 年次定期点検・各部点検">
+      </div>
+      <div>
+        <label style="${lbl}">計画日 <span style="color:#f85149">*</span></label>
+        <input id="np_date" type="date" style="${inp}">
+      </div>
+      <div>
+        <label style="${lbl}">作業開始時刻</label>
+        <input id="np_tstart" type="time" style="${inp}">
+      </div>
+      <div>
+        <label style="${lbl}">作業終了時刻</label>
+        <input id="np_tend" type="time" style="${inp}">
+      </div>
+      <div>
+        <label style="${lbl}">作業人数</label>
+        <input id="np_workers" type="number" min="1" max="30" style="${inp}" placeholder="例: 2">
+      </div>
+      <div>
+        <label style="${lbl}">必要資格</label>
+        <input id="np_qual" type="text" style="${inp}" placeholder="例: 電気主任技術者">
+      </div>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;border:1px solid rgba(210,153,34,.3);border-radius:8px;background:rgba(210,153,34,.05);">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="np_ptw" style="width:14px;height:14px;" onchange="npTogglePtw()"> PTW（作業許可証）要
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="np_ky" checked style="width:14px;height:14px;"> KY（危険予知）要
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="np_loto" style="width:14px;height:14px;"> LOTO（施錠・タグアウト）要
+      </label>
+    </div>
+    <div id="np_ptw_no_wrap" style="display:none;margin-bottom:12px;">
+      <label style="${lbl}">PTW番号（既存の場合）</label>
+      <input id="np_ptw_no" type="text" style="${inp}" placeholder="PTW-2026-MMDD-NN">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="${lbl}">備考</label>
+      <textarea id="np_notes" rows="2" style="${inp}resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button id="np_save_btn" onclick="saveNewPlan()" style="background:#238636;color:#fff;font-weight:700;border:none;padding:9px 22px;border-radius:8px;font-size:13px;cursor:pointer;">💾 下書きで保存</button>
+      <button onclick="document.getElementById('newPlanPanel').remove()" style="background:transparent;border:1px solid var(--line);color:var(--muted);padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
+      <span id="np_msg" style="font-size:12px;color:var(--muted);"></span>
+    </div>`;
+
+  const bodyEl = document.getElementById('body');
+  bodyEl.parentElement.insertBefore(panel, bodyEl);
+  panel.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function npSyncWorktype(){
+  const ku = document.getElementById('np_ku')?.value;
+  const wt = document.getElementById('np_wtype');
+  if(!wt) return;
+  const presets = {年次:'年次定期点検', 定期:'定期点検', 随時:'随時点検', その他:'点検'};
+  wt.value = presets[ku] || '点検';
+}
+
+function npTogglePtw(){
+  const checked = document.getElementById('np_ptw')?.checked;
+  const wrap = document.getElementById('np_ptw_no_wrap');
+  if(wrap) wrap.style.display = checked ? 'block' : 'none';
+}
+
+async function saveNewPlan(){
+  const btn   = document.getElementById('np_save_btn');
+  const msgEl = document.getElementById('np_msg');
+  const v = id => (document.getElementById(id)?.value||'').trim();
+
+  const turbine_id  = v('np_turbine') || null;
+  const planned_date = v('np_date');
+  const work_type    = v('np_wtype');
+
+  if(!planned_date){ msgEl.style.color='#f85149'; msgEl.textContent='計画日は必須です'; return; }
+  if(!work_type)   { msgEl.style.color='#f85149'; msgEl.textContent='作業種別は必須です'; return; }
+
+  btn.disabled = true;
+  msgEl.style.color = '#8b949e'; msgEl.textContent = '保存中…';
+
+  const body = {
+    turbine_id,
+    planned_date,
+    work_type,
+    time_start:             v('np_tstart') || null,
+    time_end:               v('np_tend')   || null,
+    worker_count:           v('np_workers') ? Number(v('np_workers')) : null,
+    required_qualification: v('np_qual')   || null,
+    ptw_required:           !!(document.getElementById('np_ptw')?.checked),
+    ptw_number:             v('np_ptw_no') || null,
+    ky_required:            !!(document.getElementById('np_ky')?.checked),
+    loto_required:          !!(document.getElementById('np_loto')?.checked),
+    notes:                  v('np_notes')  || null,
+    source_type:            'periodic',
+    status:                 'planned',
+    approval_status:        'draft',
+    created_at:             new Date().toISOString(),
+    updated_at:             new Date().toISOString()
+  };
+
+  try{
+    await sb.write('POST', 'inspection_plans', body);
+    msgEl.style.color = '#7ee787'; msgEl.textContent = '✔ 保存しました';
+    document.getElementById('newPlanPanel').remove();
+    await loadAll();
+  }catch(e){
+    msgEl.style.color = '#f85149'; msgEl.textContent = '保存失敗: ' + (e.message||String(e));
+    btn.disabled = false;
+  }
+}
+
+sb.requireLogin({ onReady: loadAll });
+
+
+
+
+  </script>
+
+
+
+
+</body>
+
+
+
+
+</html>
+
+
+
+

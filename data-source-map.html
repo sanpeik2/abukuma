@@ -1,0 +1,2694 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>阿武隈OS コックピット データソースマップ</title>
+  <style>
+    :root {
+      --bg: #0f1720;
+      --panel: #17212c;
+      --panel2: #111a24;
+      --line: #2b3b4a;
+      --text: #eef4f8;
+      --muted: #9fb0bd;
+      --gold: #d6a84f;
+      --green: #31c484;
+      --yellow: #e8b64f;
+      --red: #e45d5d;
+      --blue: #56a3d9;
+      --gray: #788694;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Yu Gothic UI','Meiryo',system-ui,sans-serif;
+      font-size: 13px;
+      padding: 24px;
+      min-width: 1100px;
+    }
+
+    /* ===== ヘッダー ===== */
+    .page-header {
+      border: 1px solid var(--line);
+      background: #162231;
+      padding: 16px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .page-header h1 {
+      font-size: 18px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .page-header p {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .page-meta {
+      text-align: right;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    /* ===== 凡例 ===== */
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ===== メインテーブル ===== */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead tr {
+      background: #1a2a3a;
+    }
+    thead th {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    thead th:first-child { text-align: left; }
+    tbody tr:nth-child(odd)  { background: #0e1720; }
+    tbody tr:nth-child(even) { background: #111e2b; }
+    tbody tr:hover { background: #162231; }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid rgba(43,59,74,0.6);
+      border-right: 1px solid rgba(43,59,74,0.4);
+      vertical-align: middle;
+    }
+    td:first-child {
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      min-width: 180px;
+    }
+    td.col-tab {
+      text-align: left;
+      min-width: 200px;
+    }
+
+    /* ===== バッジ ===== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      margin: 2px 2px;
+    }
+    .badge.scada   { background: rgba(86,163,217,0.18); color: #7ec8f0; border: 1px solid rgba(86,163,217,0.4); }
+    .badge.weather { background: rgba(49,196,132,0.15); color: #5adba8; border: 1px solid rgba(49,196,132,0.4); }
+    .badge.jepx    { background: rgba(214,168,79,0.15); color: #e8c46a; border: 1px solid rgba(214,168,79,0.4); }
+    .badge.plan    { background: rgba(232,182,79,0.15); color: #f2d070; border: 1px solid rgba(232,182,79,0.4); }
+    .badge.calc    { background: rgba(159,176,189,0.12); color: #b8cad4; border: 1px solid rgba(159,176,189,0.3); }
+    .badge.manual  { background: rgba(228,93,93,0.15); color: #f08080; border: 1px solid rgba(228,93,93,0.4); }
+    .badge.none    { background: rgba(43,59,74,0.4); color: #4a6070; border: 1px solid rgba(43,59,74,0.6); font-weight:400; }
+
+    /* ===== セクション区切り行 ===== */
+    tr.section-row td {
+      background: #1a2a3a;
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-top: 1px solid rgba(214,168,79,0.25);
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== 補足パネル ===== */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .info-card {
+      border: 1px solid var(--line);
+      background: var(--panel2);
+      padding: 14px 16px;
+    }
+    .info-card h3 {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .info-card li {
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(43,59,74,0.4);
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-card li:last-child { border-bottom: none; }
+    .info-card li strong { color: var(--text); }
+    .tag {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(43,59,74,0.6);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .tag.free { background: rgba(49,196,132,0.15); color: #5adba8; }
+    .tag.paid { background: rgba(228,93,93,0.15); color: #f08080; }
+    .tag.excel { background: rgba(232,182,79,0.15); color: #f2d070; }
+
+    /* ===== 結論パネル ===== */
+    .conclusion {
+      margin-top: 16px;
+      border: 1px solid rgba(214,168,79,0.4);
+      background: rgba(214,168,79,0.06);
+      padding: 14px 20px;
+    }
+    .conclusion h3 { color: var(--gold); font-size: 14px; margin-bottom: 8px; }
+    .conclusion p  { color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .conclusion strong { color: var(--text); }
+
+    @media print {
+      body { background: #fff; color: #000; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== ヘッダー ===== -->
+<div class="page-header">
+  <div>
+    <h1>阿武隈OS Morning Cockpit — データソース設計書</h1>
+    <p>46基 / 150MW / GE / 福島 | 全UI要素 × データソース6系統 × AI生成パイプライン 完全設計書</p>
+  </div>
+  <div class="page-meta">
+    作成: 2026-05-23　最終更新: 2026-05-26<br>
+    収録: UI×データソース対応表 / Supabase設計 / アーキテクチャ図 / AI生成パイプライン
+  </div>
+</div>
+
+<div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #58a6ff;border-radius:10px;padding:14px 18px;margin:0 0 20px;font-size:12.5px;line-height:1.7">
+  <div style="color:#9cd2ff;font-weight:700;font-size:12px;letter-spacing:.04em;margin-bottom:8px">📘 このDocsの使い方</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:5px 18px">
+    <div><b style="color:#8b949e">👥 対象者</b>　開発・運用・電気主任技術者</div>
+    <div><b style="color:#8b949e">🕐 使う場面</b>　画面の数値の出所確認／欠損・古いデータ時の対処判断</div>
+    <div><b style="color:#8b949e">⚖️ 注意</b>　データに基づく業務判断は各ライブ画面で（本書は出所の地図）</div>
+    <div><b style="color:#8b949e">📋 対になる資料</b>　テーブル構造は ER図 参照</div>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span style="color:#8b949e">🔗 関連：</span>
+    <a href="./er-diagram.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">🗂 テーブル関係図(ER)</a>
+    <a href="./ai-data-boundary.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">🔐 AIデータ境界</a>
+    <a href="./menu.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">≡ メニュー</a>
+  </div>
+</div>
+
+<!-- ===== 凡例 ===== -->
+<div class="legend">
+  <span class="legend-item"><span class="legend-dot" style="background:#56a3d9"></span>① SCADA</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#31c484"></span>② 気象API</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#d6a84f"></span>③ JEPX</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#e8b64f"></span>④ 点検・作業管理（Excel可）</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#9fb0bd"></span>⑤ 計算（自動導出）</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#e45d5d"></span>⑥ 手入力（朝会中）</span>
+</div>
+
+<!-- ===== データ信頼性・欠損時ルール（Phase 3 / 監査・判断に耐える） ===== -->
+<h2 style="color:#fff;font-size:17px;font-weight:700;margin:8px 0 4px">▶ データ信頼性・欠損時ルール</h2>
+<div style="color:#8b949e;font-size:12.5px;margin-bottom:14px">「その数字は新しいか・信じてよいか・無いときどうするか」。業務OSとして判断・監査に耐えるための取り扱い基準。<b style="color:#e3c98b">原則：欠損を勝手に0にしない（NULLは「—」表示）／古い値は鮮度を必ず表示する。</b></div>
+
+<div style="overflow-x:auto;margin-bottom:18px">
+<table style="width:100%;border-collapse:collapse;background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden;font-size:12.5px;min-width:760px">
+  <thead>
+    <tr style="background:#1c2128;color:#fff">
+      <th style="padding:9px 12px;text-align:left;min-width:120px">データ系統</th>
+      <th style="padding:9px 12px;text-align:left;min-width:90px">更新頻度</th>
+      <th style="padding:9px 12px;text-align:left;min-width:90px">信頼度</th>
+      <th style="padding:9px 12px;text-align:left">欠損・古い時の扱い</th>
+      <th style="padding:9px 12px;text-align:left">意思決定への影響</th>
+    </tr>
+  </thead>
+  <tbody style="color:#c9d1d9">
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#9cd2ff;font-weight:600">① SCADA</td>
+      <td style="padding:9px 12px">リアルタイム〜30分</td>
+      <td style="padding:9px 12px"><span style="color:#7ee787;font-weight:700">高</span>（機器直結）</td>
+      <td style="padding:9px 12px">直近値を保持し<b>「○分前」と鮮度表示</b>。通信途絶は「データなし」明示し現地確認へ。0埋め禁止</td>
+      <td style="padding:9px 12px">発電量・アラームが見えない＝<b>停止判断の根拠が消える</b>。最優先で復旧/現地確認</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#7fe3b0;font-weight:600">② 気象API</td>
+      <td style="padding:9px 12px">1時間毎</td>
+      <td style="padding:9px 12px"><span style="color:#e3c98b;font-weight:700">中</span>（予報は外れる）</td>
+      <td style="padding:9px 12px">前回キャッシュを表示＋鮮度。<b>気象庁の注意報・警報を予報より優先</b></td>
+      <td style="padding:9px 12px">高所作業可否・出力予測がぶれる。安全側（作業中止寄り）に倒す</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#e3c98b;font-weight:600">③ JEPX</td>
+      <td style="padding:9px 12px">日次（前日確定）</td>
+      <td style="padding:9px 12px"><span style="color:#7ee787;font-weight:700">高</span>（公式値）</td>
+      <td style="padding:9px 12px">未取得は前日価格で代用し<b>「暫定」表示</b></td>
+      <td style="padding:9px 12px">売電額予測のみに影響。<b>運用・安全判断には波及しない</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#e3c98b;font-weight:600">④ 点検・作業管理</td>
+      <td style="padding:9px 12px">都度／CSV取込</td>
+      <td style="padding:9px 12px"><span style="color:#e3c98b;font-weight:700">中</span>（人手入力）</td>
+      <td style="padding:9px 12px"><b>未入力は「対象外」と区別し「未実施」として警告</b>。期限超過はハイライト</td>
+      <td style="padding:9px 12px">点検漏れ・期限超過を見逃す＝<b>保安義務に直結</b>。未入力ゼロを担保</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#b8c4cf;font-weight:600">⑤ 計算（導出）</td>
+      <td style="padding:9px 12px">日次バッチ 06:00</td>
+      <td style="padding:9px 12px"><span style="color:#b8c4cf;font-weight:700">元データ依存</span></td>
+      <td style="padding:9px 12px">元データ欠損なら計算結果もNULL→<b>「—」表示（0や前日値で埋めない）</b></td>
+      <td style="padding:9px 12px">KPI・稼働率が歪む。欠損由来かを必ず区別して読む</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:9px 12px;color:#f0a6a6;font-weight:600">⑥ 手入力（朝会）</td>
+      <td style="padding:9px 12px">朝会中</td>
+      <td style="padding:9px 12px"><span style="color:#f0a6a6;font-weight:700">人依存</span>（主観）</td>
+      <td style="padding:9px 12px">空欄可。ただし<b>判断・承認は「理由＋承認者＋時刻」を証跡として残す</b></td>
+      <td style="padding:9px 12px">証跡が無いと後から検証不能。重要判断ほど記録を必須化</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #e8b64f;border-radius:10px;padding:13px 16px;margin-bottom:28px;font-size:12.5px;line-height:1.7;color:#e3c98b">
+  <b style="color:#ffd479">⚖️ 欠損・低信頼データに基づく最終判断は電気主任技術者が行う。</b>
+  画面はデータの鮮度（○分前）・信頼度・暫定/未実施の別を必ず示し、利用者が「この数字をどこまで信じるか」を判断できるようにする。データに基づく業務操作・承認は各ライブ画面で行い、本書はあくまで出所と取り扱いの地図。
+</div>
+
+<!-- ===== メインテーブル ===== -->
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="min-width:180px">表示要素</th>
+      <th style="min-width:240px">昨日タブ（実績）</th>
+      <th style="min-width:240px">本日タブ（予定・現状）</th>
+      <th style="min-width:240px">明日タブ（予測）</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <!-- ヘッダーセクション -->
+    <tr class="section-row"><td colspan="4">▶ ヘッダー（日付・天気・風況・注意報・ゲートクローズ）</td></tr>
+
+    <tr>
+      <td>日付・曜日</td>
+      <td class="col-tab"><span class="badge calc">⑤ 計算（昨日日付を自動表示）</span></td>
+      <td class="col-tab"><span class="badge calc">⑤ 計算（サーバー時刻から自動）</span></td>
+      <td class="col-tab"><span class="badge calc">⑤ 計算（翌日日付を自動表示）</span></td>
+    </tr>
+
+    <tr>
+      <td>天気概況アイコン・テキスト</td>
+      <td class="col-tab"><span class="badge none">—</span><small style="color:var(--muted)">昨日タブでは表示なし</small></td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象API（当日天気予報）</span><br>
+        <small style="color:var(--muted)">Open-Meteo weathercode / 気象庁API</small>
+      </td>
+      <td class="col-tab"><span class="badge weather">② 気象API（翌日天気予報）</span></td>
+    </tr>
+
+    <tr>
+      <td>ヘッダー風速表示</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 現在風速（ナセル/気象計）</span>
+        <span class="badge weather">② 気象API補完</span><br>
+        <small style="color:var(--muted)">SCADA取得不可時は気象APIで補完</small>
+      </td>
+      <td class="col-tab"><span class="badge weather">② 気象API予測風速（翌日最大・平均）</span></td>
+    </tr>
+
+    <tr>
+      <td>注意報・警報</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象庁API（強風・雷・暴風注意報）</span>
+      </td>
+      <td class="col-tab"><span class="badge weather">② 気象庁API（翌日予報）</span></td>
+    </tr>
+
+    <tr>
+      <td>気象コメント文</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 気象API → AI生成（風向・高所作業リスク要約）</span>
+      </td>
+      <td class="col-tab"><span class="badge calc">⑤ 気象API翌日予測 → AI生成</span></td>
+    </tr>
+
+    <tr>
+      <td>ゲートクローズ残時間</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 計算（gate_close_time − 現在時刻）</span><br>
+        <small style="color:var(--muted)">1時間前計画提出期限まで</small>
+      </td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+    </tr>
+
+    <!-- 最重要判断セクション -->
+    <tr class="section-row"><td colspan="4">▶ 本日の最重要判断（decision-bar）</td></tr>
+
+    <tr>
+      <td>最重要判断 3項目</td>
+      <td class="col-tab"><span class="badge none">—</span><small style="color:var(--muted)">昨日タブでは表示なし</small></td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ アラーム＋点検計画＋気象API → AI生成</span><br>
+        <small style="color:var(--muted)">alarm_active / inspection_plan_today / 注意報から優先度付き判断文を自動生成</small>
+      </td>
+      <td class="col-tab"><span class="badge none">—</span><small style="color:var(--muted)">明日タブでは表示なし</small></td>
+    </tr>
+
+    <!-- 昨日今日明日サマリーセクション -->
+    <tr class="section-row"><td colspan="4">▶ 昨日今日明日サマリーカード（day-summary 3枚）</td></tr>
+
+    <tr>
+      <td>サマリー文（story-main）</td>
+      <td class="col-tab">
+        <span class="badge scada">① alarm_events（昨日アラーム履歴）</span>
+        <span class="badge plan">④ 点検実績（繰越・完了）</span><br>
+        <small style="color:var(--muted)">→ ⑤ AI要約（1文）</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① alarm_active（現在アラーム）</span>
+        <span class="badge plan">④ inspection_plan_today</span><br>
+        <small style="color:var(--muted)">→ ⑤ AI要約（本日見込み1文）</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象API翌日予測</span>
+        <span class="badge plan">④ 翌日点検計画</span><br>
+        <small style="color:var(--muted)">→ ⑤ AI要約（明日予測1文）</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>ストーリータグ</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ アラームカテゴリ自動分類</span><br>
+        <small style="color:var(--muted)">再発アラーム / 通信欠損 / 点検繰越 など</small>
+      </td>
+      <td class="col-tab"><span class="badge calc">⑤ 点検計画変更・アラーム種別から自動</span></td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象APIから自動</span>
+        <span class="badge calc">⑤ 点検計画から</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>持ち越しタスク</td>
+      <td class="col-tab">
+        <span class="badge scada">① alarm_events（未解決）</span>
+        <span class="badge plan">④ 点検繰越フラグ（status="carryover"）</span>
+      </td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+    </tr>
+
+    <!-- KPIセクション -->
+    <tr class="section-row"><td colspan="4">▶ KPIカード（6枚）</td></tr>
+
+    <tr>
+      <td>① 発電量</td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 30min実績</span><br>
+        <small style="color:var(--muted)">日次合計値 power_mwh</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 途中集計</span>
+        <span class="badge weather">② 気象×パワー曲線</span><br>
+        <small style="color:var(--muted)">残時間は予測で補完</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象予測×パワー曲線</span><br>
+        <small style="color:var(--muted)">SCADAデータなし・全て予測</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>② 稼働率</td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 停止履歴</span><br>
+        <small style="color:var(--muted)">停止時間÷24h×46基</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① 現在ステータス46台</span><br>
+        <small style="color:var(--muted)">停止中台数から逆算</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 点検予定から推定</span><br>
+        <small style="color:var(--muted)">停止予定台数×時間</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>③ 売電額</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 発電量実績 × PPA単価</span><br>
+        <small style="color:var(--muted)">18円/kWh × MWh ÷ 10,000</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 発電量(途中+予測) × 18円</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 発電量予測 × 18円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>④ 平均風速</td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 風速計実績</span><br>
+        <small style="color:var(--muted)">met_mast or ナセル風速</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 現在風速</span>
+        <span class="badge weather">② 気象API補完</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象API予測（翌日）</span><br>
+        <small style="color:var(--muted)">SCADAは将来値なし</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>⑤ JEPX参考</td>
+      <td class="col-tab">
+        <span class="badge jepx">③ JEPX前日スポット実績</span><br>
+        <small style="color:var(--muted)">日次平均 円/kWh</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge jepx">③ 当日JEPX（公開データ）</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge jepx">③ 翌日JEPX予測参考</span><br>
+        <small style="color:var(--muted)">各社予測 or 前日比推定</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>⑥ 1時間前計画値誤差</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ SCADA実績 ÷ 前日予測値</span><br>
+        <small style="color:var(--muted)">forecast_accuracy_logs</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 前日の誤差率を表示</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 前日の誤差率を参考表示</span>
+      </td>
+    </tr>
+
+    <!-- アグリゲーターセクション -->
+    <tr class="section-row"><td colspan="4">▶ アグリゲーター連絡事項・インバランス影響（kpi-action-row）</td></tr>
+
+    <tr>
+      <td>インバランス影響額</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 昨日実績誤差 × JEPX確定単価 × 昨日発電量実績</span><br>
+        <small style="color:var(--muted)">forecast_accuracy_logs × jepx_spot × power_mwh</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 本日計画誤差 × JEPX参考 × 本日予測MWh</span><br>
+        <small style="color:var(--muted)">精算単価確定前の概算・参考値</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 前日誤差参考 × JEPX翌日予測 × 明日予測MWh</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>アグリゲーター共有事項・確認依頼</td>
+      <td class="col-tab">
+        <span class="badge plan">④ 点検実績（繰越・中止）</span>
+        <span class="badge scada">① 通信欠損・除外条件</span><br>
+        <small style="color:var(--muted)">→ ⑤ AI定型文生成</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 点検計画変更内容</span>
+        <span class="badge scada">① 欠損WTG除外状況</span><br>
+        <small style="color:var(--muted)">→ ⑤ AI定型文生成</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 翌日点検予定</span>
+        <span class="badge weather">② 気象API翌日予報</span><br>
+        <small style="color:var(--muted)">→ ⑤ AI定型文生成</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>アグリゲーター下書き文</td>
+      <td colspan="3" class="col-tab">
+        <span class="badge calc">⑤ KPI数値（発電量・誤差率）＋点検計画変更内容 → AI定型文自動生成</span><br>
+        <small style="color:var(--muted)">「本日予測○MWh、計画値誤差○%。○○点検は○○へ変更予定」形式の文章を自動生成</small>
+      </td>
+    </tr>
+
+    <!-- WTGセクション -->
+    <tr class="section-row"><td colspan="4">▶ WTGマトリクス（46台）</td></tr>
+
+    <tr>
+      <td>46台ステータス表示</td>
+      <td class="col-tab">
+        <span class="badge scada">① 昨日の停止・欠損履歴</span><br>
+        <small style="color:var(--muted)">turbine_status_events</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① リアルタイム状態</span><br>
+        <small style="color:var(--muted)">normal/warn/inspect/stop/missing</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① 現在ステータス継続</span>
+        <span class="badge plan">④ 点検予定を重畳</span>
+      </td>
+    </tr>
+
+    <!-- WTG詳細パネルセクション -->
+    <tr class="section-row"><td colspan="4">▶ WTG詳細パネル（WTGクリック時のサイドパネル）</td></tr>
+
+    <tr>
+      <td>現在出力</td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 昨日30min実績（選択時刻の値）</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA リアルタイム出力</span><br>
+        <small style="color:var(--muted)">power_output_kw（最新30min値）</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge none">—</span>
+        <small style="color:var(--muted)">将来値なし</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>風速（WTG詳細）</td>
+      <td class="col-tab"><span class="badge scada">① SCADA 昨日実績風速</span></td>
+      <td class="col-tab"><span class="badge scada">① SCADA 現在風速</span></td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象API翌日予測風速</span><br>
+        <small style="color:var(--muted)">WTG位置付近の予測値</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>直近アラーム</td>
+      <td class="col-tab">
+        <span class="badge scada">① alarm_events（昨日分・WTG別）</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① alarm_active（現在未解決）</span>
+      </td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+    </tr>
+
+    <tr>
+      <td>推奨アクション</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ アラーム種別 × 再発回数 → AI判定</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ アラーム種別 × 風況 × 点検計画 → AI判定</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 翌日点検予定 × 天気予報 → AI判定</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>30分出力トレンド（棒グラフ）</td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 30min実績系列（昨日WTG別）</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA 30min実績系列（本日WTG別）</span>
+      </td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+    </tr>
+
+    <!-- 異常・アラームセクション -->
+    <tr class="section-row"><td colspan="4">▶ 異常・アラームリスト</td></tr>
+
+    <tr>
+      <td>アラーム・対応リスト</td>
+      <td class="col-tab">
+        <span class="badge scada">① 昨日のアラーム履歴</span><br>
+        <small style="color:var(--muted)">alarm_events（昨日分）</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① 現在アクティブアラーム</span><br>
+        <small style="color:var(--muted)">alarm_active（未解決）</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 今日の継続案件を引継</span><br>
+        <small style="color:var(--muted)">解決見込みが出るまで表示</small>
+      </td>
+    </tr>
+
+    <!-- グラフセクション -->
+    <tr class="section-row"><td colspan="4">▶ 5階建て予測グラフ（風況 / JEPX / 発電量 / 売電額 / 天気）</td></tr>
+
+    <tr>
+      <td>グラフ時系列データ</td>
+      <td class="col-tab">
+        <span class="badge scada">① 30分実績値</span><br>
+        <small style="color:var(--muted)">scada_30min（全5系列）</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge scada">① SCADA途中実績</span>
+        <span class="badge weather">② 気象API</span>
+        <span class="badge jepx">③ JEPX</span><br>
+        <small style="color:var(--muted)">残時間は①②③を組み合わせ</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge weather">② 気象API（翌日72h）</span>
+        <span class="badge jepx">③ JEPX翌日予測</span><br>
+        <small style="color:var(--muted)">SCADAデータなし・予測のみ</small>
+      </td>
+    </tr>
+
+    <!-- 点検セクション -->
+    <tr class="section-row"><td colspan="4">▶ 点検計画・カレンダー・詳細パネル</td></tr>
+
+    <tr>
+      <td>点検計画リスト</td>
+      <td class="col-tab">
+        <span class="badge plan">④ 昨日の点検結果</span><br>
+        <small style="color:var(--muted)">完了/繰越/中止を表示</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 本日の作業計画</span><br>
+        <small style="color:var(--muted)">inspection_plan_today</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 翌日の作業計画</span><br>
+        <small style="color:var(--muted)">inspection_plan_tomorrow</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>点検の発電影響</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 停止時間 × 風況 × パワー曲線</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 停止予定時間 × 風況予測</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 停止予定時間 × 気象API予測風速</span>
+      </td>
+    </tr>
+
+    <!-- 点検詳細パネルセクション -->
+    <tr class="section-row"><td colspan="4">▶ 点検詳細パネル（点検クリック時のサイドパネル）</td></tr>
+
+    <tr>
+      <td>発電影響（MWh）</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 昨日停止実績時間 × 実績風況 × パワー曲線</span><br>
+        <small style="color:var(--muted)">turbine_status_events × power_curve</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 停止予定時間</span>
+        <span class="badge weather">② 気象API風速予測</span>
+        <span class="badge calc">⑤ × パワー曲線</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 翌日停止予定時間</span>
+        <span class="badge weather">② 翌日気象API予測</span>
+        <span class="badge calc">⑤ × パワー曲線</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>売電影響（万円）</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 発電影響実績 × PPA 18円/kWh ÷ 10,000</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 発電影響予測 × PPA 18円/kWh ÷ 10,000</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 発電影響予測 × PPA 18円/kWh ÷ 10,000</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>推奨判断文</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ AI（昨日実績の振り返りコメント）</span>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 風況 × 点検時間 × アラーム状況 → AI（延期/実施判断）</span><br>
+        <small style="color:var(--muted)">「13:00以降へ変更」などの具体的判断文</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 翌日気象API × 点検種別 → AI</span>
+      </td>
+    </tr>
+
+    <!-- 作業前安全チェックセクション -->
+    <tr class="section-row"><td colspan="4">▶ 作業前 法定・安全チェック（safety-check-card）</td></tr>
+
+    <tr>
+      <td>対象作業（点検との連動）</td>
+      <td class="col-tab">
+        <span class="badge none">—</span>
+        <small style="color:var(--muted)">昨日タブでは表示なし</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 点検計画（本日選択中の作業）</span><br>
+        <small style="color:var(--muted)">inspection_plan_today.work_type / wtg_id</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 翌日点検計画（予習確認用）</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>法定・社内確認ゲート（PTW・KY・感電・高所）</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge plan">④ 点検計画（作業種別でゲート条件を決定）</span>
+        <span class="badge manual">⑥ 手入力（PTW番号・KY実施確認）</span><br>
+        <small style="color:var(--muted)">高所作業→高所ゲート発動 / 電気作業→電気安全ゲート</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge none">—</span>
+        <small style="color:var(--muted)">翌日分は前日確認用表示のみ</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>作業別の重点危険</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge plan">④ 作業種別（ブレード/ナセル/電気）</span>
+        <span class="badge weather">② 気象API風速・雷情報</span>
+        <span class="badge calc">⑤ 危険レベル自動判定</span>
+      </td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+    </tr>
+
+    <!-- 工数・資格チェックセクション -->
+    <tr class="section-row"><td colspan="4">▶ 工数・資格チェック（resource-warning）</td></tr>
+
+    <tr>
+      <td>高所資格者・電気作業者の必要/保有数</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge plan">④ 点検計画（必要資格・人数）</span>
+        <span class="badge manual">⑥ 手入力（要員名簿・保有資格）</span><br>
+        <small style="color:var(--muted)">inspection_plan_today.required_qualification × staff_roster.csv</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 翌日点検計画</span>
+        <span class="badge manual">⑥ 手入力（翌日要員確認）</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td>予定工数（人時）</td>
+      <td class="col-tab"><span class="badge none">—</span></td>
+      <td class="col-tab">
+        <span class="badge plan">④ 点検計画（time_start/time_end合計）</span><br>
+        <small style="color:var(--muted)">全作業の必要工数 vs. 利用可能工数枠</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge plan">④ 翌日点検計画（time_start/time_end合計）</span>
+      </td>
+    </tr>
+
+    <!-- AI所見セクション -->
+    <tr class="section-row"><td colspan="4">▶ AI所見（風はどうか / 機は健やかか / 人は安全か / 本日の点検）</td></tr>
+
+    <tr>
+      <td>AI所見 4カード</td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 上記①②③④のデータをAIが要約</span><br>
+        <small style="color:var(--muted)">昨日の実績値・アラーム・点検結果から生成</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 上記①②③④のデータをAIが要約</span><br>
+        <small style="color:var(--muted)">現在状態・予測・作業計画から生成</small>
+      </td>
+      <td class="col-tab">
+        <span class="badge calc">⑤ 上記①②③④のデータをAIが要約</span><br>
+        <small style="color:var(--muted)">翌日予測・点検候補・リスクから生成</small>
+      </td>
+    </tr>
+
+    <!-- 議事録セクション -->
+    <tr class="section-row"><td colspan="4">▶ 議事録（自動入力 / 手入力）</td></tr>
+
+    <tr>
+      <td>議事録 自動入力（7項目）</td>
+      <td colspan="3" class="col-tab">
+        <span class="badge calc">⑤ KPI・点検・アラームから自動生成</span>
+        <small style="color:var(--muted)">アグリゲーター連絡 / O&M連絡 / 出席者 / 未解決リスク / 前回決定結果 / 次回確認時刻 / データ品質メモ</small>
+      </td>
+    </tr>
+
+    <tr>
+      <td>議事録 手入力（3項目）</td>
+      <td colspan="3" class="col-tab">
+        <span class="badge manual">⑥ 朝会中に入力</span>
+        <small style="color:var(--muted)">代表所見 / 決定事項 / 申し送り — SCADAでは取れない判断・意思</small>
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+</div>
+
+<!-- ===== 補足情報 ===== -->
+<div class="info-grid">
+
+  <div class="info-card">
+    <h3 style="color:#56a3d9">① SCADA が提供するデータ</h3>
+    <ul>
+      <li><strong>30分発電量</strong> <span class="tag">power_output_mwh</span></li>
+      <li><strong>風速（ナセル/気象計）</strong> <span class="tag">wind_speed_ms</span></li>
+      <li><strong>WTGステータス</strong> <span class="tag">normal/warn/stop/missing</span></li>
+      <li><strong>アラーム履歴</strong> <span class="tag">alarm_events</span></li>
+      <li><strong>停止時間・欠損時間</strong> <span class="tag">turbine_status_events</span></li>
+      <li style="color:var(--red)"><strong>提供できないもの</strong> <span class="tag paid">将来予測値なし</span></li>
+    </ul>
+  </div>
+
+  <div class="info-card">
+    <h3 style="color:#31c484">② 気象API ／ ③ JEPX</h3>
+    <ul>
+      <li><strong>Open-Meteo</strong> <span class="tag free">無料・商用可</span></li>
+      <li><small style="color:var(--muted)">緯度経度指定で72時間風速・天気取得。APIキー不要。</small></li>
+      <li><strong>気象庁API</strong> <span class="tag free">無料</span></li>
+      <li><small style="color:var(--muted)">天気予報・注意報・警報の公式データ。</small></li>
+      <li><strong>JEPX公式CSV</strong> <span class="tag free">無料（要ダウンロード）</span></li>
+      <li><strong>電力・ガス取引監視委</strong> <span class="tag free">無料API</span></li>
+    </ul>
+  </div>
+
+  <div class="info-card">
+    <h3 style="color:#e8b64f">④ 点検・作業計画 の最小構成</h3>
+    <ul>
+      <li><strong>inspection_plan.csv</strong> <span class="tag excel">Excel可</span></li>
+      <li><small style="color:var(--muted)">date / wtg_id / work_type / time_start / time_end / status / power_impact_mwh</small></li>
+      <li><strong>alarm_list.csv</strong> <span class="tag excel">Excel可</span></li>
+      <li><small style="color:var(--muted)">date / scenario / severity / wtg_id / alarm_type / detail / owner</small></li>
+      <li style="color:var(--green)"><strong>CMMSがあれば CSV出力で代替</strong></li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ===== 結論パネル ===== -->
+<div class="conclusion">
+  <h3>▶ SCADAだけでは賄えない部分（重要）</h3>
+  <p>
+    SCADAが担うのは全体の約 <strong>4割（昨日タブのほぼ全て）</strong>。<br>
+    <strong>本日タブ</strong> は SCADA（現在値）＋ 気象API（残時間予測）＋ JEPX ＋ 点検計画 の4系統が必要。<br>
+    <strong>明日タブ</strong> は SCADA の出番はほぼなく、気象API・JEPX予測・点検計画が主役になる。<br><br>
+    最小構成の推奨: <strong>daily_kpi.csv（3行）/ wtg_status.csv（138行）/ time_series.csv / inspection_plan.csv / alarm_list.csv</strong> の5ファイル。<br>
+    気象APIとJEPXは Python 10行で自動取得可能。点検計画は既存のExcelをCSV保存するだけで接続できる。<br><br>
+    <strong>今回の追加マッピングで判明した追加データ要件：</strong><br>
+    ① <strong>staff_roster.csv</strong>（要員名簿・保有資格）— 工数・資格チェックに必要。Excelで管理中なら同様にCSV化で対応可。<br>
+    ② <strong>gate_close_time</strong>（ゲートクローズ時刻）— 固定値またはアグリゲーター契約から設定。<br>
+    ③ <strong>power_curve.csv</strong>（GE機種別パワー曲線）— 点検影響MWh計算に必要。GEより取得済みの場合は流用可。<br>
+    ④ <strong>forecast_accuracy_logs.csv</strong>（計画値誤差履歴）— インバランス影響額の計算に使用。SCADAまたはアグリゲーターから取得。
+  </p>
+</div>
+
+
+<!-- ===== Supabaseテーブル設計 ===== -->
+<div style="margin-top:32px;border-top:2px solid rgba(214,168,79,0.3);padding-top:20px">
+  <h2 style="color:var(--gold);font-size:16px;font-weight:700;margin-bottom:4px">▶ Supabase に格納すべきデータ（11テーブル構成）</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:16px">各テーブルの役割・カラム・ソース・更新頻度</p>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+
+    <!-- scada_30min -->
+    <div style="border:1px solid rgba(86,163,217,0.4);background:#0d1f33;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(86,163,217,0.2);color:#7ec8f0;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">①SCADA</span>
+        <strong style="font-size:13px;color:#eef4f8">scada_30min</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">30分毎</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">30分発電量・風速時系列。グラフ・KPI計算・発電影響計算の基礎データ。</p>
+      <code style="font-size:10px;color:#7ec8f0;line-height:1.7;display:block">wtg_id · timestamp_start · power_output_mwh<br>wind_speed_ms · availability · nacelle_direction</code>
+    </div>
+
+    <!-- wtg_status -->
+    <div style="border:1px solid rgba(86,163,217,0.4);background:#0d1f33;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(86,163,217,0.2);color:#7ec8f0;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">①SCADA</span>
+        <strong style="font-size:13px;color:#eef4f8">wtg_status</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">Realtime/5分</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">46基のリアルタイムステータス。WTGマトリクス・詳細パネルに直結。</p>
+      <code style="font-size:10px;color:#7ec8f0;line-height:1.7;display:block">wtg_id · status · output_kw · wind_speed_ms<br>alarm_code · updated_at</code>
+    </div>
+
+    <!-- alarm_events -->
+    <div style="border:1px solid rgba(86,163,217,0.4);background:#0d1f33;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(86,163,217,0.2);color:#7ec8f0;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">①SCADA</span>
+        <strong style="font-size:13px;color:#eef4f8">alarm_events</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">イベント駆動</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">アラーム発生〜解決の全履歴。昨日サマリー・AI所見・再発判定に使用。</p>
+      <code style="font-size:10px;color:#7ec8f0;line-height:1.7;display:block">wtg_id · alarm_type · severity · started_at<br>resolved_at · detail · owner · recurrence_count</code>
+    </div>
+
+    <!-- weather_cache -->
+    <div style="border:1px solid rgba(49,196,132,0.4);background:#0d2a1f;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(49,196,132,0.18);color:#5adba8;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">②気象API</span>
+        <strong style="font-size:13px;color:#eef4f8">weather_cache</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">1時間毎</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">Open-Meteo + 気象庁APIの結果をキャッシュ。API呼び出しを削減しつつ全画面で参照可能に。</p>
+      <code style="font-size:10px;color:#5adba8;line-height:1.7;display:block">datetime · wind_speed_ms · wind_dir · weather_code<br>alert_type · alert_level · fetched_at</code>
+    </div>
+
+    <!-- jepx_spot -->
+    <div style="border:1px solid rgba(214,168,79,0.4);background:#2a1f0d;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(214,168,79,0.18);color:#e8c46a;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">③JEPX</span>
+        <strong style="font-size:13px;color:#eef4f8">jepx_spot</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">日次</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">30分枠スポット価格。KPI・インバランス影響額・グラフの JEPX 系列に使用。</p>
+      <code style="font-size:10px;color:#e8c46a;line-height:1.7;display:block">date · slot_30min · area · price_yen_kwh · fetched_at</code>
+    </div>
+
+    <!-- daily_kpi -->
+    <div style="border:1px solid rgba(159,176,189,0.35);background:#111a24;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">⑤計算</span>
+        <strong style="font-size:13px;color:#eef4f8">daily_kpi</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">日次バッチ</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">昨日実績・本日見込み・明日予測の6KPIを1行3行で保存。KPI比較表の主データ。</p>
+      <code style="font-size:10px;color:#b8cad4;line-height:1.7;display:block">date · type(actual/today/tomorrow) · power_mwh<br>availability_pct · revenue_man_yen · avg_wind_ms<br>jepx_avg · forecast_error_pct</code>
+    </div>
+
+    <!-- forecast_accuracy_logs -->
+    <div style="border:1px solid rgba(159,176,189,0.35);background:#111a24;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">⑤計算</span>
+        <strong style="font-size:13px;color:#eef4f8">forecast_accuracy_logs</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">日次</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">計画値と実績の誤差ログ。インバランス影響額計算・アグリゲーター報告に使用。</p>
+      <code style="font-size:10px;color:#b8cad4;line-height:1.7;display:block">date · planned_mwh · actual_mwh · error_pct · gate_close_time</code>
+    </div>
+
+    <!-- inspection_plan -->
+    <div style="border:1px solid rgba(232,182,79,0.4);background:#1e1a08;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">④点検計画</span>
+        <strong style="font-size:13px;color:#eef4f8">inspection_plan</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">CSV Upload</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">点検計画・進捗・資格・PTW。点検カレンダー・詳細パネル・安全チェックの全てに使用。</p>
+      <code style="font-size:10px;color:#f2d070;line-height:1.7;display:block">date · wtg_id · work_type · time_start · time_end<br>status · power_impact_mwh · required_qualification<br>ptw_number · worker_count · carryover_from</code>
+    </div>
+
+    <!-- staff_roster -->
+    <div style="border:1px solid rgba(232,182,79,0.4);background:#1e1a08;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">④点検計画</span>
+        <strong style="font-size:13px;color:#eef4f8">staff_roster</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">週次更新</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">要員名簿・保有資格。工数・資格チェックパネルに使用。Excelで管理中ならCSV化で対応可。</p>
+      <code style="font-size:10px;color:#f2d070;line-height:1.7;display:block">staff_id · name · qualifications[] · available · updated_at</code>
+    </div>
+
+    <!-- meeting_minutes -->
+    <div style="border:1px solid rgba(228,93,93,0.4);background:#1e0d0d;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(228,93,93,0.15);color:#f08080;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">⑥手入力</span>
+        <strong style="font-size:13px;color:#eef4f8">meeting_minutes</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">朝会毎</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">朝会の議事録。手入力3項目（所見・決定・申し送り）＋自動補完7項目を1行で保存。翌日の前日分として参照。</p>
+      <code style="font-size:10px;color:#f08080;line-height:1.7;display:block">date · representative_comment · decisions · handover<br>aggregator_note · om_note · unresolved_risks<br>next_check_time · attendees · data_quality_note</code>
+    </div>
+
+    <!-- power_curve -->
+    <div style="border:1px solid rgba(159,176,189,0.35);background:#111a24;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">静的マスタ</span>
+        <strong style="font-size:13px;color:#eef4f8">power_curve</strong>
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">初期設定のみ</span>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin:0 0 6px">GE機種別パワー曲線。点検影響MWh計算（停止時間×風速→推定発電量）に使用。GE仕様書から一度だけ投入。</p>
+      <code style="font-size:10px;color:#b8cad4;line-height:1.7;display:block">model · wind_speed_ms · power_output_kw</code>
+    </div>
+
+  </div><!-- /grid -->
+</div>
+
+<!-- ===== 重要フィールド別 欠損時の意思決定影響（Phase 3.5 / 系統ルールの例外） ===== -->
+<div style="margin-top:32px;border-top:2px solid rgba(159,176,189,0.25);padding-top:20px">
+  <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:4px">▶ 重要フィールド別 欠損時の意思決定影響</h2>
+  <div style="color:#8b949e;font-size:12.5px;margin-bottom:14px">上の「6系統ルール」は系統単位の原則。ここは<b style="color:#e3c98b">意思決定に直結する個別フィールドの例外</b>だけを抜き出した早見。全フィールドではなく、判断を誤ると影響が大きいものに絞る。</div>
+<div style="overflow-x:auto;margin-bottom:8px">
+<table style="width:100%;border-collapse:collapse;background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden;font-size:12px;min-width:860px">
+  <thead>
+    <tr style="background:#1c2128;color:#fff">
+      <th style="padding:8px 11px;text-align:left;min-width:200px">重要フィールド</th>
+      <th style="padding:8px 11px;text-align:left;min-width:90px">更新頻度</th>
+      <th style="padding:8px 11px;text-align:left;min-width:80px">信頼度</th>
+      <th style="padding:8px 11px;text-align:left;min-width:230px">欠損・古い時の扱い</th>
+      <th style="padding:8px 11px;text-align:left">意思決定への影響</th>
+    </tr>
+  </thead>
+  <tbody style="color:#c9d1d9">
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">wtg_status.status</code></td>
+      <td style="padding:8px 11px">リアルタイム</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px">直近値を保持し鮮度表示。通信途絶は<b>「通信断」明示</b>→現地確認（不明をOK扱いしない）</td>
+      <td style="padding:8px 11px">WTG停止・警告判断の根拠。誤れば<b>誤停止／異常見逃し</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">wtg_status.output_kw</code></td>
+      <td style="padding:8px 11px">リアルタイム〜数分</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px"><b>0と欠損を区別</b>（欠損は「—」、0は実値）。直近値＋鮮度</td>
+      <td style="padding:8px 11px">出力低下・停止判断。0埋めすると<b>誤検知</b>の恐れ</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">scada_30min.power_output_mwh</code></td>
+      <td style="padding:8px 11px">30分</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px">未確定枠は「暫定」表示。<b>欠測は補間・0計上せず「—」</b></td>
+      <td style="padding:8px 11px">発電量・売電額。欠損を0計上すると<b>過小評価</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">scada_30min.availability</code></td>
+      <td style="padding:8px 11px">30分〜日次</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（算出値）</td>
+      <td style="padding:8px 11px">元データ欠損なら算出不可→「—」。前日値で埋めない</td>
+      <td style="padding:8px 11px">稼働率・停止時間KPI。欠損由来の歪みを区別して読む</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">alarm_events.alarm_code</code></td>
+      <td style="padding:8px 11px">イベント駆動</td>
+      <td style="padding:8px 11px"><span style="color:#7ee787;font-weight:700">高</span></td>
+      <td style="padding:8px 11px">取りこぼしはSCADA再同期で補完。重複はdedup</td>
+      <td style="padding:8px 11px">異常検知・再発/頻発判定。欠落で<b>再発を見逃す</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">weather_cache.wind_speed_ms</code></td>
+      <td style="padding:8px 11px">1時間</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（予報）</td>
+      <td style="padding:8px 11px">前回キャッシュ＋鮮度。<b>気象庁の警報・注意報を予報より優先</b></td>
+      <td style="padding:8px 11px">高所作業・点検可否。迷えば<b>安全側（中止寄り）</b>に倒す</td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">inspection_plan.status</code></td>
+      <td style="padding:8px 11px">都度／CSV</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（人手）</td>
+      <td style="padding:8px 11px"><b>未入力は「未実施」扱いで警告</b>（「対象外」と区別）。期限超過はハイライト</td>
+      <td style="padding:8px 11px">点検繰越・期限超過。漏れは<b>保安義務に直結</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">meeting_minutes.decisions</code></td>
+      <td style="padding:8px 11px">朝会中（手入力）</td>
+      <td style="padding:8px 11px"><span style="color:#f0a6a6;font-weight:700">人依存</span></td>
+      <td style="padding:8px 11px">空欄可。ただし<b>理由＋承認者＋時刻を証跡として必須化</b>推奨</td>
+      <td style="padding:8px 11px">判断証跡。無いと<b>後から検証不能</b></td>
+    </tr>
+    <tr style="border-top:1px solid #30363d">
+      <td style="padding:8px 11px"><code style="color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px">ai_insights.top_decisions</code></td>
+      <td style="padding:8px 11px">日次バッチ（早朝）</td>
+      <td style="padding:8px 11px"><span style="color:#e3c98b;font-weight:700">中</span>（AI生成・要人確認）</td>
+      <td style="padding:8px 11px">未生成は前日分＋「前日」表示。確信度が低い項目は要確認マーク</td>
+      <td style="padding:8px 11px">最重要判断バー。<b>鵜呑み禁止</b>・電気主任技術者の確認が前提</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #e8b64f;border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:12px;line-height:1.7;color:#e3c98b">
+  <b style="color:#ffd479">⚖️ 共通原則：</b>欠損を0で埋めない（NULLは「—」）／古い値は鮮度を表示／「対象外」と「未実施」を区別する。低信頼・欠損データに基づく最終判断は電気主任技術者が行う。
+</div>
+</div>
+
+<!-- ===== フィールド逆引き表 ===== -->
+<div style="margin-top:32px;border-top:2px solid rgba(159,176,189,0.25);padding-top:20px">
+  <h2 style="color:var(--text);font-size:16px;font-weight:700;margin-bottom:4px">▶ フィールド逆引き表 — このフィールドはコックピットのどこに使われるか</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:16px">
+    全11テーブル・全フィールドを一覧化。「このデータが欠けると画面の何が壊れるか」を確認するためのリファレンスです。
+  </p>
+
+  <!-- 凡例 -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;padding:10px 14px;background:var(--panel2);border:1px solid var(--line)">
+    <span style="font-size:11px;color:var(--muted);margin-right:4px;line-height:22px">使用箇所：</span>
+    <span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span>
+    <span style="background:rgba(242,193,78,0.18);color:#f2c14e;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">WTGマトリクス</span>
+    <span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span>
+    <span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span>
+    <span style="background:rgba(86,163,217,0.12);color:#b8dcf3;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">点検カレンダー</span>
+    <span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span>
+    <span style="background:rgba(228,93,93,0.15);color:#f08080;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span>
+    <span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">AI所見</span>
+    <span style="background:rgba(49,196,132,0.12);color:#7be0b2;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">安全チェック</span>
+    <span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">工数チェック</span>
+    <span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">議事録</span>
+    <span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">ヘッダー</span>
+    <span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span>
+    <span style="background:rgba(228,93,93,0.12);color:#ffb0a9;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">最重要判断</span>
+    <span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span>
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:130px;text-align:left">テーブル名</th>
+        <th style="min-width:180px;text-align:left">フィールド名</th>
+        <th style="min-width:90px;text-align:left">型</th>
+        <th style="min-width:320px;text-align:left">コックピットの使用箇所</th>
+        <th style="min-width:200px;text-align:left">備考</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- ── scada_30min ── -->
+      <tr class="section-row"><td colspan="5">① scada_30min — 30分発電量時系列（SCADAシステム）</td></tr>
+      <tr>
+        <td><span class="badge scada">scada_30min</span></td>
+        <td><code>wtg_id</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span> <span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">daily_kpi計算</span></td>
+        <td style="color:var(--muted);font-size:11px">"WTG01"〜"WTG46"</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">scada_30min</span></td>
+        <td><code>timestamp_start</code></td>
+        <td style="color:var(--muted);font-size:11px">timestamptz</td>
+        <td><span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（時系列軸）</span>　<span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">daily_kpi計算</span> <span style="color:var(--muted);font-size:11px">（日付判定）</span></td>
+        <td style="color:var(--muted);font-size:11px">30分コマの開始時刻</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">scada_30min</span></td>
+        <td><code>power_output_mwh</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「発電量・売電額」</span>　<span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（発電量系列）</span></td>
+        <td style="color:var(--muted);font-size:11px">daily_kpiのSUM元。最重要フィールド</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">scada_30min</span></td>
+        <td><code>wind_speed_ms</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「平均風速」</span>　<span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（実績風況系列）</span>　<span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span></td>
+        <td style="color:var(--muted);font-size:11px">daily_kpiのAVG元</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">scada_30min</span></td>
+        <td><code>availability</code></td>
+        <td style="color:var(--muted);font-size:11px">bool</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「稼働率」計算（false=停止コマとしてカウント）</span></td>
+        <td style="color:var(--muted);font-size:11px">true=発電中 / false=停止・欠損</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">scada_30min</span></td>
+        <td><code>nacelle_direction</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">AI所見</span> <span style="color:var(--muted);font-size:11px">（風向変化の参考情報）</span></td>
+        <td style="color:var(--muted);font-size:11px">省略可能。最小構成では不要</td>
+      </tr>
+
+      <!-- ── wtg_status ── -->
+      <tr class="section-row"><td colspan="5">① wtg_status — リアルタイムステータス 46行（SCADAシステム・Realtime）</td></tr>
+      <tr>
+        <td><span class="badge scada">wtg_status</span></td>
+        <td><code>wtg_id</code></td>
+        <td style="color:var(--muted);font-size:11px">text UNIQUE</td>
+        <td><span style="background:rgba(242,193,78,0.18);color:#f2c14e;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTGマトリクス</span> <span style="color:var(--muted);font-size:11px">（46基の特定）</span>　<span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span></td>
+        <td style="color:var(--muted);font-size:11px"><strong style="color:#e45d5d">UNIQUE制約必須</strong>（UPSERTのキー）</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">wtg_status</span></td>
+        <td><code>status</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(242,193,78,0.18);color:#f2c14e;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTGマトリクス</span> <span style="color:var(--muted);font-size:11px">（色分け・ステータス集計）</span></td>
+        <td style="color:var(--muted);font-size:11px">normal / warn / inspect / stop / missing</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">wtg_status</span></td>
+        <td><code>output_kw</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span> <span style="color:var(--muted);font-size:11px">「現在出力」</span></td>
+        <td style="color:var(--muted);font-size:11px">kW単位（MWではない）</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">wtg_status</span></td>
+        <td><code>wind_speed_ms</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span> <span style="color:var(--muted);font-size:11px">「現在風速」</span>　<span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">ヘッダー</span> <span style="color:var(--muted);font-size:11px">「風速バッジ」</span></td>
+        <td style="color:var(--muted);font-size:11px">SCADAナセル風速（最新値）</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">wtg_status</span></td>
+        <td><code>alarm_code</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span> <span style="color:var(--muted);font-size:11px">「直近アラーム」</span>　<span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span></td>
+        <td style="color:var(--muted);font-size:11px">GEアラームコード。なければNULL</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">wtg_status</span></td>
+        <td><code>updated_at</code></td>
+        <td style="color:var(--muted);font-size:11px">timestamptz</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「データ品質メモ」（長時間未更新=SCADA断線疑い）</span></td>
+        <td style="color:var(--muted);font-size:11px">30分以上古い → SCADA接続確認</td>
+      </tr>
+
+      <!-- ── alarm_events ── -->
+      <tr class="section-row"><td colspan="5">① alarm_events — アラーム履歴（SCADAシステム・イベント駆動）</td></tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>wtg_id</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span>　<span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span>　<span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">AI所見</span></td>
+        <td style="color:var(--muted);font-size:11px">どのWTGで発生したか</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>alarm_type</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span> <span style="color:var(--muted);font-size:11px">（表示）</span>　<span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">AI所見</span> <span style="color:var(--muted);font-size:11px">「機は健やかか」</span>　<span style="background:rgba(228,93,93,0.12);color:#ffb0a9;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">最重要判断</span></td>
+        <td style="color:var(--muted);font-size:11px">例: GEN_TEMP_HIGH, COMM_LOSS</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>severity</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span> <span style="color:var(--muted);font-size:11px">（優先度ソート・色分け）</span>　<span style="background:rgba(228,93,93,0.12);color:#ffb0a9;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">最重要判断</span> <span style="color:var(--muted);font-size:11px">（danger/warn分類）</span></td>
+        <td style="color:var(--muted);font-size:11px">high / mid / low</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>started_at</code></td>
+        <td style="color:var(--muted);font-size:11px">timestamptz</td>
+        <td><span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span> <span style="color:var(--muted);font-size:11px">（発生時刻）</span>　<span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span> <span style="color:var(--muted);font-size:11px">「昨日の実績」</span></td>
+        <td style="color:var(--muted);font-size:11px"></td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>resolved_at</code></td>
+        <td style="color:var(--muted);font-size:11px">timestamptz</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span> <span style="color:var(--muted);font-size:11px">（解決済み確認）</span>　<span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">AI所見</span></td>
+        <td style="color:var(--muted);font-size:11px">NULL = 未解決（持ち越し判定に使用）</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>detail</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span> <span style="color:var(--muted);font-size:11px">（詳細テキスト）</span>　<span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「未解決リスク」自動補完</span></td>
+        <td style="color:var(--muted);font-size:11px"></td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>owner</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span> <span style="color:var(--muted);font-size:11px">（担当部署表示）</span></td>
+        <td style="color:var(--muted);font-size:11px">設備部 / 管理部 など</td>
+      </tr>
+      <tr>
+        <td><span class="badge scada">alarm_events</span></td>
+        <td><code>recurrence_count</code></td>
+        <td style="color:var(--muted);font-size:11px">int4</td>
+        <td><span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">AI所見</span> <span style="color:var(--muted);font-size:11px">「再発判定（90日以内に4回など）」</span>　<span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTG詳細</span> <span style="color:var(--muted);font-size:11px">「推奨アクション」</span></td>
+        <td style="color:var(--muted);font-size:11px">INSERT時にalarm_typeで集計して更新</td>
+      </tr>
+
+      <!-- ── weather_cache ── -->
+      <tr class="section-row"><td colspan="5">② weather_cache — 気象APIキャッシュ（Open-Meteo + 気象庁・1時間毎）</td></tr>
+      <tr>
+        <td><span class="badge weather">weather_cache</span></td>
+        <td><code>datetime</code></td>
+        <td style="color:var(--muted);font-size:11px">timestamptz UNIQUE</td>
+        <td><span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（予測時系列軸）</span>　<span style="background:rgba(86,163,217,0.12);color:#b8dcf3;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検カレンダー</span> <span style="color:var(--muted);font-size:11px">（時間帯特定）</span></td>
+        <td style="color:var(--muted);font-size:11px"><strong style="color:#e45d5d">UNIQUE制約必須</strong>（UPSERTのキー）</td>
+      </tr>
+      <tr>
+        <td><span class="badge weather">weather_cache</span></td>
+        <td><code>wind_speed_ms</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（風況予測系列）</span>　<span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">ヘッダー</span>　<span style="background:rgba(86,163,217,0.12);color:#b8dcf3;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span> <span style="color:var(--muted);font-size:11px">（発電影響計算）</span>　<span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">daily_kpi計算</span></td>
+        <td style="color:var(--muted);font-size:11px"><strong style="color:#eef4f8">最も多用されるフィールド</strong>。power_curveと組み合わせて発電量を推計</td>
+      </tr>
+      <tr>
+        <td><span class="badge weather">weather_cache</span></td>
+        <td><code>wind_dir</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">ヘッダー</span> <span style="color:var(--muted);font-size:11px">「気象コメント」</span>　<span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">AI所見</span> <span style="color:var(--muted);font-size:11px">「人は安全か（高所作業判定）」</span></td>
+        <td style="color:var(--muted);font-size:11px">南南西 / 西 など</td>
+      </tr>
+      <tr>
+        <td><span class="badge weather">weather_cache</span></td>
+        <td><code>weather_code</code></td>
+        <td style="color:var(--muted);font-size:11px">int4</td>
+        <td><span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">ヘッダー</span> <span style="color:var(--muted);font-size:11px">「天気アイコン」</span>　<span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（天気系列）</span></td>
+        <td style="color:var(--muted);font-size:11px">WMO weather code（0=晴れ、80=雨など）</td>
+      </tr>
+      <tr>
+        <td><span class="badge weather">weather_cache</span></td>
+        <td><code>alert_type</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">ヘッダー</span> <span style="color:var(--muted);font-size:11px">「注意報バッジ」</span>　<span style="color:var(--muted);font-size:11px">お天気アラーム</span>　<span style="background:rgba(49,196,132,0.12);color:#7be0b2;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">安全チェック</span></td>
+        <td style="color:var(--muted);font-size:11px">強風 / 雷 / 暴風 / なし</td>
+      </tr>
+      <tr>
+        <td><span class="badge weather">weather_cache</span></td>
+        <td><code>alert_level</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="color:var(--muted);font-size:11px">お天気アラーム（重要度色）</span>　<span style="background:rgba(49,196,132,0.12);color:#7be0b2;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">安全チェック</span> <span style="color:var(--muted);font-size:11px">（高所作業中止判定）</span></td>
+        <td style="color:var(--muted);font-size:11px">high / mid / none</td>
+      </tr>
+      <tr>
+        <td><span class="badge weather">weather_cache</span></td>
+        <td><code>fetched_at</code></td>
+        <td style="color:var(--muted);font-size:11px">timestamptz</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「データ品質メモ」（鮮度確認）</span></td>
+        <td style="color:var(--muted);font-size:11px">2時間以上古い → API取得失敗を疑う</td>
+      </tr>
+
+      <!-- ── jepx_spot ── -->
+      <tr class="section-row"><td colspan="5">③ jepx_spot — JEPXスポット価格 30分枠（JEPX公式・日次）</td></tr>
+      <tr>
+        <td><span class="badge jepx">jepx_spot</span></td>
+        <td><code>date</code></td>
+        <td style="color:var(--muted);font-size:11px">date</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「JEPX参考」</span>　<span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（JEPX系列）</span></td>
+        <td style="color:var(--muted);font-size:11px"></td>
+      </tr>
+      <tr>
+        <td><span class="badge jepx">jepx_spot</span></td>
+        <td><code>slot_30min</code></td>
+        <td style="color:var(--muted);font-size:11px">int4</td>
+        <td><span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（30分単位のJEPX価格プロット）</span></td>
+        <td style="color:var(--muted);font-size:11px">1〜48（1=0:00-0:30, 48=23:30-24:00）</td>
+      </tr>
+      <tr>
+        <td><span class="badge jepx">jepx_spot</span></td>
+        <td><code>area</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td style="color:var(--muted);font-size:11px">フィルタ条件のみ（東北エリア固定）</td>
+        <td style="color:var(--muted);font-size:11px">"tohoku" で固定。画面には非表示</td>
+      </tr>
+      <tr>
+        <td><span class="badge jepx">jepx_spot</span></td>
+        <td><code>price_yen_kwh</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「JEPX参考」</span>　<span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「インバランス影響額計算」</span>　<span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span></td>
+        <td style="color:var(--muted);font-size:11px">円/kWh</td>
+      </tr>
+
+      <!-- ── daily_kpi ── -->
+      <tr class="section-row"><td colspan="5">⑤ daily_kpi — 日次KPI集計（計算・日次バッチ・毎朝06:00）</td></tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>date</code></td>
+        <td style="color:var(--muted);font-size:11px">date</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">（行の特定）</span></td>
+        <td style="color:var(--muted);font-size:11px">(date, type) が UNIQUE制約のキー</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>type</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">（昨日列 / 本日列 / 明日列 の切り替え）</span></td>
+        <td style="color:var(--muted);font-size:11px">actual / today / tomorrow</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>power_mwh</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「発電量」</span>　<span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">グラフ</span> <span style="color:var(--muted);font-size:11px">（日次発電量系列）</span>　<span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「下書き文」</span></td>
+        <td style="color:var(--muted);font-size:11px">MWh</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>availability_pct</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「稼働率」</span></td>
+        <td style="color:var(--muted);font-size:11px">%</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>revenue_man_yen</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「売電額」</span>　<span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「インバランス影響額計算の分母」</span></td>
+        <td style="color:var(--muted);font-size:11px">万円（= power_mwh × 1.8）</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>avg_wind_ms</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「平均風速」</span></td>
+        <td style="color:var(--muted);font-size:11px">m/s</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>jepx_avg</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「JEPX参考」</span>　<span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「インバランス影響額計算」</span></td>
+        <td style="color:var(--muted);font-size:11px">円/kWh（jepx_spotのAVG）</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">daily_kpi</span></td>
+        <td><code>forecast_error_pct</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「計画値誤差」</span>　<span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「下書き文・インバランス計算」</span></td>
+        <td style="color:var(--muted);font-size:11px">%（forecast_accuracy_logsから転記）</td>
+      </tr>
+
+      <!-- ── forecast_accuracy_logs ── -->
+      <tr class="section-row"><td colspan="5">⑤ forecast_accuracy_logs — 計画値誤差ログ（計算・日次）</td></tr>
+      <tr>
+        <td><span class="badge calc">forecast_accuracy_logs</span></td>
+        <td><code>planned_mwh</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「下書き文」の計画値表示</span></td>
+        <td style="color:var(--muted);font-size:11px">アグリゲーターへ提出した計画値</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">forecast_accuracy_logs</span></td>
+        <td><code>actual_mwh</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「下書き文」の実績値表示</span></td>
+        <td style="color:var(--muted);font-size:11px">scada_30minのSUMと一致させる</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">forecast_accuracy_logs</span></td>
+        <td><code>error_pct</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">「計画値誤差」</span>　<span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span> <span style="color:var(--muted);font-size:11px">「インバランス影響額計算」</span></td>
+        <td style="color:var(--muted);font-size:11px">= (actual-planned) ÷ planned × 100</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">forecast_accuracy_logs</span></td>
+        <td><code>gate_close_time</code></td>
+        <td style="color:var(--muted);font-size:11px">time</td>
+        <td><span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">ヘッダー</span> <span style="color:var(--muted);font-size:11px">「ゲートクローズ残時間カウントダウン」</span></td>
+        <td style="color:var(--muted);font-size:11px">例: "08:30:00" で固定。契約により異なる</td>
+      </tr>
+
+      <!-- ── inspection_plan ── -->
+      <tr class="section-row"><td colspan="5">④ inspection_plan — 点検計画（CSV Upload・都度更新）</td></tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>date</code></td>
+        <td style="color:var(--muted);font-size:11px">date</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#b8dcf3;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検カレンダー</span> <span style="color:var(--muted);font-size:11px">（日付軸）</span>　<span style="background:rgba(242,193,78,0.18);color:#f2c14e;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTGマトリクス</span> <span style="color:var(--muted);font-size:11px">（点検予定重畳）</span></td>
+        <td style="color:var(--muted);font-size:11px"></td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>wtg_id</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#b8dcf3;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検カレンダー</span>　<span style="background:rgba(242,193,78,0.18);color:#f2c14e;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">WTGマトリクス</span>　<span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span></td>
+        <td style="color:var(--muted);font-size:11px"></td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>work_type</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span> <span style="color:var(--muted);font-size:11px">（表示）</span>　<span style="background:rgba(49,196,132,0.12);color:#7be0b2;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">安全チェック</span> <span style="color:var(--muted);font-size:11px">（ゲート条件の決定キー）</span></td>
+        <td style="color:var(--muted);font-size:11px">ブレード目視 / ナセル内確認 / 電気点検 など</td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>time_start / time_end</code></td>
+        <td style="color:var(--muted);font-size:11px">time</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span>　<span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">工数チェック</span>　<span style="background:rgba(86,163,217,0.12);color:#b8dcf3;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検カレンダー</span> <span style="color:var(--muted);font-size:11px">（発電影響MWh計算）</span></td>
+        <td style="color:var(--muted);font-size:11px">停止時間 = time_end - time_start</td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>status</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="color:var(--muted);font-size:11px">点検計画リスト（色分け表示）</span>　<span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span> <span style="color:var(--muted);font-size:11px">「持ち越し判定」</span></td>
+        <td style="color:var(--muted);font-size:11px">planned / done / carryover / canceled</td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>power_impact_mwh</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span> <span style="color:var(--muted);font-size:11px">「発電影響」</span>　<span style="background:rgba(86,163,217,0.18);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">KPI表</span> <span style="color:var(--muted);font-size:11px">（本日稼働率の補正）</span></td>
+        <td style="color:var(--muted);font-size:11px">停止時間 × 風速予測 × パワー曲線で計算</td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>required_qualification</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">工数チェック</span> <span style="color:var(--muted);font-size:11px">（必要資格 vs 保有資格の照合）</span></td>
+        <td style="color:var(--muted);font-size:11px">高所 / 電気 / なし</td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>ptw_number</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(49,196,132,0.12);color:#7be0b2;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">安全チェック</span> <span style="color:var(--muted);font-size:11px">「PTW確認ゲート」</span></td>
+        <td style="color:var(--muted);font-size:11px">Permit to Work 番号（例: PTW-226）</td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>worker_count</code></td>
+        <td style="color:var(--muted);font-size:11px">int4</td>
+        <td><span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">工数チェック</span> <span style="color:var(--muted);font-size:11px">「必要人数」</span></td>
+        <td style="color:var(--muted);font-size:11px"></td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">inspection_plan</span></td>
+        <td><code>carryover_from</code></td>
+        <td style="color:var(--muted);font-size:11px">date</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span> <span style="color:var(--muted);font-size:11px">「昨日の実績 持ち越しタスク」</span>　<span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アラームリスト</span></td>
+        <td style="color:var(--muted);font-size:11px">NULL=新規計画 / 日付あり=繰越</td>
+      </tr>
+
+      <!-- ── staff_roster ── -->
+      <tr class="section-row"><td colspan="5">④ staff_roster — 要員名簿（週次更新）</td></tr>
+      <tr>
+        <td><span class="badge plan">staff_roster</span></td>
+        <td><code>name</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「出席者」自動補完</span></td>
+        <td style="color:var(--muted);font-size:11px"></td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">staff_roster</span></td>
+        <td><code>qualifications</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">工数チェック</span> <span style="color:var(--muted);font-size:11px">（保有資格 vs 点検の required_qualification を照合）</span></td>
+        <td style="color:var(--muted);font-size:11px">カンマ区切り "高所,電気"</td>
+      </tr>
+      <tr>
+        <td><span class="badge plan">staff_roster</span></td>
+        <td><code>available</code></td>
+        <td style="color:var(--muted);font-size:11px">bool</td>
+        <td><span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">工数チェック</span> <span style="color:var(--muted);font-size:11px">（本日出勤者のみを保有資格カウントに含める）</span></td>
+        <td style="color:var(--muted);font-size:11px"><strong style="color:#e45d5d">毎朝更新が必要</strong></td>
+      </tr>
+
+      <!-- ── meeting_minutes ── -->
+      <tr class="section-row"><td colspan="5">⑥ meeting_minutes — 議事録（朝会毎・手入力+自動補完）</td></tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>date</code></td>
+        <td style="color:var(--muted);font-size:11px">date</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span> <span style="color:var(--muted);font-size:11px">「昨日」カードが前日の議事録を参照</span></td>
+        <td style="color:var(--muted);font-size:11px">PRIMARY KEY</td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>representative_comment</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「代表所見」入力欄 → 保存</span></td>
+        <td style="color:var(--muted);font-size:11px"><strong style="color:#e45d5d">手入力（必須）</strong></td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>decisions</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「決定事項」入力欄 → 保存</span></td>
+        <td style="color:var(--muted);font-size:11px"><strong style="color:#e45d5d">手入力（必須）</strong></td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>handover</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「申し送り」</span>　<span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span> <span style="color:var(--muted);font-size:11px">「翌日の持ち越しタスク表示」</span></td>
+        <td style="color:var(--muted);font-size:11px"><strong style="color:#e45d5d">手入力（必須）</strong></td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>aggregator_note</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「アグリゲーター連絡」（自動補完・readonly）</span>　<span style="background:rgba(214,168,79,0.12);color:#ffd17a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">アグリゲーター</span></td>
+        <td style="color:var(--muted);font-size:11px">daily_kpiとinspection_planから自動生成</td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>om_note</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「O&M連絡」（自動補完・readonly）</span></td>
+        <td style="color:var(--muted);font-size:11px">alarm_eventsとinspection_planから自動生成</td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>unresolved_risks</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「未解決リスク」（自動補完）</span>　<span style="background:rgba(86,163,217,0.12);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">サマリーカード</span> <span style="color:var(--muted);font-size:11px">（翌日引継ぎ）</span></td>
+        <td style="color:var(--muted);font-size:11px">未解決alarm + 繰越点検から自動生成</td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>next_check_time</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「次回確認時刻」（自動補完）</span></td>
+        <td style="color:var(--muted);font-size:11px">例: "11:30 WTG07一次確認"</td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>attendees</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「出席者」（staff_rosterのavailable=trueから自動補完）</span></td>
+        <td style="color:var(--muted);font-size:11px">自動補完</td>
+      </tr>
+      <tr>
+        <td><span class="badge manual">meeting_minutes</span></td>
+        <td><code>data_quality_note</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">議事録</span> <span style="color:var(--muted);font-size:11px">「データ品質メモ」（wtg_status.updated_atから自動補完）</span></td>
+        <td style="color:var(--muted);font-size:11px">例: "WTG23通信欠損 実績集計から除外"</td>
+      </tr>
+
+      <!-- ── power_curve ── -->
+      <tr class="section-row"><td colspan="5">静的マスタ power_curve — GEパワー曲線（初期設定のみ）</td></tr>
+      <tr>
+        <td><span class="badge calc">power_curve</span></td>
+        <td><code>model</code></td>
+        <td style="color:var(--muted);font-size:11px">text</td>
+        <td style="color:var(--muted);font-size:11px">機種照合のみ（画面には非表示）</td>
+        <td style="color:var(--muted);font-size:11px">"GE-3.6-137" など。阿武隈の機種で固定</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">power_curve</span></td>
+        <td><code>wind_speed_ms</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span> <span style="color:var(--muted);font-size:11px">「発電影響計算」（入力軸：weather_cacheの風速値）</span>　<span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">daily_kpi計算</span></td>
+        <td style="color:var(--muted);font-size:11px">パワー曲線の入力軸（風速）</td>
+      </tr>
+      <tr>
+        <td><span class="badge calc">power_curve</span></td>
+        <td><code>power_output_kw</code></td>
+        <td style="color:var(--muted);font-size:11px">float8</td>
+        <td><span style="background:rgba(86,163,217,0.12);color:#9fd0ef;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">点検詳細</span> <span style="color:var(--muted);font-size:11px">「発電影響MWh」の機会損失計算</span>　<span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600">daily_kpi(tomorrow)</span> <span style="color:var(--muted);font-size:11px">計算</span></td>
+        <td style="color:var(--muted);font-size:11px">パワー曲線の出力軸（kW）</td>
+      </tr>
+
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== アーキテクチャ図 ===== -->
+<div style="margin-top:32px;border-top:2px solid rgba(86,163,217,0.25);padding-top:20px">
+  <h2 style="color:var(--blue);font-size:16px;font-weight:700;margin-bottom:4px">▶ アプリケーションアーキテクチャ図</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:16px">データソース → ETL → Supabase → Morning Cockpit → 朝会出力</p>
+
+  <svg viewBox="0 0 980 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;border:1px solid var(--line)">
+    <defs>
+      <marker id="arr"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#56a3d9"/></marker>
+      <marker id="arr-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#31c484"/></marker>
+      <marker id="arr-y" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#d6a84f"/></marker>
+      <marker id="arr-r" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#e45d5d"/></marker>
+      <marker id="arr-p" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#a58bff"/></marker>
+    </defs>
+    <rect width="980" height="520" fill="#0b1420"/>
+
+    <!-- Column labels -->
+    <text x="97"  y="16" text-anchor="middle" fill="#788694" font-size="11" font-family="Yu Gothic UI,system-ui,sans-serif">外部データソース</text>
+    <text x="298" y="16" text-anchor="middle" fill="#788694" font-size="11" font-family="Yu Gothic UI,system-ui,sans-serif">取込・ETL</text>
+    <text x="529" y="16" text-anchor="middle" fill="#788694" font-size="11" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase</text>
+    <text x="780" y="16" text-anchor="middle" fill="#788694" font-size="11" font-family="Yu Gothic UI,system-ui,sans-serif">アプリ層</text>
+
+    <!-- ── Col1: Data Sources ── -->
+    <rect x="5"  y="24" width="184" height="48" rx="2" fill="#0d1f33" stroke="#56a3d9" stroke-width="1.5"/>
+    <text x="97" y="43"  text-anchor="middle" fill="#7ec8f0" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">① SCADA</text>
+    <text x="97" y="60"  text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">30min実績 / 風速 / アラーム / ステータス</text>
+
+    <rect x="5"  y="80" width="184" height="48" rx="2" fill="#0d2a1f" stroke="#31c484" stroke-width="1.5"/>
+    <text x="97" y="99"  text-anchor="middle" fill="#5adba8" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">② Open-Meteo API</text>
+    <text x="97" y="116" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">72時間風況・天気予報（無料）</text>
+
+    <rect x="5"  y="136" width="184" height="48" rx="2" fill="#0d2a1f" stroke="#31c484" stroke-width="1.5"/>
+    <text x="97" y="155" text-anchor="middle" fill="#5adba8" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">② 気象庁API</text>
+    <text x="97" y="172" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">注意報・警報（無料）</text>
+
+    <rect x="5"  y="192" width="184" height="48" rx="2" fill="#2a1f0d" stroke="#d6a84f" stroke-width="1.5"/>
+    <text x="97" y="211" text-anchor="middle" fill="#e8c46a" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">③ JEPX公式CSV</text>
+    <text x="97" y="228" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">スポット価格 30分枠（無料）</text>
+
+    <rect x="5"  y="248" width="184" height="48" rx="2" fill="#2a2008" stroke="#e8b64f" stroke-width="1.5"/>
+    <text x="97" y="267" text-anchor="middle" fill="#f2d070" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">④ 点検計画 CSV</text>
+    <text x="97" y="284" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">作業予定・工数・PTW番号</text>
+
+    <rect x="5"  y="304" width="184" height="48" rx="2" fill="#2a2008" stroke="#e8b64f" stroke-width="1"/>
+    <text x="97" y="323" text-anchor="middle" fill="#f2d070" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">④ 要員名簿 CSV</text>
+    <text x="97" y="340" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">資格・保有者数</text>
+
+    <rect x="5"  y="360" width="184" height="48" rx="2" fill="#2a0d0d" stroke="#e45d5d" stroke-width="1.5"/>
+    <text x="97" y="379" text-anchor="middle" fill="#f08080" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">⑥ 手入力（朝会）</text>
+    <text x="97" y="396" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">代表所見・決定事項・申し送り</text>
+
+    <rect x="5"  y="416" width="184" height="46" rx="2" fill="#111a24" stroke="rgba(159,176,189,0.4)" stroke-width="1"/>
+    <text x="97" y="434" text-anchor="middle" fill="#b8cad4" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">パワー曲線 CSV</text>
+    <text x="97" y="451" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">GE仕様書（初期設定のみ）</text>
+
+    <!-- ── Col1→Col2 arrows ── -->
+    <polyline points="189,48 202,48 202,82 210,82"   fill="none" stroke="#56a3d9" stroke-width="1.5" marker-end="url(#arr)"/>
+    <polyline points="189,104 202,104 202,100 210,100" fill="none" stroke="#31c484" stroke-width="1.5" marker-end="url(#arr-g)"/>
+    <polyline points="189,160 202,160 202,118 210,118" fill="none" stroke="#31c484" stroke-width="1.5" marker-end="url(#arr-g)"/>
+    <polyline points="189,216 203,216 203,136 210,136" fill="none" stroke="#d6a84f" stroke-width="1.5" marker-end="url(#arr-y)"/>
+    <polyline points="189,272 203,272 203,242 210,242" fill="none" stroke="#e8b64f" stroke-width="1.5" marker-end="url(#arr-y)"/>
+    <polyline points="189,328 203,328 203,262 210,262" fill="none" stroke="#e8b64f" stroke-width="1.5" marker-end="url(#arr-y)"/>
+    <polyline points="189,384 203,384 203,342 210,342" fill="none" stroke="#e45d5d" stroke-width="1.5" marker-end="url(#arr-r)"/>
+    <polyline points="189,439 203,439 203,282 210,282" fill="none" stroke="#9fb0bd" stroke-width="1"   marker-end="url(#arr)"/>
+
+    <!-- ── Col2: ETL ── -->
+    <rect x="210" y="24"  width="176" height="155" rx="2" fill="#101e2e" stroke="#56a3d9" stroke-width="1" stroke-dasharray="5 3"/>
+    <text x="298" y="46"  text-anchor="middle" fill="#9fd0ef" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">Python ETL</text>
+    <text x="298" y="63"  text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">cron / GitHub Actions</text>
+    <line x1="220" y1="68" x2="376" y2="68" stroke="#1a2e42" stroke-width="1"/>
+    <text x="298" y="86"  text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">① SCADA → upsert（30min毎）</text>
+    <text x="298" y="104" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">② 気象API fetch → cache（1h毎）</text>
+    <text x="298" y="122" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">③ JEPX CSV → insert（日次）</text>
+    <text x="298" y="140" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">⑤ KPI集計・誤差計算（日次）</text>
+    <text x="298" y="167" text-anchor="middle" fill="#56a3d9" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase Python SDK</text>
+
+    <rect x="210" y="196" width="176" height="100" rx="2" fill="#1e1a0d" stroke="#e8b64f" stroke-width="1" stroke-dasharray="5 3"/>
+    <text x="298" y="218" text-anchor="middle" fill="#f2d070" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">CSV Upload</text>
+    <text x="298" y="236" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">点検計画 / 要員名簿 / パワー曲線</text>
+    <text x="298" y="254" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase Storage 経由</text>
+    <text x="298" y="283" text-anchor="middle" fill="#e8b64f" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Edge Function → DB insert</text>
+
+    <rect x="210" y="314" width="176" height="100" rx="2" fill="#1e0d0d" stroke="#e45d5d" stroke-width="1" stroke-dasharray="5 3"/>
+    <text x="298" y="336" text-anchor="middle" fill="#f08080" font-size="12" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">Realtime Input</text>
+    <text x="298" y="354" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">朝会中の手入力フォーム</text>
+    <text x="298" y="372" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">→ meeting_minutes</text>
+    <text x="298" y="401" text-anchor="middle" fill="#e45d5d" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase Realtime</text>
+
+    <!-- ── Col2→Col3 arrows ── -->
+    <line x1="386" y1="100" x2="420" y2="160" stroke="#56a3d9" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="386" y1="246" x2="420" y2="295" stroke="#e8b64f" stroke-width="2" marker-end="url(#arr-y)"/>
+    <line x1="386" y1="364" x2="420" y2="385" stroke="#e45d5d" stroke-width="2" marker-end="url(#arr-r)"/>
+
+    <!-- ── Col3: Supabase ── -->
+    <rect x="420" y="24" width="220" height="434" rx="4" fill="#12192a" stroke="rgba(214,168,79,0.7)" stroke-width="2"/>
+    <rect x="420" y="24" width="220" height="36"  rx="4" fill="rgba(214,168,79,0.15)"/>
+    <text x="530" y="48" text-anchor="middle" fill="#d6a84f" font-size="14" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase</text>
+    <text x="530" y="74" text-anchor="middle" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">PostgreSQL · Realtime · Auth · Storage · Edge Fn</text>
+    <line x1="430" y1="80" x2="630" y2="80" stroke="#1a2a3a" stroke-width="1"/>
+
+    <!-- Table entries inside Supabase box -->
+    <rect x="430" y="86"  width="200" height="26" rx="2" fill="rgba(86,163,217,0.1)"   stroke="rgba(86,163,217,0.3)"   stroke-width="1"/>
+    <text x="440" y="103" fill="#7ec8f0" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">scada_30min</text>
+    <text x="624" y="103" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">①30分実績</text>
+
+    <rect x="430" y="118" width="200" height="26" rx="2" fill="rgba(86,163,217,0.1)"   stroke="rgba(86,163,217,0.3)"   stroke-width="1"/>
+    <text x="440" y="135" fill="#7ec8f0" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">wtg_status</text>
+    <text x="624" y="135" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">①Realtime</text>
+
+    <rect x="430" y="150" width="200" height="26" rx="2" fill="rgba(86,163,217,0.1)"   stroke="rgba(86,163,217,0.3)"   stroke-width="1"/>
+    <text x="440" y="167" fill="#7ec8f0" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">alarm_events</text>
+    <text x="624" y="167" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">①アラーム履歴</text>
+
+    <rect x="430" y="182" width="200" height="26" rx="2" fill="rgba(49,196,132,0.08)"  stroke="rgba(49,196,132,0.25)"  stroke-width="1"/>
+    <text x="440" y="199" fill="#5adba8" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">weather_cache</text>
+    <text x="624" y="199" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">②気象APIキャッシュ</text>
+
+    <rect x="430" y="214" width="200" height="26" rx="2" fill="rgba(214,168,79,0.08)"  stroke="rgba(214,168,79,0.25)"  stroke-width="1"/>
+    <text x="440" y="231" fill="#e8c46a" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">jepx_spot</text>
+    <text x="624" y="231" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">③JEPXスポット</text>
+
+    <rect x="430" y="246" width="200" height="26" rx="2" fill="rgba(159,176,189,0.08)" stroke="rgba(159,176,189,0.25)" stroke-width="1"/>
+    <text x="440" y="263" fill="#b8cad4" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">daily_kpi</text>
+    <text x="624" y="263" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">⑤KPI集計</text>
+
+    <rect x="430" y="278" width="200" height="26" rx="2" fill="rgba(159,176,189,0.08)" stroke="rgba(159,176,189,0.25)" stroke-width="1"/>
+    <text x="440" y="295" fill="#b8cad4" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">forecast_accuracy_logs</text>
+    <text x="624" y="295" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">⑤誤差ログ</text>
+
+    <rect x="430" y="310" width="200" height="26" rx="2" fill="rgba(232,182,79,0.08)"  stroke="rgba(232,182,79,0.25)"  stroke-width="1"/>
+    <text x="440" y="327" fill="#f2d070" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">inspection_plan</text>
+    <text x="624" y="327" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">④点検計画</text>
+
+    <rect x="430" y="342" width="200" height="26" rx="2" fill="rgba(232,182,79,0.08)"  stroke="rgba(232,182,79,0.25)"  stroke-width="1"/>
+    <text x="440" y="359" fill="#f2d070" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">staff_roster</text>
+    <text x="624" y="359" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">④要員名簿</text>
+
+    <rect x="430" y="374" width="200" height="26" rx="2" fill="rgba(228,93,93,0.08)"   stroke="rgba(228,93,93,0.25)"   stroke-width="1"/>
+    <text x="440" y="391" fill="#f08080" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">meeting_minutes</text>
+    <text x="624" y="391" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">⑥手入力</text>
+
+    <rect x="430" y="406" width="200" height="26" rx="2" fill="rgba(159,176,189,0.08)" stroke="rgba(159,176,189,0.25)" stroke-width="1"/>
+    <text x="440" y="423" fill="#b8cad4" font-size="11" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">power_curve</text>
+    <text x="624" y="423" text-anchor="end" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">静的マスタ</text>
+
+    <text x="530" y="450" text-anchor="middle" fill="#56a3d9" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Row Level Security で全テーブル保護</text>
+
+    <!-- ── Col3→Col4 arrows ── -->
+    <line x1="640" y1="190" x2="670" y2="190" stroke="#d6a84f" stroke-width="2" marker-end="url(#arr-y)"/>
+    <line x1="640" y1="330" x2="670" y2="360" stroke="#d6a84f" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#arr-y)"/>
+
+    <!-- ── Col4: App Layer ── -->
+    <rect x="670" y="24"  width="200" height="130" rx="3" fill="#1a1030" stroke="#a58bff" stroke-width="2"/>
+    <text x="770" y="50"  text-anchor="middle" fill="#c4b0ff" font-size="13" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">Morning Cockpit</text>
+    <text x="770" y="68"  text-anchor="middle" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">index.html（HTML + JS）</text>
+    <line x1="680" y1="73" x2="860" y2="73" stroke="#2a1a40" stroke-width="1"/>
+    <text x="770" y="91"  text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase JS SDK でデータ取得</text>
+    <text x="770" y="109" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Realtime で WTGステータス subscribe</text>
+    <text x="770" y="127" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">KPI / グラフ / 点検 を描画</text>
+
+    <rect x="670" y="174" width="200" height="110" rx="3" fill="#0d2028" stroke="#56a3d9" stroke-width="1.5"/>
+    <text x="770" y="198" text-anchor="middle" fill="#9fd0ef" font-size="13" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">Claude API</text>
+    <text x="770" y="216" text-anchor="middle" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase Edge Function 経由</text>
+    <line x1="680" y1="221" x2="860" y2="221" stroke="#1a2a3a" stroke-width="1"/>
+    <text x="770" y="239" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">AI所見 / 最重要判断</text>
+    <text x="770" y="257" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">サマリー / 下書き文 生成</text>
+    <text x="770" y="273" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">claude-sonnet-4-5</text>
+
+    <rect x="670" y="304" width="200" height="80" rx="3" fill="#101a10" stroke="#31c484" stroke-width="1.5"/>
+    <text x="770" y="328" text-anchor="middle" fill="#7be0b2" font-size="13" font-weight="bold" font-family="Yu Gothic UI,system-ui,sans-serif">朝会出力</text>
+    <line x1="680" y1="333" x2="860" y2="333" stroke="#1a2a1a" stroke-width="1"/>
+    <text x="770" y="351" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">PDF出力（window.print）</text>
+    <text x="770" y="369" text-anchor="middle" fill="#788694" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">議事録 → Supabase 保存</text>
+
+    <rect x="670" y="402" width="200" height="44" rx="3" fill="#1e0d10" stroke="rgba(228,93,93,0.4)" stroke-width="1" stroke-dasharray="4 2"/>
+    <text x="770" y="428" text-anchor="middle" fill="#f08080" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">議事録保存 → meeting_minutes</text>
+
+    <!-- Internal col4 arrows -->
+    <line x1="770" y1="154" x2="770" y2="174" stroke="#a58bff" stroke-width="1.5" marker-end="url(#arr-p)"/>
+    <line x1="756" y1="174" x2="756" y2="154" stroke="#56a3d9" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="770" y1="284" x2="770" y2="304" stroke="#a58bff" stroke-width="1.5" marker-end="url(#arr-p)"/>
+
+    <!-- Save back: app → meeting_minutes → Supabase -->
+    <polyline points="870,154 888,154 888,424 870,424" fill="none" stroke="#e45d5d" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr-r)"/>
+    <polyline points="670,424 658,424 658,388 640,388" fill="none" stroke="#e45d5d" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr-r)"/>
+
+    <!-- Legend（Supabaseボックス下に移動） -->
+    <rect x="6" y="475" width="840" height="30" rx="2" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <circle cx="22"  cy="490" r="5" fill="#56a3d9"/><text x="31"  y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">① SCADA</text>
+    <circle cx="105" cy="490" r="5" fill="#31c484"/><text x="114" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">② 気象API</text>
+    <circle cx="192" cy="490" r="5" fill="#d6a84f"/><text x="201" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">③ JEPX</text>
+    <circle cx="268" cy="490" r="5" fill="#e8b64f"/><text x="277" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">④ 点検計画/要員</text>
+    <circle cx="384" cy="490" r="5" fill="#b8cad4"/><text x="393" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">⑤ 計算・導出</text>
+    <circle cx="464" cy="490" r="5" fill="#e45d5d"/><text x="473" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">⑥ 手入力</text>
+    <circle cx="538" cy="490" r="5" fill="#a58bff"/><text x="547" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Morning Cockpit</text>
+    <circle cx="648" cy="490" r="5" fill="#7ec8f0"/><text x="657" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">Supabase（PostgreSQL）</text>
+    <circle cx="788" cy="490" r="5" fill="#e45d5d" stroke="rgba(228,93,93,0.5)" fill-opacity="0.3" stroke-width="1.5"/><text x="797" y="494" fill="#9fb0bd" font-size="10" font-family="Yu Gothic UI,system-ui,sans-serif">点線=書き戻し</text>
+  </svg>
+
+</div>
+
+
+<!-- ===== daily_kpi 計算方法（詳細） ===== -->
+<div style="margin-top:32px;border-top:2px solid rgba(159,176,189,0.25);padding-top:20px">
+  <h2 style="color:#b8cad4;font-size:16px;font-weight:700;margin-bottom:4px">▶ daily_kpi テーブルの作り方（詳細計算フロー）</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:20px">
+    毎朝 <strong style="color:#eef4f8">06:00</strong> に Python ETL が実行され、1日あたり <strong style="color:#eef4f8">3行</strong>（昨日実績・本日見込み・明日予測）を計算して UPSERT します。<br>
+    この3行が KPI比較表・アグリゲーター連絡・インバランス影響額のすべての数値の源泉です。
+  </p>
+
+  <!-- 3行の意味 -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
+    <div style="border:1px solid rgba(86,163,217,0.4);background:#0d1f33;padding:14px 16px;border-top:3px solid #56a3d9">
+      <div style="color:#7ec8f0;font-weight:700;font-size:13px;margin-bottom:6px">① type = 'actual'　　昨日実績</div>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7;margin:0">
+        前日の <code style="color:#7ec8f0">scada_30min</code> 全48コマを集計。<br>
+        SCADAが記録した発電量・風速の実測値から計算。<br>
+        議事録の「前日決定の結果」・KPI比較表「昨日実績」列に表示。
+      </p>
+    </div>
+    <div style="border:1px solid rgba(86,163,217,0.4);background:#0d1233;padding:14px 16px;border-top:3px solid #a58bff">
+      <div style="color:#c4b0ff;font-weight:700;font-size:13px;margin-bottom:6px">② type = 'today'　　本日見込み</div>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7;margin:0">
+        <strong style="color:#eef4f8">確定分</strong>（朝までの <code style="color:#7ec8f0">scada_30min</code>）＋<br>
+        <strong style="color:#eef4f8">残時間推計</strong>（<code style="color:#5adba8">weather_cache</code> × パワー曲線）<br>
+        を足し合わせて1日分を推計。KPI比較表「本日見込み」列に表示。
+      </p>
+    </div>
+    <div style="border:1px solid rgba(49,196,132,0.4);background:#0d2a1f;padding:14px 16px;border-top:3px solid #31c484">
+      <div style="color:#5adba8;font-weight:700;font-size:13px;margin-bottom:6px">③ type = 'tomorrow'　明日予測</div>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7;margin:0">
+        全48コマを <code style="color:#5adba8">weather_cache</code>（翌日72時間予報）× パワー曲線で推計。<br>
+        SCADAデータは使わない（まだ存在しない）。<br>
+        KPI比較表「明日予測」列に表示。
+      </p>
+    </div>
+  </div>
+
+  <!-- 計算フロー図 -->
+  <h3 style="color:#9fb0bd;font-size:13px;font-weight:700;margin:0 0 12px;border-left:3px solid #d6a84f;padding-left:10px">計算フロー（Python ETL が毎朝06:00に実行）</h3>
+
+  <div style="background:#0e1720;border:1px solid var(--line);padding:16px 20px;font-family:monospace;font-size:12px;line-height:2;margin-bottom:24px;overflow-x:auto">
+    <span style="color:#788694"># ─── STEP 1: 昨日実績（type='actual'）を計算 ─────────────────────</span><br>
+    <span style="color:#5adba8">yesterday</span> <span style="color:#788694">=</span> <span style="color:#7ec8f0">today</span> <span style="color:#788694">-</span> <span style="color:#e8c46a">1日</span><br>
+    <br>
+    <span style="color:#9fb0bd">power_mwh</span>       <span style="color:#788694">=</span> <span style="color:#f2d070">SUM</span>(scada_30min.power_output_mwh) <span style="color:#788694">WHERE</span> date = yesterday<br>
+    <span style="color:#9fb0bd">availability_pct</span> <span style="color:#788694">=</span> (46×48 <span style="color:#788694">-</span> 停止コマ数) <span style="color:#788694">/</span> (46×48) <span style="color:#788694">×</span> 100<br>
+    <span style="color:#9fb0bd">revenue_man_yen</span>  <span style="color:#788694">=</span> power_mwh <span style="color:#788694">×</span> <span style="color:#e8c46a">18円/kWh</span> <span style="color:#788694">×</span> 1000 <span style="color:#788694">÷</span> 10000  <span style="color:#788694"># MWh→万円</span><br>
+    <span style="color:#9fb0bd">avg_wind_speed_ms</span><span style="color:#788694">=</span> <span style="color:#f2d070">AVG</span>(scada_30min.wind_speed_ms) <span style="color:#788694">WHERE</span> date = yesterday<br>
+    <span style="color:#9fb0bd">jepx_avg</span>         <span style="color:#788694">=</span> <span style="color:#f2d070">AVG</span>(jepx_spot.price_yen_kwh) <span style="color:#788694">WHERE</span> date = yesterday<br>
+    <span style="color:#9fb0bd">forecast_error_pct</span><span style="color:#788694">=</span> forecast_accuracy_logs.error_pct <span style="color:#788694">WHERE</span> date = yesterday<br>
+    <br>
+    <span style="color:#788694"># ─── STEP 2: 本日見込み（type='today'）を計算 ──────────────────────</span><br>
+    <span style="color:#5adba8">now_slot</span> <span style="color:#788694">=</span> 現在時刻の30分コマ番号  <span style="color:#788694"># 例: 7:00なら slot=14</span><br>
+    <br>
+    <span style="color:#9fb0bd">power_actual_so_far</span> <span style="color:#788694">=</span> <span style="color:#f2d070">SUM</span>(scada_30min) <span style="color:#788694">WHERE</span> date=today <span style="color:#788694">AND</span> slot &lt;= now_slot<br>
+    <span style="color:#9fb0bd">power_forecast_rest</span> <span style="color:#788694">=</span> <span style="color:#f2d070">SUM</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;weather_cache.wind_speed_ms → power_curve → kW → MWh変換<br>
+    ) <span style="color:#788694">WHERE</span> datetime_hour > now <span style="color:#788694">AND</span> date=today<br>
+    <span style="color:#9fb0bd">power_mwh</span> <span style="color:#788694">=</span> power_actual_so_far <span style="color:#788694">+</span> power_forecast_rest<br>
+    <span style="color:#788694"># revenue / availability / wind_avg → 同様に計算</span><br>
+    <br>
+    <span style="color:#788694"># ─── STEP 3: 明日予測（type='tomorrow'）を計算 ─────────────────────</span><br>
+    <span style="color:#9fb0bd">power_mwh</span> <span style="color:#788694">=</span> <span style="color:#f2d070">SUM</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;weather_cache.wind_speed_ms → power_curve → kW → MWh変換<br>
+    ) <span style="color:#788694">WHERE</span> date = tomorrow  <span style="color:#788694"># 全48コマを気象予測から推計</span><br>
+    <span style="color:#9fb0bd">jepx_avg</span> <span style="color:#788694">=</span> jepx_spot.price_yen_kwh <span style="color:#788694">WHERE</span> date = tomorrow  <span style="color:#788694"># JEPXが翌日分を公開済みなら使用</span><br>
+    <br>
+    <span style="color:#788694"># ─── STEP 4: Supabaseにupsert（同じdateとtypeがあれば上書き） ──────</span><br>
+    <span style="color:#f2d070">UPSERT</span> daily_kpi (date, type, power_mwh, availability_pct, revenue_man_yen, avg_wind_speed_ms, jepx_avg, forecast_error_pct)<br>
+    <span style="color:#788694">ON CONFLICT</span> (date, type) <span style="color:#788694">DO UPDATE SET</span> ... <span style="color:#788694"># 毎朝最新値で上書き</span>
+  </div>
+
+  <!-- 6KPI × 3タイプの計算式表 -->
+  <h3 style="color:#9fb0bd;font-size:13px;font-weight:700;margin:0 0 12px;border-left:3px solid #d6a84f;padding-left:10px">6つのKPI 計算式一覧</h3>
+
+  <div style="overflow-x:auto;border:1px solid var(--line)">
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#1a2a3a">
+        <th style="padding:10px 14px;font-size:12px;color:var(--muted);text-align:left;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-width:140px">KPI</th>
+        <th style="padding:10px 14px;font-size:12px;color:#56a3d9;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-width:240px">昨日実績（actual）</th>
+        <th style="padding:10px 14px;font-size:12px;color:#a58bff;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-width:260px">本日見込み（today）</th>
+        <th style="padding:10px 14px;font-size:12px;color:#31c484;text-align:center;border-bottom:1px solid var(--line);min-width:240px">明日予測（tomorrow）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background:#0e1720">
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4);font-weight:600;color:#eef4f8">① 発電量<br><small style="color:var(--muted);font-weight:400">power_mwh</small></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#7ec8f0;font-size:11px">SUM(scada_30min)<br>WHERE date=昨日</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#c4b0ff;font-size:11px">SCADA確定分<br>+ weather×パワー曲線（残時間）</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6)"><code style="color:#5adba8;font-size:11px">weather_cache×パワー曲線<br>WHERE date=明日（全48コマ）</code></td>
+      </tr>
+      <tr style="background:#111e2b">
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4);font-weight:600;color:#eef4f8">② 稼働率<br><small style="color:var(--muted);font-weight:400">availability_pct</small></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#7ec8f0;font-size:11px">(46×48 - 停止コマ数)<br>÷ (46×48) × 100</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#c4b0ff;font-size:11px">現在の停止台数から逆算<br>+ 点検予定による補正</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6)"><code style="color:#5adba8;font-size:11px">点検計画の停止予定時間<br>から推計</code></td>
+      </tr>
+      <tr style="background:#0e1720">
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4);font-weight:600;color:#eef4f8">③ 売電額<br><small style="color:var(--muted);font-weight:400">revenue_man_yen</small></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#7ec8f0;font-size:11px">power_mwh<br>× 18円/kWh × 1000 ÷ 10000</code><br><small style="color:var(--muted);font-size:10px">= power_mwh × 1.8 （万円）</small></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#c4b0ff;font-size:11px">本日power_mwh見込み<br>× 1.8</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6)"><code style="color:#5adba8;font-size:11px">明日power_mwh予測<br>× 1.8</code></td>
+      </tr>
+      <tr style="background:#111e2b">
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4);font-weight:600;color:#eef4f8">④ 平均風速<br><small style="color:var(--muted);font-weight:400">avg_wind_speed_ms</small></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#7ec8f0;font-size:11px">AVG(scada_30min.wind_speed_ms)<br>WHERE date=昨日</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#c4b0ff;font-size:11px">確定分はSCADA AVG<br>残時間はweather_cache AVG</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6)"><code style="color:#5adba8;font-size:11px">AVG(weather_cache.wind_speed_ms)<br>WHERE date=明日</code></td>
+      </tr>
+      <tr style="background:#0e1720">
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4);font-weight:600;color:#eef4f8">⑤ JEPX参考<br><small style="color:var(--muted);font-weight:400">jepx_avg</small></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#7ec8f0;font-size:11px">AVG(jepx_spot.price_yen_kwh)<br>WHERE date=昨日</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6);border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#c4b0ff;font-size:11px">AVG(jepx_spot)<br>WHERE date=今日（公開済分）</code></td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(43,59,74,0.6)"><code style="color:#5adba8;font-size:11px">jepx_spot WHERE date=明日<br>（前日の夜に公開される）</code></td>
+      </tr>
+      <tr style="background:#111e2b">
+        <td style="padding:10px 14px;border-right:1px solid rgba(43,59,74,0.4);font-weight:600;color:#eef4f8">⑥ 計画値誤差<br><small style="color:var(--muted);font-weight:400">forecast_error_pct</small></td>
+        <td style="padding:10px 14px;border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#7ec8f0;font-size:11px">forecast_accuracy_logs<br>WHERE date=昨日<br>= (実績-計画) ÷ 計画 × 100</code></td>
+        <td style="padding:10px 14px;border-right:1px solid rgba(43,59,74,0.4)"><code style="color:#c4b0ff;font-size:11px">前日の誤差率を参考表示<br>（本日分は朝会後に確定）</code></td>
+        <td style="padding:10px 14px"><code style="color:#5adba8;font-size:11px">前日の誤差率を参考表示<br>（翌日分はまだ算出不能）</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- パワー曲線補間の説明 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+
+    <div style="border:1px solid rgba(159,176,189,0.3);background:#111a24;padding:14px 16px">
+      <h4 style="color:#b8cad4;font-size:13px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px">
+        <span style="background:#b8cad4;color:#0b1420;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">曲</span>
+        パワー曲線による発電量推計の方法
+      </h4>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7;margin:0">
+        気象API から取得した <strong style="color:#eef4f8">風速(m/s)</strong> を、GEのパワー曲線テーブル（<code style="color:#b8cad4">power_curve</code>）に当てはめて出力(kW)を求めます。<br><br>
+        <strong style="color:#eef4f8">例:</strong> 風速 7.2 m/s → パワー曲線から 2,450 kW を補間<br>
+        → 30分コマなので <code style="color:#b8cad4">2,450 kW × 0.5h ÷ 1000 = 1.225 MWh</code><br>
+        → これを48コマ分合計すると1日の予測発電量になる<br><br>
+        ※ 46基すべてに同じ風速を使うのが最小構成。精度を上げるには WTG 位置ごとに別の座標で気象APIを呼ぶ。
+      </p>
+    </div>
+
+    <div style="border:1px solid rgba(214,168,79,0.3);background:#1a1a08;padding:14px 16px">
+      <h4 style="color:#d6a84f;font-size:13px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px">
+        <span style="background:#d6a84f;color:#0b1420;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">注</span>
+        よくある落とし穴・注意点
+      </h4>
+      <ul style="color:var(--muted);font-size:12px;line-height:1.7;margin:0;padding-left:16px">
+        <li><strong style="color:#eef4f8">売電額の単位変換:</strong> MWh × 18円/kWh の計算は「MWh→kWh変換 (×1000)→万円換算 (÷10000)」なので結果は <code style="color:#e8c46a">× 1.8</code> をかけるだけ</li>
+        <li><strong style="color:#eef4f8">UPSERT の ON CONFLICT:</strong> <code style="color:#e8c46a">(date, type)</code> に UNIQUE 制約が必要。Supabase で作成後に Index を追加する</li>
+        <li><strong style="color:#eef4f8">type='today' の実行タイミング:</strong> 朝会は 08:00 スタートなので、06:00 に計算すると約2時間分のSCADAデータが確定済みになる。残り22時間は気象APIで補完</li>
+        <li><strong style="color:#eef4f8">JEPX 明日分の公開タイミング:</strong> 前日 17:00 頃に公開される。ETL を 17:30 にもう1回実行して tomorrow の jepx_avg を更新することを推奨</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- 実行タイミング -->
+  <h3 style="color:#9fb0bd;font-size:13px;font-weight:700;margin:20px 0 12px;border-left:3px solid #d6a84f;padding-left:10px">daily_kpi 更新スケジュール（1日のタイムライン）</h3>
+
+  <div style="background:#0e1720;border:1px solid var(--line);padding:14px 20px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:700px">
+      <thead>
+        <tr>
+          <th style="padding:7px 14px;color:var(--muted);font-weight:600;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap">実行時刻</th>
+          <th style="padding:7px 14px;color:var(--muted);font-weight:600;text-align:left;border-bottom:1px solid var(--line)">処理内容</th>
+          <th style="padding:7px 14px;color:var(--muted);font-weight:600;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap">更新されるtype</th>
+          <th style="padding:7px 14px;color:var(--muted);font-weight:600;text-align:left;border-bottom:1px solid var(--line)">備考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(43,59,74,0.5)">
+          <td style="padding:8px 14px;color:#d6a84f;font-weight:700;white-space:nowrap">06:00 ⚡</td>
+          <td style="padding:8px 14px;color:#eef4f8">daily_kpi メイン計算バッチ実行</td>
+          <td style="padding:8px 14px"><span style="background:rgba(86,163,217,0.15);color:#7ec8f0;padding:2px 7px;border-radius:999px;font-size:10px">actual</span> <span style="background:rgba(165,139,255,0.15);color:#c4b0ff;padding:2px 7px;border-radius:999px;font-size:10px">today</span> <span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:2px 7px;border-radius:999px;font-size:10px">tomorrow</span></td>
+          <td style="padding:8px 14px;color:var(--muted)">朝会（08:00）の2時間前に完了させる</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(43,59,74,0.5);background:#111e2b">
+          <td style="padding:8px 14px;color:#9fb0bd;white-space:nowrap">毎30分</td>
+          <td style="padding:8px 14px;color:#eef4f8">wtg_status UPSERT（SCDAリアルタイム）</td>
+          <td style="padding:8px 14px"><span style="color:var(--muted);font-size:11px">daily_kpiは更新しない</span></td>
+          <td style="padding:8px 14px;color:var(--muted)">WTGマトリクスの表示は最新30分値</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(43,59,74,0.5)">
+          <td style="padding:8px 14px;color:#9fb0bd;white-space:nowrap">17:30</td>
+          <td style="padding:8px 14px;color:#eef4f8">JEPX 翌日スポット価格を取得・更新</td>
+          <td style="padding:8px 14px"><span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:2px 7px;border-radius:999px;font-size:10px">tomorrow</span></td>
+          <td style="padding:8px 14px;color:var(--muted)">jepx_avg のみ再計算</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(43,59,74,0.5);background:#111e2b">
+          <td style="padding:8px 14px;color:#9fb0bd;white-space:nowrap">毎1時間</td>
+          <td style="padding:8px 14px;color:#eef4f8">weather_cache 更新（気象API再取得）</td>
+          <td style="padding:8px 14px"><span style="color:var(--muted);font-size:11px">daily_kpiは更新しない</span></td>
+          <td style="padding:8px 14px;color:var(--muted)">気象APIキャッシュのみ。KPI再計算は翌06:00</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 14px;color:#e45d5d;white-space:nowrap">朝会中（手動）</td>
+          <td style="padding:8px 14px;color:#eef4f8">meeting_minutes に議事録を保存</td>
+          <td style="padding:8px 14px"><span style="color:var(--muted);font-size:11px">daily_kpiは変わらない</span></td>
+          <td style="padding:8px 14px;color:var(--muted)">翌日の actual 計算には影響しない</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+
+<!-- ===== Supabase内でできること vs 外部が必要なもの ===== -->
+<div style="margin-top:32px;border-top:2px solid rgba(86,163,217,0.3);padding-top:20px">
+  <h2 style="color:var(--blue);font-size:16px;font-weight:700;margin-bottom:4px">▶ Supabase の中だけで自動化できること（外部サーバー不要）</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:20px">
+    「Python を動かすサーバーを別に用意しないといけないの？」→ <strong style="color:#eef4f8">ほぼ不要です。</strong><br>
+    Supabase には <strong style="color:#56a3d9">Edge Functions</strong>（クラウド上で動くプログラム）と <strong style="color:#56a3d9">pg_cron</strong>（タイマー機能）が内蔵されており、<br>
+    気象API取得・JEPX取得・KPI計算のすべてを Supabase の中だけで定期自動実行できます。
+  </p>
+
+  <!-- ✅ / ❌ 比較グリッド -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px">
+    <div style="border:1px solid rgba(49,196,132,0.5);background:#0d2a1f;padding:16px">
+      <div style="color:#31c484;font-size:14px;font-weight:700;margin-bottom:12px">✅ Supabase 内だけで完結する処理</div>
+      <ul style="color:#dbe8f0;font-size:12px;line-height:2;margin:0;padding-left:16px">
+        <li><strong>気象API取得</strong>（Open-Meteo・気象庁）<br><span style="color:var(--muted)">→ Edge Function が毎時自動で呼ぶ</span></li>
+        <li><strong>JEPX価格取得</strong><br><span style="color:var(--muted)">→ Edge Function が毎日自動でダウンロード</span></li>
+        <li><strong>daily_kpi 計算</strong>（6KPI×3行）<br><span style="color:var(--muted)">→ SQL関数 が毎朝06:00に自動計算</span></li>
+        <li><strong>スケジュール実行</strong>（cron）<br><span style="color:var(--muted)">→ pg_cron が Supabase DB 内で動く</span></li>
+        <li><strong>AI所見生成</strong>（Claude API呼び出し）<br><span style="color:var(--muted)">→ Edge Function が Cockpit から呼ばれる</span></li>
+        <li><strong>CSV アップロード処理</strong>（点検計画）<br><span style="color:var(--muted)">→ Edge Function がStorage→DBに変換</span></li>
+      </ul>
+    </div>
+    <div style="border:1px solid rgba(228,93,93,0.4);background:#2a0d0d;padding:16px">
+      <div style="color:#e45d5d;font-size:14px;font-weight:700;margin-bottom:12px">⚠️ 外部の仕組みが必要な処理</div>
+      <ul style="color:#dbe8f0;font-size:12px;line-height:2;margin:0;padding-left:16px">
+        <li><strong>SCADA データ取込</strong>（最大の課題）<br>
+          <span style="color:var(--muted)">SCADAが HTTP APIを持つ → Edge Functionで取得可能<br>
+          SCADAがCSVしか出せない → 別途Python or 手動アップロード</span></li>
+        <li><strong>要員名簿・パワー曲線</strong><br><span style="color:var(--muted)">→ Excel→CSV変換は手動。アップロード後はEdge Functionが処理</span></li>
+      </ul>
+      <div style="margin-top:12px;border:1px solid rgba(214,168,79,0.4);background:rgba(214,168,79,0.08);padding:10px;font-size:12px;color:#f2d070">
+        💡 SCADA さえ解決すれば、<br>残りはすべて Supabase 内で完結します。
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase の3つの機能 -->
+  <h3 style="color:#9fb0bd;font-size:13px;font-weight:700;margin:0 0 14px;border-left:3px solid #56a3d9;padding-left:10px">Supabase の自動化を支える3つの機能</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+    <div style="border:1px solid rgba(86,163,217,0.4);background:#0d1f33;padding:14px">
+      <div style="color:#7ec8f0;font-weight:700;font-size:13px;margin-bottom:8px">① Edge Functions</div>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7;margin:0">
+        Supabase のサーバー上で動く小さなプログラム（TypeScript）。<br>
+        外部API（Open-Meteo・JEPX・Claude）を呼んだり、DBにデータを書き込んだりできる。<br>
+        <strong style="color:#eef4f8">自分でサーバーを用意しなくてよい。</strong>
+      </p>
+    </div>
+    <div style="border:1px solid rgba(214,168,79,0.4);background:#1a1a08;padding:14px">
+      <div style="color:#d6a84f;font-weight:700;font-size:13px;margin-bottom:8px">② pg_cron</div>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7;margin:0">
+        PostgreSQL（データベース）に内蔵されたタイマー機能。<br>
+        「毎時0分にこの処理を実行する」「毎朝6時にこのSQL関数を呼ぶ」といった<br>
+        スケジュールを SQL 1行で設定できる。<strong style="color:#eef4f8">GitHub Actions 不要。</strong>
+      </p>
+    </div>
+    <div style="border:1px solid rgba(159,176,189,0.35);background:#111a24;padding:14px">
+      <div style="color:#b8cad4;font-weight:700;font-size:13px;margin-bottom:8px">③ PostgreSQL 関数</div>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7;margin:0">
+        データベースの中で SQL を使って計算できる関数。<br>
+        「scada_30min を集計して daily_kpi を計算する」処理を<br>
+        DB の中で完結させられる。<strong style="color:#eef4f8">Python なしで KPI 計算が動く。</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- ─── 実装①: 気象API Edge Function ─── -->
+  <h3 style="color:#31c484;font-size:13px;font-weight:700;margin:0 0 10px;border-left:3px solid #31c484;padding-left:10px">【実装①】気象API自動取得 — Edge Function のコード</h3>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+    Supabase ダッシュボード → <strong style="color:#eef4f8">Edge Functions</strong> → <strong style="color:#eef4f8">「New Function」</strong> → 名前: <code style="color:#5adba8">fetch-weather</code> → 以下を貼り付ける
+  </p>
+  <div style="background:#0a1520;border:1px solid rgba(49,196,132,0.3);padding:16px 20px;font-family:monospace;font-size:11.5px;line-height:1.9;margin-bottom:8px;overflow-x:auto;border-left:3px solid #31c484">
+    <span style="color:#788694">// supabase/functions/fetch-weather/index.ts</span><br>
+    <span style="color:#f08080">import</span> { serve } <span style="color:#f08080">from</span> <span style="color:#e8c46a">"https://deno.land/std@0.168.0/http/server.ts"</span><br>
+    <span style="color:#f08080">import</span> { createClient } <span style="color:#f08080">from</span> <span style="color:#e8c46a">"https://esm.sh/@supabase/supabase-js@2"</span><br>
+    <br>
+    <span style="color:#f2d070">serve</span>(<span style="color:#f08080">async</span> () =&gt; {<br>
+    &nbsp;&nbsp;<span style="color:#788694">// Supabase クライアント（自分のDBに書き込む）</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> supabase = <span style="color:#f2d070">createClient</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Deno.env.<span style="color:#f2d070">get</span>(<span style="color:#e8c46a">'SUPABASE_URL'</span>)!,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Deno.env.<span style="color:#f2d070">get</span>(<span style="color:#e8c46a">'SUPABASE_SERVICE_ROLE_KEY'</span>)!<br>
+    &nbsp;&nbsp;)<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">// ① Open-Meteo API を呼ぶ（阿武隈の緯度・経度を入れる）</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> LAT = <span style="color:#e8c46a">37.45</span>  <span style="color:#788694">// ← 実際の緯度に変更</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> LON = <span style="color:#e8c46a">140.85</span> <span style="color:#788694">// ← 実際の経度に変更</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> res = <span style="color:#f08080">await</span> <span style="color:#f2d070">fetch</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#e8c46a">`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}`</span> +<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#e8c46a">`&hourly=wind_speed_10m,wind_direction_10m,weathercode&forecast_days=3`</span><br>
+    &nbsp;&nbsp;)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> data = <span style="color:#f08080">await</span> res.<span style="color:#f2d070">json</span>()<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">// ② 取得した72時間分を weather_cache テーブルにupsert</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> rows = data.hourly.time.<span style="color:#f2d070">map</span>((t: <span style="color:#5adba8">string</span>, i: <span style="color:#5adba8">number</span>) =&gt; ({<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;datetime:       t,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;wind_speed_ms:  data.hourly.wind_speed_10m[i],<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;wind_direction: <span style="color:#5adba8">String</span>(data.hourly.wind_direction_10m[i]),<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;weather_code:   data.hourly.weathercode[i],<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;fetched_at:     <span style="color:#f08080">new</span> <span style="color:#5adba8">Date</span>().<span style="color:#f2d070">toISOString</span>()<br>
+    &nbsp;&nbsp;}))<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#f08080">await</span> supabase<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;.<span style="color:#f2d070">from</span>(<span style="color:#e8c46a">'weather_cache'</span>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;.<span style="color:#f2d070">upsert</span>(rows, { onConflict: <span style="color:#e8c46a">'datetime'</span> }) <span style="color:#788694">// datetimeが同じ行は上書き</span><br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#f08080">return new</span> <span style="color:#5adba8">Response</span>(<span style="color:#5adba8">JSON</span>.<span style="color:#f2d070">stringify</span>({ ok: <span style="color:#e8c46a">true</span>, count: rows.length }))<br>
+    })<br>
+  </div>
+  <div style="background:rgba(49,196,132,0.08);border:1px solid rgba(49,196,132,0.3);padding:10px 14px;font-size:12px;color:#5adba8;margin-bottom:24px">
+    💡 <strong>注意:</strong> weather_cache テーブルの <code>datetime</code> カラムに <strong>UNIQUE制約</strong> を追加しておくこと（Supabase → Database → Indexes → + New Index → Unique にチェック）
+  </div>
+
+  <!-- ─── 実装②: JEPX Edge Function ─── -->
+  <h3 style="color:#e8c46a;font-size:13px;font-weight:700;margin:0 0 10px;border-left:3px solid #d6a84f;padding-left:10px">【実装②】JEPX価格自動取得 — Edge Function のコード</h3>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+    新しい Edge Function を作成 → 名前: <code style="color:#e8c46a">fetch-jepx</code> → 以下を貼り付ける
+  </p>
+  <div style="background:#0a1520;border:1px solid rgba(214,168,79,0.3);padding:16px 20px;font-family:monospace;font-size:11.5px;line-height:1.9;margin-bottom:8px;overflow-x:auto;border-left:3px solid #d6a84f">
+    <span style="color:#788694">// supabase/functions/fetch-jepx/index.ts</span><br>
+    <span style="color:#f08080">import</span> { serve } <span style="color:#f08080">from</span> <span style="color:#e8c46a">"https://deno.land/std@0.168.0/http/server.ts"</span><br>
+    <span style="color:#f08080">import</span> { createClient } <span style="color:#f08080">from</span> <span style="color:#e8c46a">"https://esm.sh/@supabase/supabase-js@2"</span><br>
+    <br>
+    <span style="color:#f2d070">serve</span>(<span style="color:#f08080">async</span> () =&gt; {<br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> supabase = <span style="color:#f2d070">createClient</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Deno.env.<span style="color:#f2d070">get</span>(<span style="color:#e8c46a">'SUPABASE_URL'</span>)!, Deno.env.<span style="color:#f2d070">get</span>(<span style="color:#e8c46a">'SUPABASE_SERVICE_ROLE_KEY'</span>)!<br>
+    &nbsp;&nbsp;)<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">// ① JEPX の東北エリア CSVをダウンロード（翌日分）</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> tomorrow = <span style="color:#f08080">new</span> <span style="color:#5adba8">Date</span>()<br>
+    &nbsp;&nbsp;tomorrow.<span style="color:#f2d070">setDate</span>(tomorrow.<span style="color:#f2d070">getDate</span>() + <span style="color:#e8c46a">1</span>)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> dateStr = tomorrow.<span style="color:#f2d070">toISOString</span>().<span style="color:#f2d070">slice</span>(<span style="color:#e8c46a">0</span>,<span style="color:#e8c46a">10</span>).<span style="color:#f2d070">replace</span>(<span style="color:#e8c46a">/-/g</span>, <span style="color:#e8c46a">''</span>) <span style="color:#788694">// 例: "20260526"</span><br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">// JEPXの公開URL（東北エリア）※URLは変わる場合があるため要確認</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> url = <span style="color:#e8c46a">`https://www.jepx.jp/electricpower/csv/spot_${dateStr}.csv`</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> res = <span style="color:#f08080">await</span> <span style="color:#f2d070">fetch</span>(url)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> csv = <span style="color:#f08080">await</span> res.<span style="color:#f2d070">text</span>()<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">// ② CSVをパースして jepx_spot に upsert</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> lines = csv.<span style="color:#f2d070">split</span>(<span style="color:#e8c46a">'\n'</span>).<span style="color:#f2d070">slice</span>(<span style="color:#e8c46a">1</span>) <span style="color:#788694">// ヘッダー行を除く</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">const</span> rows = lines.<span style="color:#f2d070">filter</span>(l =&gt; l.<span style="color:#f2d070">trim</span>()).<span style="color:#f2d070">map</span>(line =&gt; {<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#f08080">const</span> cols = line.<span style="color:#f2d070">split</span>(<span style="color:#e8c46a">','</span>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#f08080">return</span> {<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;date:           dateStr.<span style="color:#f2d070">replace</span>(<span style="color:#e8c46a">/(\d{4})(\d{2})(\d{2})/</span>, <span style="color:#e8c46a">'$1-$2-$3'</span>),<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;slot_30min:     <span style="color:#5adba8">parseInt</span>(cols[<span style="color:#e8c46a">0</span>]),   <span style="color:#788694">// コマ番号(1-48)</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;price_yen_kwh:  <span style="color:#5adba8">parseFloat</span>(cols[<span style="color:#e8c46a">6</span>]),  <span style="color:#788694">// 東北エリア列 ※列番号は要確認</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fetched_at:     <span style="color:#f08080">new</span> <span style="color:#5adba8">Date</span>().<span style="color:#f2d070">toISOString</span>()<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+    &nbsp;&nbsp;})<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#f08080">await</span> supabase.<span style="color:#f2d070">from</span>(<span style="color:#e8c46a">'jepx_spot'</span>).<span style="color:#f2d070">upsert</span>(rows, { onConflict: <span style="color:#e8c46a">'date,slot_30min'</span> })<br>
+    &nbsp;&nbsp;<span style="color:#f08080">return new</span> <span style="color:#5adba8">Response</span>(<span style="color:#5adba8">JSON</span>.<span style="color:#f2d070">stringify</span>({ ok: <span style="color:#e8c46a">true</span>, rows: rows.length }))<br>
+    })<br>
+  </div>
+  <div style="background:rgba(214,168,79,0.08);border:1px solid rgba(214,168,79,0.3);padding:10px 14px;font-size:12px;color:#f2d070;margin-bottom:24px">
+    💡 <strong>注意:</strong> jepx_spot テーブルの <code>(date, slot_30min)</code> に UNIQUE制約を追加。JEPX のCSV URL・列番号は実際のファイルを見て確認すること。
+  </div>
+
+  <!-- ─── 実装③: daily_kpi SQL 関数 ─── -->
+  <h3 style="color:#b8cad4;font-size:13px;font-weight:700;margin:0 0 10px;border-left:3px solid #b8cad4;padding-left:10px">【実装③】daily_kpi 計算 — PostgreSQL 関数（外部プログラム不要）</h3>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+    Supabase ダッシュボード → <strong style="color:#eef4f8">SQL Editor</strong> → 「New query」 → 以下を貼り付けて「Run」
+  </p>
+  <div style="background:#0a1520;border:1px solid rgba(159,176,189,0.3);padding:16px 20px;font-family:monospace;font-size:11.5px;line-height:1.9;margin-bottom:8px;overflow-x:auto;border-left:3px solid #b8cad4">
+    <span style="color:#788694">-- ① daily_kpi を計算する SQL 関数を作成</span><br>
+    <span style="color:#f08080">CREATE OR REPLACE FUNCTION</span> <span style="color:#f2d070">calculate_daily_kpi</span>(target_date <span style="color:#5adba8">DATE</span>)<br>
+    <span style="color:#f08080">RETURNS</span> <span style="color:#5adba8">void</span> <span style="color:#f08080">AS</span> $$<br>
+    <span style="color:#f08080">DECLARE</span><br>
+    &nbsp;&nbsp;v_power     <span style="color:#5adba8">FLOAT</span>;<br>
+    &nbsp;&nbsp;v_wind      <span style="color:#5adba8">FLOAT</span>;<br>
+    &nbsp;&nbsp;v_avail     <span style="color:#5adba8">FLOAT</span>;<br>
+    &nbsp;&nbsp;v_jepx      <span style="color:#5adba8">FLOAT</span>;<br>
+    &nbsp;&nbsp;v_err       <span style="color:#5adba8">FLOAT</span>;<br>
+    &nbsp;&nbsp;v_stop_cnt  <span style="color:#5adba8">INT</span>;<br>
+    <span style="color:#f08080">BEGIN</span><br>
+    &nbsp;&nbsp;<span style="color:#788694">-- 発電量（昨日の scada_30min を全コマ合計）</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">SELECT</span> <span style="color:#f2d070">COALESCE</span>(<span style="color:#f2d070">SUM</span>(power_output_mwh), <span style="color:#e8c46a">0</span>)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">INTO</span> v_power<br>
+    &nbsp;&nbsp;<span style="color:#f08080">FROM</span> scada_30min <span style="color:#f08080">WHERE</span> <span style="color:#f2d070">DATE</span>(timestamp_start) = target_date;<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">-- 平均風速</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">SELECT</span> <span style="color:#f2d070">COALESCE</span>(<span style="color:#f2d070">AVG</span>(wind_speed_ms), <span style="color:#e8c46a">0</span>)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">INTO</span> v_wind<br>
+    &nbsp;&nbsp;<span style="color:#f08080">FROM</span> scada_30min <span style="color:#f08080">WHERE</span> <span style="color:#f2d070">DATE</span>(timestamp_start) = target_date;<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">-- 稼働率（停止コマを数えて逆算）</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">SELECT</span> <span style="color:#f2d070">COUNT</span>(*) <span style="color:#f08080">INTO</span> v_stop_cnt<br>
+    &nbsp;&nbsp;<span style="color:#f08080">FROM</span> scada_30min<br>
+    &nbsp;&nbsp;<span style="color:#f08080">WHERE</span> <span style="color:#f2d070">DATE</span>(timestamp_start) = target_date <span style="color:#f08080">AND</span> availability = <span style="color:#e8c46a">false</span>;<br>
+    &nbsp;&nbsp;v_avail := (<span style="color:#e8c46a">46.0</span> * <span style="color:#e8c46a">48</span> - v_stop_cnt) / (<span style="color:#e8c46a">46.0</span> * <span style="color:#e8c46a">48</span>) * <span style="color:#e8c46a">100</span>;<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">-- JEPX 平均価格</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">SELECT</span> <span style="color:#f2d070">COALESCE</span>(<span style="color:#f2d070">AVG</span>(price_yen_kwh), <span style="color:#e8c46a">0</span>)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">INTO</span> v_jepx<br>
+    &nbsp;&nbsp;<span style="color:#f08080">FROM</span> jepx_spot <span style="color:#f08080">WHERE</span> date = target_date;<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">-- 計画値誤差</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">SELECT</span> <span style="color:#f2d070">COALESCE</span>(error_pct, <span style="color:#e8c46a">0</span>)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">INTO</span> v_err<br>
+    &nbsp;&nbsp;<span style="color:#f08080">FROM</span> forecast_accuracy_logs <span style="color:#f08080">WHERE</span> date = target_date<br>
+    &nbsp;&nbsp;<span style="color:#f08080">LIMIT</span> <span style="color:#e8c46a">1</span>;<br>
+    <br>
+    &nbsp;&nbsp;<span style="color:#788694">-- daily_kpi に upsert（同じ date + type があれば上書き）</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">INSERT INTO</span> daily_kpi<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;(date, type, power_mwh, availability_pct, revenue_man_yen, avg_wind_speed_ms, jepx_avg, forecast_error_pct)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">VALUES</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;(target_date, <span style="color:#e8c46a">'actual'</span>, v_power, v_avail, v_power * <span style="color:#e8c46a">1.8</span>, v_wind, v_jepx, v_err)<br>
+    &nbsp;&nbsp;<span style="color:#f08080">ON CONFLICT</span> (date, type) <span style="color:#f08080">DO UPDATE SET</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;power_mwh          = <span style="color:#f08080">EXCLUDED</span>.power_mwh,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;availability_pct   = <span style="color:#f08080">EXCLUDED</span>.availability_pct,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;revenue_man_yen    = <span style="color:#f08080">EXCLUDED</span>.revenue_man_yen,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;avg_wind_speed_ms  = <span style="color:#f08080">EXCLUDED</span>.avg_wind_speed_ms,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;jepx_avg           = <span style="color:#f08080">EXCLUDED</span>.jepx_avg,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;forecast_error_pct = <span style="color:#f08080">EXCLUDED</span>.forecast_error_pct;<br>
+    <span style="color:#f08080">END</span>;<br>
+    $$ <span style="color:#f08080">LANGUAGE</span> plpgsql;<br>
+    <br>
+    <span style="color:#788694">-- ② 手動テスト（昨日分を今すぐ計算したい場合）</span><br>
+    <span style="color:#f08080">SELECT</span> <span style="color:#f2d070">calculate_daily_kpi</span>((<span style="color:#f2d070">CURRENT_DATE</span> - <span style="color:#f08080">INTERVAL</span> <span style="color:#e8c46a">'1 day'</span>)::<span style="color:#5adba8">DATE</span>);<br>
+  </div>
+  <div style="background:rgba(159,176,189,0.06);border:1px solid rgba(159,176,189,0.25);padding:10px 14px;font-size:12px;color:#b8cad4;margin-bottom:24px">
+    💡 <strong>注意:</strong> daily_kpi テーブルの <code>(date, type)</code> に UNIQUE制約が必要。SQL Editor で<br>
+    <code style="color:#eef4f8">ALTER TABLE daily_kpi ADD CONSTRAINT daily_kpi_date_type_key UNIQUE (date, type);</code> を実行しておくこと。
+  </div>
+
+  <!-- ─── 実装④: pg_cron スケジュール設定 ─── -->
+  <h3 style="color:#d6a84f;font-size:13px;font-weight:700;margin:0 0 10px;border-left:3px solid #d6a84f;padding-left:10px">【実装④】pg_cron でスケジュール設定 — SQL 3行で完了</h3>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+    Supabase → SQL Editor → 以下をまとめて貼り付けて「Run」。<br>
+    <strong style="color:#eef4f8">これだけで①②③が毎日自動実行されるようになります。</strong>
+  </p>
+  <div style="background:#0a1520;border:1px solid rgba(214,168,79,0.3);padding:16px 20px;font-family:monospace;font-size:11.5px;line-height:2;margin-bottom:8px;overflow-x:auto;border-left:3px solid #d6a84f">
+    <span style="color:#788694">-- pg_cron 拡張を有効化（初回のみ）</span><br>
+    <span style="color:#f08080">CREATE EXTENSION IF NOT EXISTS</span> pg_cron;<br>
+    <span style="color:#f08080">CREATE EXTENSION IF NOT EXISTS</span> pg_net; <span style="color:#788694">-- HTTP呼び出し用</span><br>
+    <br>
+    <span style="color:#788694">-- ① 毎朝06:00 に daily_kpi を計算（昨日分）</span><br>
+    <span style="color:#f08080">SELECT</span> cron.<span style="color:#f2d070">schedule</span>(<br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">'calc-daily-kpi'</span>,        <span style="color:#788694">-- ジョブ名</span><br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">'0 6 * * *'</span>,             <span style="color:#788694">-- 毎日 06:00（JST = UTC+9 なので '0 21 * * *' に変更）</span><br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">$$SELECT calculate_daily_kpi((CURRENT_DATE - INTERVAL '1 day')::DATE);$$</span><br>
+    );<br>
+    <br>
+    <span style="color:#788694">-- ② 毎時00分 に気象APIを取得</span><br>
+    <span style="color:#f08080">SELECT</span> cron.<span style="color:#f2d070">schedule</span>(<br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">'fetch-weather-hourly'</span>,<br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">'0 * * * *'</span>,             <span style="color:#788694">-- 毎時0分</span><br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">$$</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">SELECT</span> net.<span style="color:#f2d070">http_post</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;url     := <span style="color:#e8c46a">'https://【あなたのプロジェクトID】.supabase.co/functions/v1/fetch-weather'</span>,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;headers := <span style="color:#e8c46a">'{"Authorization":"Bearer 【ANON_KEY】"}'</span>::<span style="color:#5adba8">jsonb</span><br>
+    &nbsp;&nbsp;);<br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">$$</span><br>
+    );<br>
+    <br>
+    <span style="color:#788694">-- ③ 毎日17:30 にJEPX翌日分を取得</span><br>
+    <span style="color:#f08080">SELECT</span> cron.<span style="color:#f2d070">schedule</span>(<br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">'fetch-jepx-tomorrow'</span>,<br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">'30 8 * * *'</span>,            <span style="color:#788694">-- UTC 08:30 = JST 17:30</span><br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">$$</span><br>
+    &nbsp;&nbsp;<span style="color:#f08080">SELECT</span> net.<span style="color:#f2d070">http_post</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;url     := <span style="color:#e8c46a">'https://【あなたのプロジェクトID】.supabase.co/functions/v1/fetch-jepx'</span>,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;headers := <span style="color:#e8c46a">'{"Authorization":"Bearer 【ANON_KEY】"}'</span>::<span style="color:#5adba8">jsonb</span><br>
+    &nbsp;&nbsp;);<br>
+    &nbsp;&nbsp;<span style="color:#e8c46a">$$</span><br>
+    );<br>
+    <br>
+    <span style="color:#788694">-- 設定確認（登録されたジョブ一覧を表示）</span><br>
+    <span style="color:#f08080">SELECT</span> jobname, schedule, command <span style="color:#f08080">FROM</span> cron.job;<br>
+  </div>
+  <div style="background:rgba(214,168,79,0.08);border:1px solid rgba(214,168,79,0.35);padding:12px 16px;font-size:12px;color:#f2d070;margin-bottom:24px">
+    <strong>⚠️ JST（日本時間）と UTC の違いに注意！</strong><br>
+    Supabase の pg_cron は <strong>UTC（世界標準時）</strong> で動きます。<br>
+    日本時間（JST）は UTC+9 なので、「JST 06:00 に実行したい」場合は <code style="color:#eef4f8">'0 21 * * *'</code>（前日のUTC21:00）と書きます。<br>
+    <br>
+    <table style="font-size:11px;border-collapse:collapse;margin-top:6px">
+      <tr><td style="padding:3px 12px 3px 0;color:#eef4f8">JST 06:00</td><td style="padding:3px 12px 3px 0">→</td><td style="color:#e8c46a"><code>'0 21 * * *'</code></td><td style="padding:3px 0 3px 12px;color:var(--muted)">（前日UTC）</td></tr>
+      <tr><td style="padding:3px 12px 3px 0;color:#eef4f8">JST 毎時00分</td><td style="padding:3px 12px 3px 0">→</td><td style="color:#e8c46a"><code>'0 * * * *'</code></td><td style="padding:3px 0 3px 12px;color:var(--muted)">（そのまま）</td></tr>
+      <tr><td style="padding:3px 12px 3px 0;color:#eef4f8">JST 17:30</td><td style="padding:3px 12px 3px 0">→</td><td style="color:#e8c46a"><code>'30 8 * * *'</code></td><td style="padding:3px 0 3px 12px;color:var(--muted)">（UTC 08:30）</td></tr>
+    </table>
+  </div>
+
+  <!-- まとめ構成図 -->
+  <h3 style="color:#9fb0bd;font-size:13px;font-weight:700;margin:0 0 12px;border-left:3px solid #56a3d9;padding-left:10px">全体像まとめ：Supabase 内で自己完結する自動化フロー</h3>
+  <div style="background:#0e1720;border:1px solid var(--line);padding:18px 22px;font-size:12px;line-height:2.2;overflow-x:auto">
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:start;min-width:600px">
+      <span style="color:#d6a84f;font-weight:700;white-space:nowrap">JST 06:00（UTC 21:00）</span>
+      <span style="color:#eef4f8">pg_cron → <code style="color:#b8cad4">calculate_daily_kpi(昨日)</code> を実行 → <code style="color:#b8cad4">daily_kpi</code> に3行upsert</span>
+
+      <span style="color:#9fb0bd;white-space:nowrap">毎時 00分</span>
+      <span style="color:#eef4f8">pg_cron → <code style="color:#5adba8">fetch-weather</code> Edge Function を起動 → Open-Meteo API → <code style="color:#5adba8">weather_cache</code> に72時間分upsert</span>
+
+      <span style="color:#9fb0bd;white-space:nowrap">JST 17:30（UTC 08:30）</span>
+      <span style="color:#eef4f8">pg_cron → <code style="color:#e8c46a">fetch-jepx</code> Edge Function を起動 → JEPX CSV → <code style="color:#e8c46a">jepx_spot</code> に翌日分upsert</span>
+
+      <span style="color:#9fb0bd;white-space:nowrap">毎30分（外部）</span>
+      <span style="color:#eef4f8">SCADA → CSV or API → <code style="color:#7ec8f0">scada_30min</code>・<code style="color:#7ec8f0">wtg_status</code> をupsert ← <strong style="color:#e45d5d">ここだけ外部処理が必要</strong></span>
+
+      <span style="color:#9fb0bd;white-space:nowrap">朝会08:00</span>
+      <span style="color:#eef4f8">Morning Cockpit が Supabase JS SDK で <code style="color:#b8cad4">daily_kpi</code>・<code style="color:#7ec8f0">wtg_status</code>・<code style="color:#5adba8">weather_cache</code> を読んで画面に表示</span>
+
+      <span style="color:#9fb0bd;white-space:nowrap">朝会中</span>
+      <span style="color:#eef4f8">Morning Cockpit → <code style="color:#a58bff">fetch-ai-insight</code> Edge Function → Claude API → AI所見を返す</span>
+
+      <span style="color:#9fb0bd;white-space:nowrap">朝会終了後</span>
+      <span style="color:#eef4f8">議事録「保存」ボタン → Supabase JS SDK → <code style="color:#f08080">meeting_minutes</code> にinsert</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== AI生成パイプライン詳細 ===== -->
+<div style="margin-top:40px;border-top:2px solid rgba(165,139,255,0.4);padding-top:24px">
+  <h2 style="color:#c4b0ff;font-size:16px;font-weight:700;margin-bottom:4px">▶ AI生成パイプライン — 何をもとに・どう生成しているか</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Claude API（claude-sonnet）が生成する10種類の出力と、その根拠データの完全マップ</p>
+
+  <!-- ── Step 1: データ収集 ── -->
+  <div style="border:1px solid #2b3b4a;background:#111a24;padding:16px 18px;margin-bottom:12px">
+    <h3 style="color:#56a3d9;font-size:13px;font-weight:700;margin-bottom:10px">Step 1｜Supabaseから1クエリでデータを収集（ai_morning_contextビュー）</h3>
+    <p style="color:var(--muted);font-size:11px;margin-bottom:10px">以下のデータが JSON 1行にまとめられてAIに渡される。AIが呼ぶクエリは1つだけ。</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div style="background:#0d1f33;border:1px solid rgba(86,163,217,0.3);padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:#7ec8f0;margin-bottom:6px">① KPI（3行）</div>
+        <code style="font-size:10px;color:#9fb0bd;line-height:1.8;display:block">date / type（actual/today/tomorrow）<br>power_mwh / availability_pct<br>revenue_man_yen / avg_wind_ms<br>jepx_avg / forecast_error_pct</code>
+      </div>
+      <div style="background:#0d1f33;border:1px solid rgba(86,163,217,0.3);padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:#7ec8f0;margin-bottom:6px">② WTGサマリー（5数値）</div>
+        <code style="font-size:10px;color:#9fb0bd;line-height:1.8;display:block">total / normal / warn<br>inspect / stop / missing<br>※46台→5数値に圧縮<br>（AIトークン節約）</code>
+      </div>
+      <div style="background:#0d1f33;border:1px solid rgba(228,93,93,0.3);padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:#f08080;margin-bottom:6px">③ アクティブアラーム（最大10件）</div>
+        <code style="font-size:10px;color:#9fb0bd;line-height:1.8;display:block">wtg / alarm_type / severity<br>since / recurrence<br>detail<br>※critical優先でソート</code>
+      </div>
+      <div style="background:#1e1a08;border:1px solid rgba(232,182,79,0.3);padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:#f2d070;margin-bottom:6px">④ 本日・明日の点検計画</div>
+        <code style="font-size:10px;color:#9fb0bd;line-height:1.8;display:block">wtg / work / start / end<br>status / impact_mwh / ptw<br>PTW未発行は⚠自動検出<br>風速超過も自動判定</code>
+      </div>
+      <div style="background:#0d2a1f;border:1px solid rgba(49,196,132,0.3);padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:#5adba8;margin-bottom:6px">⑤ 天気予報（6h毎）</div>
+        <code style="font-size:10px;color:#9fb0bd;line-height:1.8;display:block">hour / wind_ms / code<br>alert_type<br>※3・9・15・21時の4コマ<br>（明日は6・18時の2コマ）</code>
+      </div>
+      <div style="background:#111a24;border:1px solid rgba(159,176,189,0.3);padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:#b8cad4;margin-bottom:6px">⑥ 前日議事録・誤差実績</div>
+        <code style="font-size:10px;color:#9fb0bd;line-height:1.8;display:block">handover / decisions<br>unresolved_risks<br>forecast_accuracy<br>（前日の申し送り継承用）</code>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:8px 12px;background:rgba(214,168,79,0.06);border:1px solid rgba(214,168,79,0.25)">
+      <span style="color:#d6a84f;font-size:11px;font-weight:700">設計原則：</span>
+      <span style="color:var(--muted);font-size:11px">AIには数値計算をさせない。KPI・誤差率・発電量は全てSQL/Pythonで確定した値のみを渡す。AIは受け取った数値の「解釈と文章化」のみを行う。</span>
+    </div>
+  </div>
+
+  <!-- ── Step 2: プロンプト構造 ── -->
+  <div style="border:1px solid #2b3b4a;background:#111a24;padding:16px 18px;margin-bottom:12px">
+    <h3 style="color:#56a3d9;font-size:13px;font-weight:700;margin-bottom:10px">Step 2｜Claude APIに渡すプロンプト構造</h3>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#c4b0ff;margin-bottom:8px">プロンプトの構成要素</div>
+        <div style="font-size:11px;color:var(--muted);line-height:2">
+          <div style="padding:4px 8px;background:rgba(165,139,255,0.1);border-left:2px solid #c4b0ff;margin-bottom:4px">① 発電所コンテキスト（固定）<br><span style="color:#788694;font-size:10px">46基 / GE / PPA 18円 / 稼働率目標</span></div>
+          <div style="padding:4px 8px;background:rgba(165,139,255,0.1);border-left:2px solid #c4b0ff;margin-bottom:4px">② 生成ルール（固定）<br><span style="color:#788694;font-size:10px">文字数制限 / 確信度 / 数値計算禁止</span></div>
+          <div style="padding:4px 8px;background:rgba(86,163,217,0.1);border-left:2px solid #56a3d9;margin-bottom:4px">③ ai_morning_context JSON（毎日変わる）<br><span style="color:#788694;font-size:10px">その日のKPI・アラーム・点検・天気</span></div>
+          <div style="padding:4px 8px;background:rgba(49,196,132,0.08);border-left:2px solid #31c484">④ 出力フォーマット指定（固定）<br><span style="color:#788694;font-size:10px">10種類の出力形式と保存先カラム名</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#c4b0ff;margin-bottom:8px">実際のプロンプト骨格（HANDOVER_AI_INSIGHTS.md）</div>
+        <div style="background:#0b1420;padding:10px 14px;font-size:10px;color:#9fb0bd;line-height:1.8;border:1px solid #2b3b4a">
+          「以下のJSONデータ（Supabaseのai_morning_contextビューから取得）をもとに、<br>
+          10種類のAI生成テキストを生成してSupabaseのai_insightsテーブルに保存してください。<br><br>
+          【絶対ルール】<br>
+          ・数値はJSONのデータをそのまま使う。計算・推測は一切しない<br>
+          ・各カード150文字以内（議事録は100文字以内）<br>
+          ・確信度を必ず末尾に付ける（AI所見4カードのみ）<br>
+          ・前日の申し送り事項を必ず引き継ぐ<br><br>
+          {ai_morning_context の JSON} ← Supabaseから自動取得
+          」
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Step 3: AI出力10種類 ── -->
+  <div style="border:1px solid #2b3b4a;background:#111a24;padding:16px 18px;margin-bottom:12px">
+    <h3 style="color:#56a3d9;font-size:13px;font-weight:700;margin-bottom:12px">Step 3｜AI生成の出力10種類と根拠データ対応</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead>
+        <tr style="background:#1a2a3a">
+          <th style="padding:8px 10px;text-align:left;color:var(--muted);border-bottom:1px solid #2b3b4a;width:20%">出力名</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--muted);border-bottom:1px solid #2b3b4a;width:12%">表示場所</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--muted);border-bottom:1px solid #2b3b4a;width:35%">根拠データ（AIが使うフィールド）</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--muted);border-bottom:1px solid #2b3b4a">生成ルール</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#0e1720">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(49,196,132,0.15);color:#5adba8;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">①風はどうか</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">AI所見カード</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>weather_today[hour=3,9,15,21].wind_ms</code><br><code>weather_tomorrow[hour=6,18].wind_ms</code><br><code>kpi.today.avg_wind_ms</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">風速数値をそのまま引用。10m/s超で高所作業注意を明記。150文字・確信度付き。</td>
+        </tr>
+        <tr style="background:#111e2b">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(232,182,79,0.15);color:#f2d070;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">②機は健やかか</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">AI所見カード</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>wtg_summary.normal/warn/stop/missing</code><br><code>active_alarms[severity=critical].detail</code><br><code>active_alarms.recurrence</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">critical優先・再発回数が多いものを強調。確信度は実績データ基準でほぼ「高」。</td>
+        </tr>
+        <tr style="background:#0e1720">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(228,93,93,0.15);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">③人は安全か</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">AI所見カード</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>today_inspection.work/ptw/start/end</code><br><code>weather_today[9,15].wind_ms</code><br><code>today_inspection.ptw（NULL=⚠未発行）</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">PTW未発行を⚠で必ず明記。風速10m/s超で「現地確認必須」を追記。確信度は常に「高」。</td>
+        </tr>
+        <tr style="background:#111e2b">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(86,163,217,0.15);color:#7ec8f0;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">④本日の点検</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">AI所見カード</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>today_inspection（全件）</code><br><code>tomorrow_inspection（翌日概要）</code><br><code>Σ(impact_mwh)（AIが集計禁止→手動合算）</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">件数・対象号機・時間帯・発電影響合計を記載。明日の予定も1行で言及。</td>
+        </tr>
+        <tr style="background:#0e1720">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">⑤昨日サマリー</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">サマリーカード</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>kpi[type=actual].power_mwh</code><br><code>kpi[type=actual].availability_pct</code><br><code>active_alarms（昨日継続中）</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">80文字以内・1〜2文。発電量と最重要アラームのみ言及。</td>
+        </tr>
+        <tr style="background:#111e2b">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">⑥本日サマリー</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">サマリーカード</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>kpi[type=today].power_mwh</code><br><code>today_inspection（最重要1件）</code><br><code>active_alarms[severity=critical]</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">80文字以内。見込みMWhと本日の主要アクション1つを明記。</td>
+        </tr>
+        <tr style="background:#0e1720">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(159,176,189,0.15);color:#b8cad4;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">⑦明日サマリー</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">サマリーカード</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>kpi[type=tomorrow].power_mwh</code><br><code>tomorrow_inspection（全件）</code><br><code>weather_tomorrow.wind_ms</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">80文字以内。明日の発電予測・点検件数・強風リスクを1〜2文で。</td>
+        </tr>
+        <tr style="background:#111e2b">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(214,168,79,0.15);color:#e8c46a;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">⑧アグリゲーター</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">アグリゲーター欄</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>kpi.today.power_mwh</code><br><code>forecast_accuracy.error_pct</code><br><code>today_inspection.ptw（除外申請情報）</code><br><code>tomorrow_inspection（翌日除外予告）</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">100文字以内・1段落。発電量予測・誤差率・除外申請状況を定型文形式で。</td>
+        </tr>
+        <tr style="background:#0e1720">
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><span style="background:rgba(228,93,93,0.2);color:#f08080;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">⑨最重要判断バー</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">画面最上部</td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#788694"><code>active_alarms[severity=critical]</code><br><code>today_inspection.ptw / wind_ms</code><br><code>forecast_accuracy.error_pct</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)"><strong style="color:#f08080">各15文字以内・3項目固定。</strong> danger/warn/infoで色分け。critical→安全→当日アクションの優先順。</td>
+        </tr>
+        <tr style="background:#111e2b">
+          <td style="padding:8px 10px"><span style="background:rgba(214,168,79,0.15);color:#f2d070;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700">⑩議事録下書き</span></td>
+          <td style="padding:8px 10px;color:var(--muted)">議事録フォーム</td>
+          <td style="padding:8px 10px;color:#788694"><code>active_alarms（未解決リスク）</code><br><code>today/tomorrow_inspection</code><br><code>yesterday_minutes.handover（申し送り継承）</code><br><code>kpi（代表所見・アグリゲーター文）</code></td>
+          <td style="padding:8px 10px;color:var(--muted)">9フィールドを一括生成。担当者が朝会中に編集→「保存」でSupabaseに永久保存。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Step 4: 保存・表示 ── -->
+  <div style="border:1px solid #2b3b4a;background:#111a24;padding:16px 18px;margin-bottom:12px">
+    <h3 style="color:#56a3d9;font-size:13px;font-weight:700;margin-bottom:10px">Step 4｜保存先と画面への反映</h3>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div style="background:#0b1420;border:1px solid rgba(165,139,255,0.3);padding:12px">
+        <div style="font-size:11px;font-weight:700;color:#c4b0ff;margin-bottom:8px">保存先テーブル</div>
+        <code style="font-size:10px;color:#9fb0bd;line-height:2;display:block">
+          ai_insights<br>
+          ├ wind_insight<br>
+          ├ asset_insight<br>
+          ├ safety_insight<br>
+          ├ inspection_insight<br>
+          ├ summary_yesterday/today/tomorrow<br>
+          ├ aggregator_draft_text<br>
+          ├ top_decisions（JSONB）<br>
+          └ minutes_draft（JSONB）
+        </code>
+      </div>
+      <div style="background:#0b1420;border:1px solid rgba(86,163,217,0.3);padding:12px">
+        <div style="font-size:11px;font-weight:700;color:#7ec8f0;margin-bottom:8px">Cockpitへの反映タイミング</div>
+        <div style="font-size:10px;color:#9fb0bd;line-height:2">
+          ページを開いた瞬間<br>
+          → Supabase REST API<br>
+          → ai_insights を SELECT<br>
+          → JavaScript が DOM に反映<br>
+          → 画面に表示<br><br>
+          <span style="color:#31c484">毎朝Coworkで再生成して保存すれば</span><br>
+          <span style="color:#31c484">ページリロードで最新に更新</span>
+        </div>
+      </div>
+      <div style="background:#0b1420;border:1px solid rgba(49,196,132,0.3);padding:12px">
+        <div style="font-size:11px;font-weight:700;color:#5adba8;margin-bottom:8px">お天気アラームのみ異なる</div>
+        <div style="font-size:10px;color:#9fb0bd;line-height:2">
+          AIは使わない！<br><br>
+          weather_cache の<br>
+          wind_speed_ms を<br>
+          JavaScript が読み取り<br><br>
+          ≥20m/s → 暴風警戒<br>
+          ≥15m/s → 強風注意<br>
+          ≥12m/s → 要確認<br>
+          ≥95(コード) → 雷注意<br><br>
+          <span style="color:#5adba8">完全決定論・AIなし</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 設計原則まとめ ── -->
+  <div style="border:1px solid rgba(214,168,79,0.4);background:rgba(214,168,79,0.05);padding:14px 18px">
+    <h3 style="color:#d6a84f;font-size:13px;font-weight:700;margin-bottom:10px">▶ AI利用の設計原則（再掲・重要）</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#31c484;margin-bottom:6px">✅ AIがやること</div>
+        <div style="font-size:11px;color:var(--muted);line-height:2">
+          KPIの意味づけと解釈（「稼働率が目標を下回る理由」）<br>
+          要対応WTGの優先順位を文章で説明<br>
+          次アクションの候補を自然言語で提示<br>
+          前日の申し送り事項を引き継いだ文章生成<br>
+          議事録9項目の下書き一括生成
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#e45d5d;margin-bottom:6px">❌ AIがやらないこと</div>
+        <div style="font-size:11px;color:var(--muted);line-height:2">
+          発電量・売電額・稼働率の計算（SQL確定値を渡す）<br>
+          アラーム重要度の最終判定（severity列で判断）<br>
+          運転停止の自動決定（推奨表示止まり）<br>
+          お天気アラームの閾値判定（JavaScript）<br>
+          契約条件・法令の解釈
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>証拠写真アップロード設計（案B：BOX直アップロード）— 阿武隈OS</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+    --box:#0061d5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.65;max-width:1000px;margin:0 auto;padding:34px 26px 60px}
+  a{color:var(--master);text-decoration:none}
+  .back{font-size:12.5px;color:var(--master);display:inline-block;margin-bottom:14px}
+  h1{font-size:23px;color:#fff;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:8px}
+  .status{display:inline-block;font-size:11px;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid var(--work);color:#f0c674;background:rgba(210,153,34,.12);margin-bottom:24px}
+  h2{font-size:16px;color:#fff;margin:30px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}
+  h2 .n{width:23px;height:23px;border-radius:6px;background:var(--master);color:#04101f;font-size:13px;font-weight:800;display:grid;place-items:center}
+  p{margin-bottom:10px;font-size:14px}
+  .lead{font-size:14.5px;color:#e6edf3;background:var(--panel);border-left:3px solid var(--master);border-radius:0 8px 8px 0;padding:13px 16px;margin-bottom:14px}
+  code{color:var(--master);background:#0d1117;border:1px solid var(--line);padding:1px 6px;border-radius:5px;font-size:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:15px 17px}
+  .box h3{font-size:14px;color:#fff;margin-bottom:7px}
+  .box.good{border-color:var(--insp)} .box.warn{border-color:var(--work)}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:7px}
+  .tag.rec{background:rgba(63,185,80,.14);color:#7ee787;border:1px solid var(--insp)}
+  .tag.no{background:rgba(248,81,73,.12);color:#ff9a92;border:1px solid var(--defect)}
+  ul{margin:6px 0 12px 20px;font-size:13.5px} li{margin-bottom:5px}
+
+  /* sequence */
+  .seq{display:flex;flex-direction:column;gap:0;margin:16px 0}
+  .step{display:grid;grid-template-columns:34px 1fr;gap:14px;position:relative;padding-bottom:18px}
+  .step:not(:last-child)::before{content:"";position:absolute;left:16px;top:32px;bottom:0;width:2px;background:var(--line)}
+  .step .num{width:34px;height:34px;border-radius:50%;background:var(--panel2);border:2px solid var(--master);color:#fff;font-weight:800;display:grid;place-items:center;font-size:14px;z-index:1}
+  .step .c{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 15px}
+  .step .c b{color:#fff}
+  .actor{font-size:11px;font-weight:700;padding:1px 8px;border-radius:5px;margin-right:7px}
+  .a-br{background:rgba(88,166,255,.14);color:#9cd2ff} .a-ef{background:rgba(255,123,114,.14);color:#ffb3ad}
+  .a-box{background:rgba(0,97,213,.22);color:#7fb6ff} .a-db{background:rgba(63,185,80,.14);color:#7ee787}
+  .key{color:#f0c674;font-weight:700}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:#fff;font-size:11.5px}
+  .mono{font-family:monospace;color:var(--master)}
+
+  .note{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .todo li{margin-bottom:7px}
+  .pill{font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+</style>
+</head>
+<body>
+  <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  <h1>証拠写真アップロード設計</h1>
+  <div class="sub">点検実績への写真添付 / 案B：Edge Function はアップロードURL発行のみ・写真は BOX 直アップロード</div>
+  <div class="status">📝 設計メモ（未実装・実装可否は後日判断）</div>
+
+  <div class="lead">
+    <b>設計思想：</b> 証拠写真の<b>正本（システム・オブ・レコード）は BOX</b> に置く。Supabase には写真そのものを保存せず、
+    <code>box_file_id</code> または BOX URL などの<b>参照だけ</b>を持つ。これによりストレージの二重管理・費用を避け、
+    文書ガバナンス（保存期間・権限・監査）は BOX 側に一元化する。
+  </div>
+
+  <h2><span class="n">1</span>なぜ「Edge Function は URL 発行だけ」なのか</h2>
+  <div class="grid2">
+    <div class="box warn">
+      <h3>案A：ブラウザ → Edge Function → BOX（中継）<span class="tag no">不採用</span></h3>
+      <p>Function が写真バイナリを受けて BOX に転送。</p>
+      <ul>
+        <li>実装はシンプル</li>
+        <li>❗ Edge Function には<b>リクエストボディ上限・実行時間制限</b>がある</li>
+        <li>❗ 高解像度・複数枚で詰まりやすい（タイムアウト/サイズ超過）</li>
+      </ul>
+    </div>
+    <div class="box good">
+      <h3>案B：Function は発行のみ・写真は直アップロード<span class="tag rec">採用</span></h3>
+      <p>Function は BOX の<b>アップロード先URLを発行するだけ</b>。写真はブラウザから BOX へ直接送る。</p>
+      <ul>
+        <li>大容量・複数枚でも安定（Function を経由しない）</li>
+        <li>BOX の認証情報（秘密鍵）は<b>サーバー側だけ</b>に留まる</li>
+        <li>Function は軽量・短時間で完了</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>処理シーケンス</h2>
+  <div class="seq">
+    <div class="step"><div class="num">1</div><div class="c">
+      <span class="actor a-br">ブラウザ</span><b>アップロード要求</b><br>
+      点検実績フォームで写真を選択 →
+      <span class="actor a-ef">Edge Function</span> に <code>{ result_id, filename, size }</code> を送信（Supabaseの認証トークン付き）。
+    </div></div>
+    <div class="step"><div class="num">2</div><div class="c">
+      <span class="actor a-ef">Edge Function</span><b>BOX アップロードURLを発行</b><br>
+      サービスアカウントの鍵（<span class="key">Supabase Secrets に格納・フロントに出さない</span>）で BOX API を呼び、
+      対象フォルダ宛ての<b>直アップロード用URL（一時）</b>を取得してブラウザに返す。
+      <div class="note">※ BOX のチャンク/プリフライト系APIを利用。フォルダは「号機／年月」等で自動振り分け。</div>
+    </div></div>
+    <div class="step"><div class="num">3</div><div class="c">
+      <span class="actor a-br">ブラウザ</span> → <span class="actor a-box">BOX</span><b>写真を直接アップロード</b><br>
+      受け取ったURLへ写真本体を <code>PUT/POST</code>。<b>Supabase / Edge Function を経由しない</b>ので大容量でも安定。
+      完了すると BOX から <code>file_id</code> が返る。
+    </div></div>
+    <div class="step"><div class="num">4</div><div class="c">
+      <span class="actor a-br">ブラウザ</span> → <span class="actor a-db">Supabase</span><b>参照情報を保存</b><br>
+      <code>inspection_attachments</code> に <code>box_file_id</code> 等を INSERT。
+      <span class="key">誰が・いつ</span>添付したかも証跡として記録。写真本体は Supabase に入らない。
+    </div></div>
+  </div>
+
+  <h2><span class="n">3</span>Supabase 側で持つデータ（参照のみ）</h2>
+  <p>新規テーブル例：<code>inspection_attachments</code></p>
+  <table>
+    <thead><tr><th>カラム</th><th>型</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">id</td><td>uuid</td><td>主キー</td></tr>
+      <tr><td class="mono">result_id</td><td>uuid</td><td><code>inspection_results</code> への FK</td></tr>
+      <tr><td class="mono">box_file_id</td><td>text</td><td>BOX のファイルID（正本の参照）</td></tr>
+      <tr><td class="mono">box_url</td><td>text</td><td>任意。共有リンク（保持するなら）</td></tr>
+      <tr><td class="mono">filename</td><td>text</td><td>元ファイル名</td></tr>
+      <tr><td class="mono">content_type</td><td>text</td><td>image/jpeg 等</td></tr>
+      <tr><td class="mono">uploaded_by</td><td>uuid</td><td><code>om_users</code> への FK（証跡）</td></tr>
+      <tr><td class="mono">created_at</td><td>timestamptz</td><td>default now()（証跡）</td></tr>
+    </tbody>
+  </table>
+  <p class="note">写真本体は BOX。Supabase は「どの点検に・誰が・いつ・どのBOXファイルを」紐付けたかだけを保持する。</p>
+
+  <h2><span class="n">4</span>BOX 認証方式（要決定）</h2>
+  <div class="grid2">
+    <div class="box">
+      <h3>サービスアカウント（JWT / CCG）</h3>
+      <ul>
+        <li>システムが代表して書き込み</li>
+        <li>BOX上のフォルダ・権限を一元管理しやすい</li>
+        <li>証跡の <code>uploaded_by</code> は Supabase 側ユーザーで担保</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>ユーザー個人の BOX（OAuth）</h3>
+      <ul>
+        <li>BOX 上も個人名義で残る</li>
+        <li>各ユーザーが BOX アカウント必須・トークン管理が複雑</li>
+        <li>フォルダ権限の設計が重くなりがち</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">→ 運用負荷とフォルダ統制の観点では<b>サービスアカウント</b>が有力。最終判断は後日。</p>
+
+  <h2><span class="n">5</span>セキュリティ要点</h2>
+  <ul>
+    <li>BOX の秘密鍵・クライアントシークレットは <span class="key">Supabase Secrets（サーバー側）</span> のみ。フロントには絶対に置かない。</li>
+    <li>Edge Function は Supabase の認証トークンを検証し、<b>ログイン済ユーザーだけ</b>がURL発行を要求できるようにする。</li>
+    <li>閲覧時はURL直貼りより、<b>都度 Edge Function で一時リンクを取得</b>する方が漏洩しにくい。</li>
+    <li><code>inspection_attachments</code> も将来的に RLS で書込権限を制御（点検実施者・主任など）。</li>
+  </ul>
+
+  <h2><span class="n">6</span>実装する場合のTODO（参考）</h2>
+  <ul class="todo">
+    <li><span class="pill">DB</span> <code>inspection_attachments</code> テーブル作成（＋ FK / index）</li>
+    <li><span class="pill">BOX</span> サービスアカウント発行・アップロード先フォルダ設計（号機／年月）</li>
+    <li><span class="pill">Edge Function</span> ① アップロードURL発行 ② 閲覧用一時リンク取得 の2本</li>
+    <li><span class="pill">Secrets</span> BOX 認証情報を Supabase Secrets に登録</li>
+    <li><span class="pill">フロント</span> <code>inspection-input.html</code> に写真選択＋アップロードUIを追加</li>
+    <li><span class="pill">表示</span> 点検実績／風車詳細に添付サムネイル・リンク表示</li>
+    <li><span class="pill">RLS</span> 添付・証跡テーブルの書込権限ポリシー</li>
+  </ul>
+
+  <p class="note" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">
+    このページは設計メモです。実装はまだ行っていません。方針が固まったら上記TODOに沿って構築します。
+  </p>
+</body>
+</html>

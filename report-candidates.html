@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="ja">
+
+
+
+
+<head>
+
+
+
+
+<meta charset="UTF-8">
+
+
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+
+<title>保安規定 報告候補 — 阿武隈風力発電</title>
+
+
+
+
+<style>
+
+
+
+
+  :root{
+
+
+
+
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+
+
+
+
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --stop:#ff5630;
+
+
+
+
+  }
+
+
+
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+
+
+
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:20px 24px;line-height:1.6;max-width:1600px;margin:0 auto}
+
+
+
+
+  h1{font-size:23px;margin-bottom:4px}
+
+
+
+
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+
+
+
+
+  .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+
+
+
+
+  .bar .who{font-size:12px;color:var(--muted)}
+
+
+
+
+  button.r{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12.5px}
+
+
+
+
+  button.r:hover{border-color:var(--master)}
+
+
+
+
+  .disclaimer{background:#2d2212;border-left:3px solid var(--work);padding:10px 14px;border-radius:6px;margin-bottom:18px;font-size:12px;color:#e3c98b}
+
+
+
+
+  .disclaimer b{color:#ffd479}
+
+
+
+
+
+
+
+
+
+  .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+
+
+
+
+  .kpi{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
+
+
+
+
+  .kpi .v{font-size:26px;font-weight:700;color:#fff}
+
+
+
+
+  .kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+
+
+
+  .kpi.alert .v{color:var(--stop)}
+
+
+
+
+
+
+
+
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px;table-layout:fixed}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:var(--panel2);color:#fff;font-size:11px;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:rgba(255,255,255,.03)}
+  td.wtg{color:#fff;font-weight:700;white-space:nowrap;width:68px}
+  td.td-title{max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help;width:22%}
+  td.td-dt{white-space:nowrap;width:88px;color:var(--muted);font-size:11px}
+  td.td-cls{width:140px}
+  td.td-trig{width:130px}
+  td.td-num{width:62px;text-align:right}
+  td.td-wo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;width:10%;font-family:monospace;font-size:11px;color:#58a6ff}
+
+
+
+
+  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);white-space:nowrap;margin:1px 2px 1px 0}
+
+
+
+
+  .tag.must{background:rgba(248,81,73,.15);border-color:var(--defect);color:#ff9b94}
+
+
+
+
+  .tag.ok{background:rgba(63,185,80,.12);border-color:var(--insp);color:#7ee787}
+
+
+
+
+  .tag.trig{background:rgba(219,97,162,.12);border-color:var(--legal);color:#f0a6cd}
+
+
+
+
+  .empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
+  /* 主任確認バッジ */
+  .chief-pd{color:#d29922;font-weight:700}
+  .chief-ok{color:#3fb950;font-weight:700}
+  .chief-ng{color:#f85149;font-weight:700}
+
+
+
+
+  footer{margin-top:28px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
+
+
+
+
+  code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+
+
+
+
+</style>
+
+
+
+
+</head>
+
+
+
+
+<body>
+
+
+
+
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:14px 18px 12px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;"><span style="display:flex;flex-direction:column;line-height:1.15;border-left:3px solid rgb(219,97,162);padding-left:9px;flex:0 0 auto;"><b style="color:#e6edf3;font-size:12.5px;font-weight:800;letter-spacing:.04em;">業務フロー</b><span style="color:#6e7681;font-size:10px;">現在地</span></span><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(219,97,162);background:rgba(219,97,162,.13);border:1px solid rgba(219,97,162,.45);">🩷 報告フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">11 / 11</span><span style="flex:0 0 auto;display:inline-block;width:120px;max-width:30vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:100%;border-radius:999px;background:rgb(219,97,162);"></span></span></div><div style="display:flex;align-items:flex-start;flex-wrap:wrap;row-gap:6px;"><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./index.html" title="今日の管制塔（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">今日の管制塔</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./live-board.html" title="監視（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">監視</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-plan.html" title="点検計画（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検計画</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-input.html" title="点検実施（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="異常判断（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">異常判断</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業票（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">作業票</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./permits.html" title="PTW/KY（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">PTW/KY</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./approvals.html" title="承認（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">承認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業実施（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">作業実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="復旧確認（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">復旧確認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><div title="現在この画面です" aria-current="step" style="display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:rgb(219,97,162);color:#11161d;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:2px solid rgb(219,97,162);box-shadow:0 0 0 4px rgba(219,97,162,.22);box-sizing:border-box;">11</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#fff;font-weight:800;max-width:78px;word-break:break-word;">クローズ・報告確認</span></div></div></div></nav>
+
+
+
+
+  <div style="margin-bottom:10px"><a href="./menu.html" style="color:#58a6ff;text-decoration:none;font-size:12.5px">≡ メニューへ戻る</a></div>
+
+
+
+
+  <h1>保安規定 — 事故報告 候補リスト</h1>
+
+
+
+
+  <div class="sub">阿武隈風力発電所 / ビュー <code>v_report_candidates</code> をライブ取得 / 要否の最終判断は電気主任技術者</div>
+
+<div style="display:flex;gap:0;border-bottom:2px solid #30363d;margin:10px 0 18px;">
+  <a href="./work-orders.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">📝 作業票一覧</a>
+  <a href="./safety-incidents.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">⚠ 安全・異常</a>
+  <span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:700;color:#db61a2;border-bottom:2px solid #db61a2;margin-bottom:-2px;white-space:nowrap;">⚖ 報告候補</span>
+  <a href="./workflow-status.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">🗺 ワークフロー</a>
+</div>
+
+
+
+
+
+
+
+
+
+  <div class="disclaimer">
+
+
+
+
+    <b>⚠ これは一次スクリーニングです。</b>
+
+
+
+
+    保安規定影響・安全影響:高・運転影響:停止・リスク評価F(停止)判定のいずれかに該当した異常を自動抽出しています。
+
+
+
+
+    <b>国（産業保安監督部）への報告要否は電気主任技術者が条文にもとづき最終判断</b>してください。
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="cards">
+
+
+
+
+    <div class="kpi"><div class="v" id="kTotal">–</div><div class="l">報告候補（合計）</div></div>
+
+
+
+
+    <div class="kpi alert"><div class="v" id="kConfirm">–</div><div class="l">要主任技術者確認</div></div>
+
+
+
+
+    <div class="kpi"><div class="v" id="kStop">–</div><div class="l">F(停止)判定</div></div>
+
+
+
+
+    <div class="kpi"><div class="v" id="kReg">–</div><div class="l">保安規定影響あり</div></div>
+    <div class="kpi"><div class="v" id="kOutage">–</div><div class="l">停止記録フラグあり</div></div>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="bar">
+
+
+
+
+    <span class="who">表示中: ログインユーザー権限で取得</span>
+
+
+
+
+    <button class="r" onclick="load()">↻ 再読み込み</button>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <table>
+
+
+
+
+    <thead>
+
+
+
+
+      <tr>
+
+
+
+
+        <th>号機</th><th>異常</th><th>検知日時</th><th>区分</th>
+
+
+
+
+        <th>候補理由</th><th>安全</th><th>運転</th><th>F判定</th>
+
+
+
+
+        <th>停止(分)</th><th>損失(kWh)</th><th>逸失売電額(円)</th><th>停止報告</th><th>主任確認</th><th>作業票</th><th>状態</th>
+
+
+
+
+      </tr>
+
+
+
+
+    </thead>
+
+
+
+
+    <tbody id="rows">
+
+
+
+
+      <tr><td colspan="15" class="empty">ログインするとデータを取得します…</td></tr>
+
+
+
+
+    </tbody>
+
+
+
+
+  </table>
+
+
+
+
+
+
+
+
+
+  <footer>
+
+
+
+
+    データ元: <code>v_report_candidates</code>（defect_findings × risk_assessments × work_orders × v_work_order_outages_summary）。
+
+
+
+
+    抽出条件: regulation_impact='yes' OR safety_impact='high' OR operation_impact='stop' OR recommended_action='stop'。
+
+
+
+
+    本画面は説明・運用補助用。条文・様式・期限の正本は最新法令と自所の保安規定。
+
+
+
+
+  </footer>
+
+
+
+
+
+
+
+
+
+  <!-- 共通Supabaseクライアント（接続・認証・取得を集約） -->
+
+
+
+
+  <script src="./lib/supabase.js"></script>
+
+
+
+
+  <script>
+
+
+
+
+    const CHIEF_CFG = {
+      not_required: {cls:'',         text:'–'},
+      pending:      {cls:'chief-pd', text:'🟡 待ち'},
+      confirmed:    {cls:'chief-ok', text:'✅ 済'},
+      rejected:     {cls:'chief-ng', text:'🔴 差戻'}
+    };
+
+    async function load(){
+
+
+
+
+      const rows = document.getElementById('rows');
+
+
+
+
+      rows.innerHTML = '<tr><td colspan="15" class="empty">取得中…</td></tr>';
+
+
+
+
+      try{
+
+
+
+
+        const d = await sb.get('v_report_candidates?select=*&order=detected_at.desc');
+
+
+
+
+        render(d);
+
+
+
+
+      }catch(e){
+
+
+
+
+        rows.innerHTML = `<tr><td colspan="15" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
+
+
+
+
+      }
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function render(d){
+
+
+
+
+      document.getElementById('kTotal').textContent   = d.length;
+
+
+
+
+      document.getElementById('kConfirm').textContent = d.filter(r=>r.screening_class&&r.screening_class.includes('要主任技術者確認')).length;
+
+
+
+
+      document.getElementById('kStop').textContent    = d.filter(r=>r.recommended_action==='stop').length;
+
+
+
+
+      document.getElementById('kReg').textContent     = d.filter(r=>r.regulation_impact==='yes').length;
+      document.getElementById('kOutage').textContent  = d.filter(r=>r.outage_report_candidate).length;
+
+
+
+
+
+
+
+
+
+      const rows = document.getElementById('rows');
+
+
+
+
+      if(!d.length){ rows.innerHTML = '<tr><td colspan="15" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
+
+
+
+
+
+
+
+
+
+      rows.innerHTML = d.map(r=>{
+
+
+
+
+        const legalBadge = r.legal_judgement_class
+          ? `<span class="tag" style="background:rgba(188,140,255,.12);color:#bc8cff;border-color:rgba(188,140,255,.4);">⚖ ${sb.esc(r.legal_judgement_label||r.legal_judgement_class)}</span> `
+          : '';
+        const reportFlag = r.report_required_flag
+          ? '<span class="tag must" style="background:rgba(248,81,73,.15);">🚨 報告候補</span> '
+          : '';
+        const cls = r.screening_class&&r.screening_class.includes('要法令報告')
+          ? `<span class="tag must" style="background:rgba(248,81,73,.2);">🔴 要法令報告確認</span>`
+          : r.screening_class&&r.screening_class.includes('要主任技術者確認')
+
+
+
+
+          ? '<span class="tag must">要主任技術者確認</span>'
+
+
+
+
+          : '<span class="tag ok">社内記録のみ</span>';
+
+
+
+
+        const trig = (r.report_trigger||[]).map(t=>`<span class="tag trig">${sb.esc(t)}</span>`).join('');
+
+
+
+
+        return `<tr>
+
+
+
+
+          <td class="wtg">${sb.esc(r.turbine_no)}</td>
+
+
+
+
+          <td class="td-title" title="${sb.esc(r.finding_title||'')}">${sb.esc(r.finding_title||'–')}</td>
+          <td class="td-dt">${sb.fmtDateTime(r.detected_at)}</td>
+          <td class="td-cls">${legalBadge}${reportFlag}${cls}</td>
+          <td class="td-trig">${trig||'–'}</td>
+          <td style="white-space:nowrap">${sb.esc(r.safety_impact)||'–'}</td>
+          <td style="white-space:nowrap">${sb.esc(r.operation_impact)||'–'}</td>
+          <td style="text-align:center">${r.recommended_action==='stop'?'<span class="tag must">F</span>':'–'}</td>
+          <td class="td-num">${r.downtime_minutes??'–'}</td>
+          <td class="td-num">${r.estimated_loss_kwh??'–'}</td>
+          <td class="td-num">${r.total_lost_revenue_jpy>0?'¥'+Math.round(r.total_lost_revenue_jpy).toLocaleString('ja-JP'):'–'}</td>
+          <td style="text-align:center">${r.outage_report_candidate?'<span class="tag must">🔴</span>':'–'}</td>
+          <td>${(()=>{const c=CHIEF_CFG[r.chief_engineer_review_status]||CHIEF_CFG.not_required;return'<span class="'+c.cls+'">'+c.text+'</span>';})()}</td>
+          <td class="td-wo" title="${sb.esc(r.work_order_no||'')}">${sb.esc(r.work_order_no)||'–'}</td>
+          <td style="white-space:nowrap;font-size:11px">${sb.esc(r.status)||'–'}</td>
+
+
+
+
+        </tr>`;
+
+
+
+
+      }).join('');
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // ログイン確定後に load() を実行（セッションがあれば自動で即実行）
+
+
+
+
+    sb.requireLogin({ onReady: load });
+
+
+
+
+  </script>
+
+
+
+
+</body>
+
+
+
+
+</html>
+
+
+
+

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 異常評価・是正判断の基本</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--ai:#ff7b72;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.7}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:24px 22px 60px;max-width:860px;margin:0 auto}
+  .purpose{border:1px solid var(--insp);background:rgba(63,185,80,.08);border-radius:10px;padding:15px 18px;margin-bottom:8px}
+  .purpose .l{font-size:11px;color:#7ee787;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+  .purpose p{font-size:15px;color:#fff}
+  .when{font-size:13px;color:var(--muted);margin:14px 0 6px}
+  .when b{color:#f0c674}
+  h2{font-size:14px;color:#fff;margin:26px 0 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:7px}
+  .kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:12px 0}
+  .kind{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:var(--panel)}
+  .kind .t{font-size:13.5px;color:#fff;font-weight:700;margin-bottom:3px} .kind .d{font-size:12px;color:var(--muted)}
+  ol.steps{list-style:none;counter-reset:s;margin:8px 0}
+  ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 40px;font-size:14px;border-bottom:1px solid var(--line)}
+  ol.steps li:last-child{border-bottom:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;background:rgba(88,166,255,.15);color:#9cd2ff;font-weight:800;font-size:13px;display:grid;place-items:center}
+  .tip,.warn{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .tip{border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.06)} .tip .h{color:#7ee787;font-weight:700;margin-bottom:5px}
+  .warn{border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.06)} .warn .h{color:#ff9a92;font-weight:700;margin-bottom:5px}
+  .tip ul,.warn ul{margin:0;padding-left:18px} .tip li,.warn li{margin:3px 0}
+  .confirm{border:1px solid var(--work);background:rgba(210,153,34,.08);border-radius:9px;padding:11px 15px;font-size:12.5px;color:#f0c674;margin:14px 0}
+  .links{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+  .links a{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--master);background:var(--panel)}
+  .footer{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:11.5px}
+  code{color:var(--master);background:#0d1117;padding:1px 6px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div><h1>③ 異常評価・是正判断の基本</h1><div class="sub">阿武隈OS 業務の考え方 — 直すか・様子見か・報告か</div></div>
+    <a class="back" href="./menu.html">≡ メニュー</a>
+  </div>
+  <div class="wrap">
+    <div class="purpose"><div class="l">この業務の目的</div><p>見つけた異常を「直す／様子見／報告する」のどれにするか判断する。判断の<b style="color:#7ee787">根拠を残す</b>。</p></div>
+    <div class="when">📌 <b>いつ</b>：点検・アラーム・故障で異常を見つけた直後。</div>
+
+    <h2>判断の3つの軸</h2>
+    <div class="kinds">
+      <div class="kind"><div class="t">安全への影響</div><div class="d">人・設備に危険があるか。</div></div>
+      <div class="kind"><div class="t">発電への影響</div><div class="d">停止・出力低下につながるか。</div></div>
+      <div class="kind"><div class="t">法令報告の要否</div><div class="d">保安規定の報告対象か。</div></div>
+    </div>
+
+    <h2>進め方（手順）</h2>
+    <ol class="steps">
+      <li>異常の重大度を評価する</li>
+      <li>是正が要るか（直すか様子見か）を判断する</li>
+      <li>A〜F判定で区分する</li>
+      <li>保安規定の報告が要るか確認する</li>
+      <li>是正なら作業票へ／様子見なら経過観察として記録</li>
+    </ol>
+
+    <div class="tip"><div class="h">✓ ポイント</div><ul><li>迷ったら主任・電気主任技術者に相談する</li><li>「様子見」も判断として記録に残す</li></ul></div>
+    <div class="warn"><div class="h">✕ やってはいけない</div><ul><li>報告対象を自己判断で握りつぶす</li><li>重大度の評価をとばして作業に進む</li></ul></div>
+
+    <div class="confirm">⚑ 要確認：<b>A〜F判定の基準・報告対象の線引きは保安規定</b>に従うこと。下の詳細フローも叩き台です。</div>
+
+    <div class="links">
+      <a href="./decision-flow.html">▶ 考え方フロー図（A〜F判定）</a>
+      <a href="./defect-flow.html">異常是正フロー</a>
+      <a href="./report-candidates.html">保安規定 報告候補（LIVE）</a>
+      <a href="./guide-work-order.html">次：④ 作業票の基本</a>
+    </div>
+    <div class="footer">業務の考え方シリーズ ③／⑥ — 作業者向け早見。詳細・基準は保安規定／電気主任技術者の確認が優先。</div>
+  </div>
+</body>
+</html>

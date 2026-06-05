@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — AIに何を読ませるか（データ境界設計）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.65}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:24px 22px 60px;max-width:1000px;margin:0 auto}
+
+  .banner{border:1px solid var(--work);background:rgba(210,153,34,.09);border-radius:10px;padding:13px 16px;font-size:12.5px;color:#f0c674;margin-bottom:26px}
+  .banner b{color:#ffd479}
+
+  h2.sec{font-size:16px;color:#fff;margin:34px 0 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h2.sec .n{width:26px;height:26px;border-radius:7px;background:rgba(255,123,114,.16);color:#ff9a92;font-size:13px;font-weight:800;display:grid;place-items:center}
+  h3{font-size:14px;color:#fff;margin:18px 0 8px}
+  p{font-size:13.5px;margin:8px 0;color:var(--txt)}
+  .muted{color:var(--muted);font-size:12.5px}
+
+  .eq{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0;font-size:15px;flex-wrap:wrap}
+  .eq .l{color:#7ee787;font-weight:700} .eq .r{color:#ff9a92;font-weight:700} .eq .ne{color:var(--muted);font-size:20px}
+
+  .flow{display:flex;flex-direction:column;gap:0;margin:16px 0}
+  .layer{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--panel)}
+  .layer.l1{border-left:4px solid var(--defect)} .layer.l2{border-left:4px solid var(--work)} .layer.l3{border-left:4px solid var(--insp)}
+  .layer .lh{font-size:13.5px;color:#fff;font-weight:700;margin-bottom:5px}
+  .layer .ld{font-size:12.5px;color:var(--muted)}
+  .arrow{text-align:center;color:var(--muted);font-size:17px;padding:5px 0}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  @media(max-width:680px){.cols{grid-template-columns:1fr}}
+  .box{border:1px solid var(--line);border-radius:10px;padding:15px 17px;background:var(--panel)}
+  .box.ok{border-color:rgba(63,185,80,.45)} .box.ng{border-color:rgba(248,81,73,.4)}
+  .box .bh{font-size:13.5px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .box.ok .bh{color:#7ee787} .box.ng .bh{color:#ff9a92}
+  .box ul{list-style:none;margin:0;padding:0}
+  .box li{font-size:12.5px;padding:4px 0 4px 18px;position:relative;color:var(--txt)}
+  .box.ok li::before{content:"✓";position:absolute;left:0;color:var(--insp);font-weight:700}
+  .box.ng li::before{content:"✕";position:absolute;left:0;color:var(--defect);font-weight:700}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#fff;font-weight:600}
+  td code,p code,li code{color:var(--master);background:#0d1117;padding:1px 6px;border-radius:4px;font-size:11.5px;font-family:Consolas,monospace}
+
+  .checklist{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 6px;margin:14px 0}
+  .checklist .item{display:flex;gap:11px;align-items:flex-start;padding:9px 13px;border-bottom:1px solid var(--line)}
+  .checklist .item:last-child{border-bottom:none}
+  .checklist .chk{width:18px;height:18px;border:2px solid var(--insp);border-radius:5px;flex-shrink:0;margin-top:2px;color:var(--insp);font-size:12px;display:grid;place-items:center;font-weight:800}
+  .checklist .ct{font-size:13px;color:var(--txt)} .checklist .ct b{color:#fff}
+  .checklist .ct .sm{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+
+  pre{background:#0d1117;border:1px solid var(--line);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:12px;font-family:Consolas,monospace;color:#c9d1d9;margin:12px 0;line-height:1.6}
+  pre .k{color:#ff7b72} pre .c{color:var(--muted)} pre .s{color:#7ee787} pre .f{color:#d2a8ff}
+
+  .phase{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+  .phase .ph{flex-shrink:0;font-size:11px;font-weight:800;padding:3px 11px;border-radius:999px;border:1px solid}
+  .phase.now .ph{color:#7ee787;border-color:var(--insp);background:rgba(63,185,80,.12)}
+  .phase.next .ph{color:#9cd2ff;border-color:var(--master);background:rgba(88,166,255,.12)}
+  .phase .pd{font-size:13px}
+  .footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:11.5px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="mark">AW</div>
+    <div>
+      <h1>AIに何を読ませるか — データ境界設計</h1>
+      <div class="sub">阿武隈OS / 朝会コックピット — セキュリティ設計メモ</div>
+    </div>
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  </div>
+
+  <div class="wrap">
+    <div class="banner">
+      <b>これは設計メモです（現時点では未実装）。</b> いまは構築中・実データ未投入のため現状の構成のままでOK。本番運用前に「② Supabase側で AI読取専用View ＋ 専用キー」を実装するための整理です。
+    </div>
+
+    <!-- 0 -->
+    <h2 class="sec"><span class="n">0</span>大前提：「学習されない」と「安全」は別問題</h2>
+    <p>商用APIは明示的にオプトインしない限り入出力を学習に使わない、と各社が説明しています（OpenAI API / Anthropic API とも）。ただしそれは <b>学習リスク</b> の話であって、<b>漏洩・誤操作リスク</b> はまた別です。</p>
+    <div class="eq">
+      <span class="l">学習されない</span><span class="ne">≠</span><span class="r">何でも渡してよい</span>
+    </div>
+    <p>「学習しない設定」でも残るリスク：</p>
+    <table>
+      <tr><th style="width:32px">#</th><th>残るリスク</th><th>中身</th></tr>
+      <tr><td>①</td><td>送信そのもの</td><td>その時点で機密データを外部サービスに渡している</td></tr>
+      <tr><td>②</td><td>APIキー漏洩</td><td>キーが漏れれば第三者が同じAPIを叩ける</td></tr>
+      <tr><td>③</td><td><code>service_role</code> 漏洩</td><td>DBを広範囲に読まれる・書かれる・消される</td></tr>
+      <tr><td>④</td><td>ログ残留</td><td>プロンプト/ログに故障詳細が残る可能性</td></tr>
+      <tr><td>⑤</td><td>社内規程・契約</td><td>「外部AI投入禁止」に該当する場合がある</td></tr>
+    </table>
+    <p class="muted">結論：APIで学習しない設定ならかなり安心。でも会社機密をそのまま渡すのは別リスク。だから「渡す範囲」を絞る。</p>
+
+    <!-- 1 -->
+    <h2 class="sec"><span class="n">1</span>本当に危ない構成（これは避ける）</h2>
+    <pre><span class="c"># 一番危険なパターン</span>
+Claude Code / AI ツール
+   <span class="k">↓</span>  <span class="s">service_role key</span>（フルアクセス・RLSなし）
+本番DB を直接読む
+   <span class="k">↓</span>
+故障詳細・契約金額・個人情報まで全部見える／消せる</pre>
+    <p>Supabaseが悪いのでも、Claude Codeが悪いのでもありません。<b>「どのキーを渡し、どのテーブルを読ませているか」</b>が問題です。</p>
+
+    <!-- 2 -->
+    <h2 class="sec"><span class="n">2</span>安全な3層構成</h2>
+    <div class="flow">
+      <div class="layer l1">
+        <div class="lh">① 本番DB（フルデータ）</div>
+        <div class="ld">故障詳細・契約金額・修理見積・個人情報・点検票原本。<b>AIからは直接触らせない。</b></div>
+      </div>
+      <div class="arrow">▼ 集計・匿名化</div>
+      <div class="layer l2">
+        <div class="lh">② 朝会用View（絞った安全データ）</div>
+        <div class="ld">停止台数・重大アラーム件数・点検予定・可用率・匿名化した故障カテゴリだけ。<code>ai_morning_briefing_view</code></div>
+      </div>
+      <div class="arrow">▼ 読取専用キー</div>
+      <div class="layer l3">
+        <div class="lh">③ AI用キー（読取専用・View限定）</div>
+        <div class="ld">朝会用Viewだけ読める <code>anon</code> + RLS。書込・削除は不可。<code>service_role</code> は渡さない。</div>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <h2 class="sec"><span class="n">3</span>AIに渡してよい／渡さない</h2>
+    <div class="cols">
+      <div class="box ok">
+        <div class="bh">渡してよい（朝会に必要な範囲）</div>
+        <ul>
+          <li>本日停止：3基</li>
+          <li>重大アラーム件数：2件</li>
+          <li>本日の点検予定：5件</li>
+          <li>期限超過の有無</li>
+          <li>前日比 可用率：-1.8%</li>
+          <li>要注意カテゴリ：ピッチ系・油圧系（匿名化）</li>
+        </ul>
+      </div>
+      <div class="box ng">
+        <div class="bh">渡さない方がよい</div>
+        <ul>
+          <li>メーカー名</li>
+          <li>契約金額・修理見積</li>
+          <li>詳細な故障原因（生データ）</li>
+          <li>作業員名・個人情報</li>
+          <li>ベンダー報告内容</li>
+          <li>保険・保証交渉の内容</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <h2 class="sec"><span class="n">4</span>最低限これだけ守ればかなり安全</h2>
+    <div class="checklist">
+      <div class="item"><div class="chk">✓</div><div class="ct"><b><code>service_role key</code> をAIツールにもローカルにも渡さない</b><span class="sm">フロントは <code>anon</code>（publishable）キーのみ。これは公開前提で安全。</span></div></div>
+      <div class="item"><div class="chk">✓</div><div class="ct"><b><code>.env</code> をGitHubに絶対上げない</b><span class="sm">.gitignore に登録。キーは環境変数 / Supabase Secrets に。</span></div></div>
+      <div class="item"><div class="chk">✓</div><div class="ct"><b>AIが読む専用View（朝会用）を1つ作る</b><span class="sm">まずは <code>ai_morning_briefing_view</code> 一本でよい。</span></div></div>
+    </div>
+    <p class="muted">面倒なのは最初の一回だけ。この仕切りを作れば、安心してAIを毎朝使える。</p>
+
+    <!-- 5 -->
+    <h2 class="sec"><span class="n">5</span>実装イメージ（後で②で着手）</h2>
+    <h3>朝会用View（集計・匿名化）</h3>
+    <pre><span class="k">create view</span> ai_morning_briefing_view <span class="k">as</span>
+<span class="k">select</span>
+  <span class="f">count</span>(*) <span class="k">filter</span> (<span class="k">where</span> status=<span class="s">'standby'</span>)   <span class="k">as</span> 停止台数,
+  (<span class="k">select</span> <span class="f">count</span>(*) <span class="k">from</span> alarm_events
+     <span class="k">where</span> severity=<span class="s">'critical'</span> <span class="k">and</span> resolved_at <span class="k">is null</span>) <span class="k">as</span> 重大アラーム件数,
+  (<span class="k">select</span> <span class="f">count</span>(*) <span class="k">from</span> inspection_plan
+     <span class="k">where</span> planned_date=<span class="f">current_date</span>)             <span class="k">as</span> 本日点検予定,
+  ...<span class="c"> -- 可用率・故障カテゴリ（匿名化）など</span>
+<span class="k">from</span> turbines;
+<span class="c">-- ※ 個別の故障詳細・契約・個人名はSELECTに含めない</span></pre>
+    <h3>AI用ロール（読取専用）</h3>
+    <pre><span class="c">-- View だけ select 可。本番テーブルへの直接権限は与えない</span>
+<span class="k">grant select on</span> ai_morning_briefing_view <span class="k">to</span> ai_readonly;
+<span class="c">-- RLS / GRANT は要件確定後にまとめて適用（今は触らない）</span></pre>
+    <p class="muted">※ 現在DBは28テーブルともRLS無効・「今は触らず進める」方針。RLS / 権限設計は本番運用前にまとめて実施する想定。</p>
+
+    <!-- 6 -->
+    <h2 class="sec"><span class="n">6</span>進め方（フェーズ）</h2>
+    <div class="phase now"><span class="ph">いま</span><div class="pd">構築中・実データなし → 現構成のままでOK。Claude Codeで画面・SQL・ビューを自由に作る。便利さは維持。</div></div>
+    <div class="phase next"><span class="ph">本番前</span><div class="pd">① <code>ai_morning_briefing_view</code> を作成 → ② AI読取専用キー/ロールを分離 → ③ <code>service_role</code> をAIから外す → ④ 故障/契約/個人情報はViewのSELECTから除外。</div></div>
+    <p class="muted">「開発中はClaude Codeで便利に作る → OK」「本番運用はAIに見せる範囲だけ絞る → 必要」。全部ダメではなく、出口だけ絞る。</p>
+
+    <div class="footer">
+      関連：<a href="./box-upload-flow.html">証拠写真アップロード設計（案B）</a> / <a href="./data-source-map.html">データソースマップ</a> / <a href="./er-diagram.html">テーブル関係図（ER）</a> / <a href="./menu.html">メニュー</a><br>
+      この文書は叩き台です。実装時に列名・View定義・権限は実スキーマに合わせて調整します。
+    </div>
+  </div>
+</body>
+</html>

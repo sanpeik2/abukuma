@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>異常発見→是正 考え方フロー図 — 阿武隈風力発電 O&M OS</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --insp:#3fb950; --defect:#f85149; --work:#d29922; --safety:#bc8cff;
+    --rca:#ff9bce; --moc:#bc8cff; --stop:#ff5630; --ai:#ff7b72; --ok:#3fb950; --info:#58a6ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:32px 24px;line-height:1.6;max-width:1080px;margin:0 auto}
+  h1{font-size:24px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+  h2.sec{font-size:16px;color:#fff;margin:36px 0 14px;padding-left:10px;border-left:4px solid var(--info)}
+
+  .note{background:var(--panel2);border-left:3px solid var(--info);padding:14px 18px;border-radius:6px;margin-bottom:24px;font-size:13.5px}
+  .note b{color:#fff}
+
+  /* 縦フローの中央ライン */
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;max-width:560px;margin:0 auto;position:relative}
+  .step .lbl{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .step .ttl{font-size:17px;font-weight:700;color:#fff;margin:2px 0 6px}
+  .step .body{font-size:13px;color:var(--txt)}
+  .step .tbls{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px}
+  code.t{font-size:11px;color:#79c0ff;background:#0d1117;border:1px solid var(--line);padding:2px 7px;border-radius:5px;font-family:"Consolas",monospace}
+  .down{text-align:center;color:var(--muted);font-size:22px;line-height:1;margin:8px 0}
+  .down small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* 一次評価の5軸 */
+  .axes{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;max-width:920px;margin:0 auto}
+  .axis{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .axis .an{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px}
+  .axis .vals{display:flex;flex-direction:column;gap:4px;font-size:12px}
+  .v{display:flex;align-items:center;gap:7px}
+  .v .b{width:9px;height:9px;border-radius:2px;flex:none}
+  .g{background:var(--ok)} .y{background:var(--work)} .r{background:var(--defect)}
+
+  /* 判定分岐 A-F */
+  .judge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-top:6px}
+  .judge{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;border-top:4px solid var(--line)}
+  .judge h3{font-size:15px;color:#fff;padding:12px 16px 8px;display:flex;align-items:center;gap:8px}
+  .badge{font-size:12px;font-weight:800;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#0d1117}
+  .judge .cond, .judge .act{padding:0 16px 12px;font-size:12.5px}
+  .judge .h{font-size:11px;color:var(--muted);letter-spacing:.06em;margin:8px 0 3px;text-transform:uppercase}
+  .judge ul{list-style:none;padding-left:0}
+  .judge li{padding-left:14px;position:relative;margin-bottom:2px}
+  .judge li:before{content:"›";position:absolute;left:0;color:var(--muted)}
+  .judge .tbls{padding:0 16px 14px}
+  .jA{border-top-color:var(--ok)} .jA .badge{background:var(--ok)}
+  .jB{border-top-color:#56d364} .jB .badge{background:#56d364}
+  .jC{border-top-color:var(--work)} .jC .badge{background:var(--work)}
+  .jD{border-top-color:var(--rca)} .jD .badge{background:var(--rca)}
+  .jE{border-top-color:var(--moc)} .jE .badge{background:var(--moc)}
+  .jF{border-top-color:var(--stop)} .jF .badge{background:var(--stop)}
+
+  /* 是正3種 */
+  .three{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .three .c{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .three .c .ct{font-weight:700;color:#fff;margin-bottom:4px}
+  .three .c .cg{font-size:11px;color:var(--muted);margin-bottom:8px}
+  .three .c .ex{font-size:12.5px}
+
+  .merge{background:var(--panel2);border:1px dashed var(--line);border-radius:10px;padding:10px 16px;max-width:560px;margin:0 auto;text-align:center;font-size:12.5px;color:var(--muted)}
+  .ai-box{background:rgba(255,123,114,.08);border:1px solid var(--ai);border-radius:10px;padding:14px 18px;font-size:13px}
+  .ai-box b{color:#ffb3ad}
+
+  /* 正常判定の根拠 */
+  .ev-note{background:rgba(63,185,80,.07);border:1px solid var(--insp);border-radius:10px;padding:13px 16px;max-width:920px;margin:0 auto;font-size:13px}
+  .ev-note b{color:#7ee787}
+  .ev-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:920px;margin:14px auto 0}
+  @media(max-width:720px){.ev-2col{grid-template-columns:1fr}}
+  .ev-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .ev-card h4{font-size:13px;color:#fff;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .ev-card.insp h4{background:rgba(63,185,80,.12)} .ev-card.alm h4{background:rgba(88,166,255,.12)}
+  table.ev{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.ev td{border-top:1px solid var(--line);padding:7px 12px;vertical-align:top}
+  table.ev td.k{color:#fff;white-space:nowrap;font-weight:600}
+  table.ev td.val{color:var(--txt)}
+  table.ev td.val b{color:#7ee787}
+  .ng-good{font-size:11px;color:var(--muted);padding:9px 14px;border-top:1px dashed var(--line)}
+  .ng-good .x{color:#ff8d85} .ng-good .o{color:#7ee787}
+  .gap-flag{display:inline-block;font-size:11px;color:#ff8d85;background:rgba(248,81,73,.12);border:1px solid var(--defect);border-radius:5px;padding:2px 8px;margin-top:6px}
+
+  /* スコアリング */
+  .score-wrap{max-width:920px;margin:0 auto}
+  .score-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.score-2col{grid-template-columns:1fr}}
+  .score-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .score-card h4{font-size:13px;color:#fff;margin-bottom:10px}
+  table.sc{width:100%;border-collapse:collapse;font-size:12px}
+  table.sc th,table.sc td{border:1px solid var(--line);padding:5px 8px;text-align:center}
+  table.sc th{background:#0d1117;color:var(--muted);font-weight:600}
+  table.sc td.lab{text-align:left;color:var(--txt)}
+  .p1{color:var(--ok);font-weight:700}.p3{color:var(--work);font-weight:700}.p5{color:var(--defect);font-weight:700}
+  .formula{text-align:center;font-size:15px;color:#fff;background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:10px;margin:12px 0;font-family:"Consolas",monospace}
+  .formula b{color:#79c0ff}
+  /* 5x5マトリクス */
+  table.mtx{border-collapse:collapse;margin:0 auto;font-size:12px}
+  table.mtx td,table.mtx th{width:42px;height:36px;text-align:center;border:1px solid #0d1117;font-weight:700}
+  table.mtx th{background:transparent;color:var(--muted);font-weight:600;border:none;font-size:11px}
+  .m-low{background:#1a3b24;color:#7ee787}.m-med{background:#4d3a12;color:#f0c560}
+  .m-high{background:#5a2e10;color:#ffa657}.m-crit{background:#5a1a17;color:#ff8d85}
+  .band-tbl td.bd{font-weight:700}
+  .auto-note{background:rgba(88,166,255,.08);border:1px solid var(--info);border-radius:10px;padding:12px 16px;font-size:12.5px;margin-top:14px}
+  .auto-note b{color:#9ecbff}
+
+  /* PTW/LOTO/KY 安全統制 */
+  .ptw-wrap{border:2px solid var(--work);border-radius:14px;padding:14px;background:rgba(210,153,34,.06);position:relative;margin-top:6px}
+  .ptw-tag{position:absolute;top:-11px;left:16px;background:var(--bg);color:var(--work);font-size:12px;font-weight:800;padding:0 8px}
+  .ptw-lead{font-size:12.5px;color:var(--txt);margin:4px 4px 14px;padding-left:6px}
+  .ptw-lead b{color:#ffd479}
+  .timeline{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+  .tl{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;position:relative}
+  .tl .ph{font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+  .tl .tt{font-size:13.5px;font-weight:700;color:#fff;margin:2px 0 5px}
+  .tl .ds{font-size:11.5px;color:var(--txt)}
+  .tlarrow{display:flex;align-items:center;color:var(--muted);font-weight:bold;font-size:18px}
+  .role-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}
+  .rc{border-radius:10px;padding:12px 14px;border:1px solid var(--line);background:var(--panel)}
+  .rc .rt{font-weight:800;color:#fff;font-size:14px;margin-bottom:3px;display:flex;align-items:center;gap:7px}
+  .rc .rsub{font-size:11px;color:var(--muted);margin-bottom:7px}
+  .rc .rb{font-size:12px}
+  .rc.ptw{border-left:4px solid var(--work)} .rc.ptw .rt span{color:var(--work)}
+  .rc.loto{border-left:4px solid var(--stop)} .rc.loto .rt span{color:var(--stop)}
+  .rc.ky{border-left:4px solid var(--info)} .rc.ky .rt span{color:var(--info)}
+  .rc .tbls{margin-top:8px}
+  footer{margin-top:36px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+  <h1>異常発見 → 是正 「考え方」フロー図</h1>
+  <div class="sub">阿武隈風力発電所 O&M OS / 点検で異常を見つけた後、頭の中でどう判断するか（Issue #13 詳細版）</div>
+
+  <div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #58a6ff;border-radius:10px;padding:14px 18px;margin:16px 0 20px;font-size:12.5px;line-height:1.7">
+    <div style="color:#9cd2ff;font-weight:700;font-size:12px;letter-spacing:.04em;margin-bottom:8px">📘 このDocsの使い方</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:5px 18px">
+      <div><b style="color:#8b949e">👥 対象者</b>　点検員・是正担当・電気主任技術者</div>
+      <div><b style="color:#8b949e">🕐 使う場面</b>　異常発見後の一次評価〜A〜F判定の拠り所</div>
+      <div><b style="color:#8b949e">⚖️ 最終判断</b>　電気主任技術者（本図は判断の型・正本は保安規定）</div>
+      <div><b style="color:#8b949e">📋 残す証跡</b>　<code>defect_findings</code> / <code>risk_assessments</code> / <code>work_orders</code></div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="color:#8b949e">🔗 接続ライブ画面：</span>
+      <a href="./defect-rca.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">🔧 故障/RCA</a>
+      <a href="./inspection-input.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">🛠 点検実績入力</a>
+      <a href="./guide-defect-judge.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">③ 是正判断の基本</a>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>大原則：見つけても、すぐ交換しない。</b><br>
+    「故障を見つけた＝交換」ではない。まず <b>5つの軸で一次評価</b> し、<b>A〜Fのどれに進むか</b> を決める。
+    記録だけでよいのか／簡易補修か／部品交換か／原因調査(RCA)か／変更管理(MOC)か／即停止かを、感覚ではなくルールで分岐させるのが本フローの目的。
+  </div>
+
+  <!-- ===== 縦フロー：発見〜一次評価 ===== -->
+  <h2 class="sec">STEP 1〜3 ｜ 発見してから判断するまで</h2>
+
+  <div class="step" style="border-left:4px solid var(--insp)">
+    <div class="lbl">STEP 1 ｜ INPUT</div>
+    <div class="ttl">① 点検・巡視・SCADAで「おかしい」に気づく</div>
+    <div class="body">油漏れ／異音／異常振動／温度上昇／ボルト緩み／腐食／センサー値異常／ブレード損傷／電気盤の焦げ跡 など。</div>
+    <div class="tbls"><code class="t">inspection_results</code><code class="t">alarm_events(SCADA)</code></div>
+  </div>
+  <div class="down">↓<small>「異常あり」を選ぶと…</small></div>
+
+  <div class="step" style="border-left:4px solid var(--defect)">
+    <div class="lbl">STEP 2 ｜ 起票</div>
+    <div class="ttl">② 異常・故障候補として独立起票する</div>
+    <div class="body">点検実績の中に埋もれさせない。「誰が・いつ・どの風車で・何を」を記録し、追跡できる1件にする。</div>
+    <div class="tbls"><code class="t">defect_findings</code><code class="t">attachments(写真→BOX)</code></div>
+  </div>
+  <div class="down">↓<small>※異常なしでも「正常の根拠」を残す（下記）</small></div>
+
+  <!-- ===== 正常判定の根拠 ===== -->
+  <div class="ev-note">
+    <b>重要：「異常なし」は判定であって根拠ではない。</b>
+    「問題なかった」ではなく <b>「何の基準に対し、実測いくつだから正常」</b> という適合の積極的証明を残す。
+    これが無いと、後で同じ箇所が壊れたとき「なぜ見逃したか」を説明できない。
+  </div>
+
+  <div class="ev-2col">
+    <div class="ev-card insp">
+      <h4>点検「正常」の根拠 例（実測値 × 判定基準）</h4>
+      <table class="ev">
+        <tr><td class="k">ギア油温</td><td class="val">実測 <b>65℃</b> ／ 基準 上限80・警報75 → 範囲内</td></tr>
+        <tr><td class="k">主軸受振動</td><td class="val">実測 <b>2.1 mm/s</b> ／ ISO 10816-21 ゾーンA(&lt;2.8) → 良好</td></tr>
+        <tr><td class="k">潤滑油分析</td><td class="val">鉄粉 <b>8ppm</b>・水分120ppm ／ 基準 &lt;15・&lt;300 → 範囲内</td></tr>
+        <tr><td class="k">ボルト締結</td><td class="val">マーキング<b>ずれなし</b> ／ 規定 580±30 N·m</td></tr>
+        <tr><td class="k">ブレーキ残厚</td><td class="val">実測 <b>8.2mm</b> ／ 交換限界 5mm → 余裕</td></tr>
+        <tr><td class="k">絶縁抵抗</td><td class="val">実測 <b>120MΩ</b> ／ 規定 &gt;1MΩ → クリア</td></tr>
+        <tr><td class="k">端子盤サーモ</td><td class="val">最高42℃・ΔT3℃ ／ 偏熱なし(ΔT&lt;10)</td></tr>
+        <tr><td class="k">ブレード目視</td><td class="val">クラック・エロージョン<b>なし</b>＋写真・前回比 変化なし</td></tr>
+      </table>
+      <div class="ng-good"><span class="x">×「異常なし」</span> → <span class="o">○「油漏れ・異音・変色なし（目視＋打音）」</span>と定性も明記</div>
+    </div>
+
+    <div class="ev-card alm">
+      <h4>アラーム「問題なし」の根拠 例（消した理由）</h4>
+      <table class="ev">
+        <tr><td class="k">自動クリア</td><td class="val">コードXXX、継続<b>8秒</b>で自動復帰・停止せず</td></tr>
+        <tr><td class="k">正常帯へ復帰</td><td class="val">油温ピーク78℃→3分で<b>68℃(基準内)</b></td></tr>
+        <tr><td class="k">一過性</td><td class="val">過去<b>14日 再発0回</b></td></tr>
+        <tr><td class="k">気象相関</td><td class="val">高温アラート＝外気35℃と整合／強風時yaw頻発＝設計想定内</td></tr>
+        <tr><td class="k">関連値整合</td><td class="val">温度上昇だが<b>負荷・油圧・回転数は正常</b>＝機器異常でない</td></tr>
+        <tr><td class="k">メーカー許容</td><td class="val">OEM許容トリップ回数/日 の範囲内</td></tr>
+      </table>
+      <div class="ng-good">記録先 <code class="t" style="font-size:10px">alarm_events.disposition / disposition_reason</code></div>
+    </div>
+  </div>
+
+  <div class="ev-note" style="margin-top:14px;border-color:var(--master);background:rgba(88,166,255,.07)">
+    <b style="color:#9ecbff">DBで根拠を強制：</b> <code class="t">result_checklist</code> に
+    <code class="t">measured_value / unit / criteria_min / criteria_max / criteria_text / judgment_basis / prev_value</code> を追加。
+    ビュー <code class="t">v_checklist_evidence</code> が <b>in_range</b>（基準内か）・<b>delta_from_prev</b>（トレンド）・
+    <span class="gap-flag">evidence_gap = OK判定なのに根拠が空</span> を自動判定し、監査ギャップを炙り出す。
+  </div>
+
+  <div class="down">↓</div>
+
+  <div class="step" style="border-left:4px solid var(--work)">
+    <div class="lbl">STEP 3 ｜ 一次評価（ここが肝）</div>
+    <div class="ttl">③ 5つの軸で「どれくらいヤバいか」を測る</div>
+    <div class="body">交換判断に飛びつかず、まず下の5軸を埋める。この5軸の組み合わせで A〜F が自動的に決まる。</div>
+    <div class="tbls"><code class="t">risk_assessments</code></div>
+  </div>
+
+  <div class="down" style="margin-top:14px">▼ 評価する5つの軸 ▼</div>
+  <div class="axes">
+    <div class="axis"><div class="an">安全影響</div><div class="vals">
+      <div class="v"><i class="b g"></i>低</div><div class="v"><i class="b y"></i>中</div><div class="v"><i class="b r"></i>高（人身リスク）</div></div></div>
+    <div class="axis"><div class="an">運転影響</div><div class="vals">
+      <div class="v"><i class="b g"></i>なし</div><div class="v"><i class="b y"></i>出力制限</div><div class="v"><i class="b r"></i>停止</div></div></div>
+    <div class="axis"><div class="an">原因明確性</div><div class="vals">
+      <div class="v"><i class="b g"></i>明確</div><div class="v"><i class="b y"></i>推定</div><div class="v"><i class="b r"></i>不明</div></div></div>
+    <div class="axis"><div class="an">再発性</div><div class="vals">
+      <div class="v"><i class="b g"></i>初回</div><div class="v"><i class="b y"></i>再発</div><div class="v"><i class="b r"></i>多発</div></div></div>
+    <div class="axis"><div class="an">保安規定影響</div><div class="vals">
+      <div class="v"><i class="b g"></i>なし</div><div class="v"><i class="b y"></i>要確認</div><div class="v"><i class="b r"></i>あり</div></div></div>
+  </div>
+
+  <!-- ===== スコアリング ===== -->
+  <h2 class="sec">STEP 3.5 ｜ 5軸を点数化してリスクを定量化する</h2>
+  <div class="note" style="border-left-color:var(--ok);margin-bottom:18px">
+    感覚で「ヤバい」を判断せず、発電プラント標準の <b>リスクマトリクス（影響度×発生可能性）＋FMEAの検出性補正</b> で数値化する。
+    参考：ISO/IEC 31010（リスクマトリクス）、IEC 60812（FMEA/RPN）、API 580/581（RBI）、SAE JA1011（RCM）。
+  </div>
+
+  <div class="score-wrap">
+    <div class="score-2col">
+      <div class="score-card">
+        <h4>① 影響度 C ＝ 下の3つの「最大値」</h4>
+        <table class="sc">
+          <tr><th>影響軸</th><th>低</th><th>中</th><th>高</th></tr>
+          <tr><td class="lab">安全影響</td><td class="p1">1</td><td class="p3">3</td><td class="p5">5</td></tr>
+          <tr><td class="lab">運転影響</td><td class="p1">なし1</td><td class="p3">制限3</td><td class="p5">停止5</td></tr>
+          <tr><td class="lab">保安規定影響</td><td class="p1">なし1</td><td class="p3">要確認3</td><td class="p5">あり5</td></tr>
+        </table>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">※「最も重い結果が等級を決める」安全工学の原則。環境影響もあれば同様に最大値へ。</div>
+      </div>
+      <div class="score-card">
+        <h4>② 発生可能性 L ＝ 再発性</h4>
+        <table class="sc">
+          <tr><th>再発性</th><th>点数</th></tr>
+          <tr><td class="lab">初回</td><td class="p1">1</td></tr>
+          <tr><td class="lab">再発</td><td class="p3">3</td></tr>
+          <tr><td class="lab">多発</td><td class="p5">5</td></tr>
+        </table>
+        <h4 style="margin-top:12px">③ 検出性（原因明確性）＝ 補正</h4>
+        <div style="font-size:12px">明確/推定はそのまま。<b style="color:#ff8d85">原因不明はスコアに関わらずRCAへ強制エスカレーション</b>（過小評価を防ぐFMEAのD思想）。</div>
+      </div>
+    </div>
+
+    <div class="formula">リスクスコア <b>R = C × L</b> （ 1 〜 25 ）</div>
+
+    <div class="score-2col">
+      <div class="score-card">
+        <h4>5×5 リスクマトリクス</h4>
+        <table class="mtx">
+          <tr><th></th><th colspan="5">影響度 C →</th></tr>
+          <tr><th>L↓</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+          <tr><th>5</th><td class="m-med">5</td><td class="m-high">10</td><td class="m-high">15</td><td class="m-crit">20</td><td class="m-crit">25</td></tr>
+          <tr><th>4</th><td class="m-low">4</td><td class="m-med">8</td><td class="m-high">12</td><td class="m-crit">16</td><td class="m-crit">20</td></tr>
+          <tr><th>3</th><td class="m-low">3</td><td class="m-med">6</td><td class="m-med">9</td><td class="m-high">12</td><td class="m-high">15</td></tr>
+          <tr><th>2</th><td class="m-low">2</td><td class="m-low">4</td><td class="m-med">6</td><td class="m-med">8</td><td class="m-high">10</td></tr>
+          <tr><th>1</th><td class="m-low">1</td><td class="m-low">2</td><td class="m-low">3</td><td class="m-low">4</td><td class="m-med">5</td></tr>
+        </table>
+      </div>
+      <div class="score-card">
+        <h4>バンド → 対応期限（urgency）</h4>
+        <table class="sc band-tbl">
+          <tr><th>スコアR</th><th>バンド</th><th>対応期限</th></tr>
+          <tr><td>16–25</td><td class="bd" style="color:#ff8d85">🔴 Critical</td><td>即時 immediate</td></tr>
+          <tr><td>10–15</td><td class="bd" style="color:#ffa657">🟠 High</td><td>当日 within_day</td></tr>
+          <tr><td>5–9</td><td class="bd" style="color:#f0c560">🟡 Medium</td><td>週内 within_week</td></tr>
+          <tr><td>1–4</td><td class="bd" style="color:#7ee787">🟢 Low</td><td>計画 planned</td></tr>
+        </table>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">スコアは「どれだけ急ぐか」を決める。「どの作業か(A〜F)」は下の判定で決める。</div>
+      </div>
+    </div>
+
+    <div class="auto-note">
+      <b>Supabaseで自動算出済み：</b>ビュー <code class="t">v_risk_score</code> が <code class="t">risk_assessments</code>＋<code class="t">defect_findings</code> から
+      <b>risk_score / risk_band / suggested_urgency / suggested_action(A〜F) / rca_escalation_flag</b> を計算する。
+      Budibaseはこのビューを表示するだけ。検証例：停止×多発×原因不明 → R=25・F停止／出力制限×再発 → R=9・C交換／原因不明×影響中 → R=3でもD(RCA)へ。
+    </div>
+  </div>
+
+  <!-- ===== 判定分岐 ===== -->
+  <h2 class="sec">STEP 4 ｜ スコア＋性質で「どの道に進むか」を判定（A〜F）</h2>
+  <div class="note" style="border-left-color:var(--work);margin-bottom:18px">
+    判定は上から下に向かって重くなる。<b>赤（高/停止/不明/多発/保安規定あり）が1つでも出たら、Aには行かずD〜Fを疑う。</b>
+  </div>
+
+  <div class="judge-grid">
+    <div class="judge jA">
+      <h3><span class="badge">A</span>記録のみ（軽微）</h3>
+      <div class="cond"><div class="h">この道に進む条件</div><ul>
+        <li>安全影響＝低</li><li>運転影響＝なし</li><li>原因＝明確</li><li>再発なし・保安規定影響なし</li></ul></div>
+      <div class="act"><div class="h">やること</div><ul>
+        <li>点検実績に記録＋写真添付</li><li>次回点検で再確認</li><li>必要なら監視項目に追加</li></ul></div>
+      <div class="tbls"><code class="t">defect_findings.status=closed</code></div>
+    </div>
+
+    <div class="judge jB">
+      <h3><span class="badge">B</span>簡易補修</h3>
+      <div class="cond"><div class="h">条件</div><ul>
+        <li>現場で安全に補修できる</li><li>部品交換・大きな停止が不要</li><li>原因が明確</li></ul></div>
+      <div class="act"><div class="h">やること</div><ul>
+        <li>作業票を作成</li><li>補修→写真・記録保存</li><li>復旧確認→クローズ</li></ul></div>
+      <div class="tbls"><code class="t">work_orders</code><code class="t">closeout_reviews</code></div>
+    </div>
+
+    <div class="judge jC">
+      <h3><span class="badge">C</span>部品交換</h3>
+      <div class="cond"><div class="h">条件</div><ul>
+        <li>原因が明確</li><li>劣化・寿命・破損が確認できる</li><li>交換で再発可能性が低い／MOC不要</li></ul></div>
+      <div class="act"><div class="h">やること</div><ul>
+        <li>作業票→部品手配→作業計画</li><li>Permit / KY</li><li>交換→試運転→復旧確認→クローズ</li></ul></div>
+      <div class="tbls"><code class="t">work_orders</code><code class="t">parts_usage</code><code class="t">work_permits</code></div>
+    </div>
+
+    <div class="judge jD">
+      <h3><span class="badge">D</span>RCA（根本原因調査）</h3>
+      <div class="cond"><div class="h">条件（1つでも該当）</div><ul>
+        <li>原因が分からない</li><li>同じ故障が再発／多機で発生</li><li>重大事故・大きな停止損失の恐れ</li><li>メーカー想定外／交換しても再発しそう</li></ul></div>
+      <div class="act"><div class="h">やること</div><ul>
+        <li>まず暫定措置 → RCA起票</li><li>事実整理→仮説→根本原因特定</li><li>恒久是正案→（必要ならMOC）→効果確認</li></ul></div>
+      <div class="tbls"><code class="t">rca_investigations</code><code class="t">corrective_actions</code></div>
+    </div>
+
+    <div class="judge jE">
+      <h3><span class="badge">E</span>MOC（変更管理）</h3>
+      <div class="cond"><div class="h">条件</div><ul>
+        <li>設備設定・保護値を変える</li><li>点検周期・作業手順(SOP)を変える</li><li>部品型式・運転条件を変える</li><li>安全/品質/保安規定に影響する変更</li></ul></div>
+      <div class="act"><div class="h">やること</div><ul>
+        <li>MOC申請→変更前後の記録</li><li>リスク評価→承認</li><li>Permit/KY→実施→有効性確認→クローズ</li></ul></div>
+      <div class="tbls"><code class="t">moc_changes</code><code class="t">approvals</code></div>
+    </div>
+
+    <div class="judge jF">
+      <h3><span class="badge">F</span>安全・保安規定（即対応）</h3>
+      <div class="cond"><div class="h">条件</div><ul>
+        <li>人身災害の恐れ</li><li>火災・感電・落下・倒壊の恐れ</li><li>保安規定の停止条件に該当しうる</li><li>法令報告・主任技術者判断が要りそう</li></ul></div>
+      <div class="act"><div class="h">やること</div><ul>
+        <li>即時停止 or 制限運転</li><li>現場安全確保→責任者へエスカレーション</li><li>保安規定確認→作業許可→証跡→承認クローズ</li></ul></div>
+      <div class="tbls"><code class="t">work_orders(priority=urgent)</code><code class="t">approvals</code></div>
+    </div>
+  </div>
+
+  <div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #d29922;border-radius:10px;padding:15px 18px;margin:20px 0 28px;font-size:13px;line-height:1.7">
+    <div style="color:#f0c674;font-weight:700;margin-bottom:6px">➡️ 判断したら、ここで「記録・操作・承認」する</div>
+    <div style="color:#8b949e;font-size:12.5px;margin-bottom:10px">この図は<b style="color:#c9d1d9">判断の型（考え方）</b>を示すもの。実際の起票・記録・承認は下のライブ画面で行う（このページにボタンを置いても証跡が残らないため）。A〜Fの結論をライブ画面に持っていく。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="./inspection-input.html" style="font-size:12px;border:1px solid #30363d;border-radius:999px;padding:5px 13px;color:#58a6ff;text-decoration:none;background:#161b22">🛠 点検実績入力（A：記録のみ）</a>
+      <a href="./defect-rca.html" style="font-size:12px;border:1px solid #30363d;border-radius:999px;padding:5px 13px;color:#58a6ff;text-decoration:none;background:#161b22">🔧 故障/RCA（D：根本原因）</a>
+      <a href="./work-orders.html" style="font-size:12px;border:1px solid #30363d;border-radius:999px;padding:5px 13px;color:#58a6ff;text-decoration:none;background:#161b22">📝 作業票（B/C：補修・交換）</a>
+      <a href="./permits.html" style="font-size:12px;border:1px solid #30363d;border-radius:999px;padding:5px 13px;color:#58a6ff;text-decoration:none;background:#161b22">🔒 作業許可（安全に止める）</a>
+      <a href="./approvals.html" style="font-size:12px;border:1px solid #30363d;border-radius:999px;padding:5px 13px;color:#58a6ff;text-decoration:none;background:#161b22">✅ 承認待ち（E/F：承認）</a>
+      <a href="./report-candidates.html" style="font-size:12px;border:1px solid #30363d;border-radius:999px;padding:5px 13px;color:#58a6ff;text-decoration:none;background:#161b22">⚖ 報告候補（F：保安規定）</a>
+    </div>
+  </div>
+
+  <!-- ===== 是正の3種類 ===== -->
+  <h2 class="sec">補足 ｜ 「是正」には3つの種類がある（混ぜない）</h2>
+  <div class="three">
+    <div class="c" style="border-left:3px solid var(--defect)">
+      <div class="ct">① 暫定是正</div>
+      <div class="cg">目的：安全確保・被害拡大防止（その場しのぎでOK）</div>
+      <div class="ex">停止／隔離／仮固定／監視強化／出力制限／立入制限</div>
+    </div>
+    <div class="c" style="border-left:3px solid var(--ok)">
+      <div class="ct">② 恒久是正</div>
+      <div class="cg">目的：根本的に再発を防ぐ</div>
+      <div class="ex">部品交換／設定変更／手順変更／点検周期変更／教育／設計変更</div>
+    </div>
+    <div class="c" style="border-left:3px solid var(--info)">
+      <div class="ct">③ 予防処置（横展開）</div>
+      <div class="cg">目的：同型機・類似設備へ展開</div>
+      <div class="ex">他WTGの一斉点検／同一ロット確認／メーカー照会／予備品追加／点検項目追加</div>
+    </div>
+  </div>
+
+  <!-- ===== 合流〜クローズ ===== -->
+  <h2 class="sec">STEP 5〜7 ｜ どの道(B〜F)も最後はここに合流する</h2>
+  <div class="merge">A以外（B・C・D・E・F）はすべて、下の共通レールに乗ってクローズまで進む</div>
+  <div class="down">↓</div>
+  <div class="step" style="border-left:4px solid var(--work)">
+    <div class="ttl">④ 作業計画 → 安全統制（PTW / LOTO / KY）</div>
+    <div class="body">いつ・誰が・どんなリスクで作業するかを固め、現場に出る前と直前で安全を二重・三重に縛る。この3つは別物で、<b>役割も順番も違う</b>。</div>
+  </div>
+
+  <div class="ptw-wrap" style="max-width:920px;margin:14px auto 0">
+    <span class="ptw-tag">PTW / LOTO / KY の関係</span>
+    <div class="ptw-lead">
+      <b>PTW（作業許可証）が「親」。</b>その許可の中で、<b>LOTO（機械を止めて施錠）</b>と <b>KY（危険予知）</b>が
+      着手の前提条件として動く。LOTOとKYの両方が済んで初めてPTWが有効化され、作業に着手できる。
+    </div>
+
+    <!-- 時系列 -->
+    <div class="timeline">
+      <div class="tl">
+        <div class="ph">① 計画段階</div>
+        <div class="tt">PTW 申請</div>
+        <div class="ds">作業内容・リスクレベルを記入。LOTO要否／隔離要否／作業中止風速を設定。</div>
+      </div>
+      <div class="tlarrow">→</div>
+      <div class="tl">
+        <div class="ph">② 承認</div>
+        <div class="tt">PTW 発行</div>
+        <div class="ds">監督者が承認＝issued。これが無いと現場に入れない。</div>
+      </div>
+      <div class="tlarrow">→</div>
+      <div class="tl">
+        <div class="ph">③ 当日・着手直前</div>
+        <div class="tt">LOTO ＋ KY</div>
+        <div class="ds">エネルギー源を隔離・施錠・タグ（LOTO）し、チームで危険予知（KY）。両方OKでPTWを active に。</div>
+      </div>
+      <div class="tlarrow">→</div>
+      <div class="tl">
+        <div class="ph">④ 作業〜完了</div>
+        <div class="tt">解除 → クローズ</div>
+        <div class="ds">作業完了→LOTO解除→PTWを closed。証跡をBOXへ。</div>
+      </div>
+    </div>
+
+    <!-- 3つの役割の違い -->
+    <div class="role-cards">
+      <div class="rc ptw">
+        <div class="rt"><span>●</span>PTW ＝ 作業許可証</div>
+        <div class="rsub">「この作業をやってよい」という許可の枠（親）</div>
+        <div class="rb">誰が・いつ・どんなリスクで作業するかを定義し、承認者が発行。LOTO要否・隔離要否・作業中止風速もここで決まる。状態は draft→issued→active→closed。</div>
+        <div class="tbls"><code class="t">work_permits</code><code class="t">permit_status</code><code class="t">risk_level</code></div>
+      </div>
+      <div class="rc loto">
+        <div class="rt"><span>●</span>LOTO ＝ 施錠・タグ付け</div>
+        <div class="rsub">機械を「絶対に動かない」状態にする物理的手当て</div>
+        <div class="rb">電気・油圧・回転体などのエネルギー源を止め、ロックして札を掛ける。PTWの安全条件であり、危険作業では必須。<code class="t">loto_required</code>＝true の作業は実施・確認が前提。</div>
+        <div class="tbls"><code class="t">work_permits.loto_required</code><code class="t">isolations_required</code></div>
+      </div>
+      <div class="rc ky">
+        <div class="rt"><span>●</span>KY ＝ 危険予知</div>
+        <div class="rsub">着手直前に現場チームで行う「頭の安全確認」</div>
+        <div class="rb">今日の作業に潜む危険項目を洗い出し、行動目標を決めて唱和・確認。特定のPTWに紐づく（<code class="t">permit_id</code>）。風速・天候もここで最終確認。</div>
+        <div class="tbls"><code class="t">ky_records.permit_id → work_permits.id</code><code class="t">hazard_items</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="down">↓<small>LOTO＋KY完了 → PTW有効化 → 着手</small></div>
+  <div class="step" style="border-left:4px solid var(--work)">
+    <div class="ttl">⑤ 是正作業の実施</div>
+    <div class="body">暫定・恒久・予防のいずれかを実施。使った部品は在庫から引き落とす。</div>
+    <div class="tbls"><code class="t">corrective_actions</code><code class="t">parts_usage</code><code class="t">parts_stock</code></div>
+  </div>
+  <div class="down">↓</div>
+  <div class="step" style="border-left:4px solid var(--ok)">
+    <div class="ttl">⑥ 復旧確認</div>
+    <div class="body">本当に直ったか／効果があったかを確認。pass / fail / conditional で判定。</div>
+    <div class="tbls"><code class="t">closeout_reviews.review_result</code></div>
+  </div>
+  <div class="down">↓</div>
+  <div class="step" style="border-left:4px solid var(--info)">
+    <div class="ttl">⑦ 再発防止・証跡保存・承認クローズ</div>
+    <div class="body">教訓を残し、横展開の要否を判断。証跡(写真/PDF)はBOXへ、承認は履歴に残す。監査で追えるようにする。</div>
+    <div class="tbls"><code class="t">closeout_reviews(lessons/lateral_spread)</code><code class="t">approvals</code><code class="t">attachments(BOX)</code></div>
+  </div>
+
+  <!-- ===== AI ===== -->
+  <h2 class="sec">この流れの中で AI がやること（判断は代行しない）</h2>
+  <div class="ai-box">
+    AIは <b>決めない・消さない</b>。あくまで人の判断を速くする支援役。<br>
+    ・過去の類似故障を検索 ・RCA要否の参考コメント ・原因仮説の整理 ・是正案のたたき台 ・再発防止策の提案 ・クローズレビューの要約<br>
+    使ったAIは <code class="t">ai_usage_logs</code> に、AIの出した判断は <code class="t">ai_decisions</code> に必ず記録し、<b>人間が approved_by_human で承認</b>する。
+  </div>
+
+  <footer>
+    本図は Issue #13「点検→故障発見→RCA/MOC/是正→復旧確認フロー」の詳細版（考え方フロー図）。<br>
+    テーブルの列定義は <b>Supabaseテーブル定義書.md</b>、全体のテーブル関係は <b>er-diagram.html</b> を参照。
+  </footer>
+</body>
+</html>

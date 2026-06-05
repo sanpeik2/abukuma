@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ワークフロー一覧 — 阿武隈OS</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:0;line-height:1.5}
+a{color:var(--master);text-decoration:none}
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+.topbar .mark{width:32px;height:32px;border-radius:7px;background:#58a6ff;color:#0d1117;font-weight:900;display:grid;place-items:center;font-size:13px;flex-shrink:0}
+.topbar h1{font-size:16px;font-weight:700}.topbar .sub{font-size:11px;color:var(--muted)}.topbar .back{margin-left:auto;font-size:12.5px}
+.wrap{padding:16px 20px 60px}
+
+/* ===== 駅マップ ===== */
+.station-map{overflow-x:auto;padding-bottom:4px;margin-bottom:20px}
+.stations{display:flex;align-items:stretch;min-width:700px}
+.station{flex:1;min-width:90px;display:flex;flex-direction:column;align-items:center;position:relative;cursor:pointer}
+.station:not(:last-child)::after{content:'';position:absolute;right:-1px;top:14px;width:2px;height:20px;background:var(--line);z-index:1}
+.station-inner{width:100%;padding:10px 6px 8px;text-align:center;border-radius:8px;border:1px solid transparent;transition:border-color .15s,background .15s}
+.station.active .station-inner{border-color:rgba(88,166,255,.6);background:rgba(88,166,255,.08)}
+.station:hover .station-inner{border-color:var(--line);background:var(--panel)}
+.station-dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;margin:0 auto 6px;border:2px solid var(--line);color:var(--muted);background:var(--bg)}
+.station.has-cases .station-dot{border-color:currentColor}
+.station-label{font-size:10px;color:var(--muted);font-weight:600;line-height:1.2;margin-bottom:5px}
+.station.active .station-label{color:#fff}
+.station-count{font-size:20px;font-weight:800;line-height:1}
+.station-bar-wrap{width:80%;height:4px;background:var(--panel2);border-radius:2px;margin:5px auto 0}
+.station-bar{height:100%;border-radius:2px;transition:width .4s}
+.connector{width:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--line);font-size:14px;padding-top:4px}
+
+/* ===== KPI cards ===== */
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.kpi{flex:1;min-width:110px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 14px}
+.kpi .v{font-size:22px;font-weight:700;color:#fff}.kpi .l{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi.alert .v{color:#f85149}.kpi.warn .v{color:#d29922}
+
+/* ===== フィルタバー ===== */
+.fbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.fbar button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:11.5px;padding:5px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.fbar button.act{background:rgba(88,166,255,.15);border-color:rgba(88,166,255,.6);color:#58a6ff;font-weight:700}
+.fbar .sep{color:var(--line)}
+
+/* ===== テーブル ===== */
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px;table-layout:fixed}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:var(--panel2);font-size:11px;color:#fff;white-space:nowrap;font-weight:700}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.025);cursor:pointer}
+.td-wtg{width:64px;font-weight:700;color:#fff;white-space:nowrap}
+.td-title{width:24%;max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
+.td-dt{width:82px;font-size:11px;color:var(--muted);white-space:nowrap}
+.td-stage{width:138px;white-space:nowrap}
+.td-risk{width:76px;white-space:nowrap}
+.td-num{width:58px;text-align:right;color:var(--muted)}
+.td-wo{width:130px;font-family:monospace;font-size:11px;color:#58a6ff;white-space:nowrap}
+.td-flags{width:90px}
+.td-act{width:46px;text-align:center}
+/* 重要度バッジ */
+.risk-s-high{display:flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:#f85149;line-height:1.4}
+.risk-s-mid {display:flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:#d29922;line-height:1.4}
+.risk-s-low {display:flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:#8b949e;line-height:1.4}
+.risk-o-stop{display:flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:#f85149;line-height:1.4}
+.risk-o-drt {display:flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:#d29922;line-height:1.4}
+.empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
+
+/* ===== バッジ ===== */
+.badge-stage{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.badge-flag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:5px;margin:1px 1px 0 0;white-space:nowrap}
+.badge-overdue{background:rgba(248,81,73,.2);color:#ff7b72;border:1px solid rgba(248,81,73,.4)}
+.badge-stuck{background:rgba(210,153,34,.2);color:#e3b341;border:1px solid rgba(210,153,34,.4)}
+.badge-report{background:rgba(219,97,162,.15);color:#f0a6cd;border:1px solid rgba(219,97,162,.4)}
+.badge-rca{background:rgba(188,140,255,.15);color:#bc8cff;border:1px solid rgba(188,140,255,.4)}
+
+/* ===== ドロワー（タイムライン） ===== */
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:none}
+#ov.show{display:block}
+#drawer{position:fixed;top:0;right:0;width:min(52vw,960px);height:100%;background:var(--panel);border-left:1px solid var(--line);overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
+#ov.show #drawer{transform:none}
+.dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:16px 22px;display:flex;align-items:center;gap:12px}
+.dhd h2{font-size:17px;color:#fff;flex:1}.dhd .x{background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer}
+.dbody{padding:22px 26px 50px}
+
+/* タイムライン */
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--line)}
+.tl-item{position:relative;margin-bottom:24px}
+.tl-item::before{content:'';position:absolute;left:-21px;top:5px;width:14px;height:14px;border-radius:50%;border:2px solid var(--line);background:var(--bg)}
+.tl-item.done::before{background:#238636;border-color:#238636}
+.tl-item.current::before{background:#58a6ff;border-color:#58a6ff;box-shadow:0 0 0 4px rgba(88,166,255,.25);width:16px;height:16px;left:-22px;top:4px}
+.tl-item.future::before{background:var(--bg);border-color:var(--line)}
+.tl-step{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:5px}
+.tl-item.done .tl-step{color:#3fb950}.tl-item.current .tl-step{color:#58a6ff;font-size:13px}
+.tl-content{font-size:14px;color:var(--txt)}
+.tl-meta{font-size:12.5px;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark">AW</div>
+  <div><h1>ワークフロー一覧</h1><div class="sub">阿武隈OS — 全案件の現在地マップ（v_case_pipeline × defect_findings）</div></div>
+  <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+</div>
+
+<div class="wrap">
+
+  <div style="display:flex;gap:0;border-bottom:2px solid #30363d;margin-bottom:20px;">
+    <a href="./work-orders.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">📝 作業票一覧</a>
+    <a href="./safety-incidents.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">⚠ 安全・異常</a>
+    <a href="./report-candidates.html" style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:600;color:#8b949e;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;">⚖ 報告候補</a>
+    <span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;font-size:13px;font-weight:700;color:#58a6ff;border-bottom:2px solid #58a6ff;margin-bottom:-2px;white-space:nowrap;">🗺 ワークフロー</span>
+  </div>
+
+  <!-- 駅マップ -->
+  <div class="station-map" id="stationMapWrap">
+    <div class="stations" id="stationMap"></div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kTotal">–</div><div class="l">総案件数</div></div>
+    <div class="kpi alert"><div class="v" id="kOverdue">–</div><div class="l">期限超過</div></div>
+    <div class="kpi warn"><div class="v" id="kStuck">–</div><div class="l">滞留（3日超）</div></div>
+    <div class="kpi"><div class="v" id="kReport">–</div><div class="l">報告候補</div></div>
+    <div class="kpi"><div class="v" id="kClosed">–</div><div class="l">クローズ済（直近30日）</div></div>
+  </div>
+
+  <!-- フィルタ -->
+  <div class="fbar" id="fbar">
+    <button class="act" data-f="open" onclick="setFilter('open',this)">進行中のみ</button>
+    <button data-f="all" onclick="setFilter('all',this)">全件（クローズ含む）</button>
+    <span class="sep">|</span>
+    <button data-f="overdue" onclick="setFilter('overdue',this)">🔴 期限超過</button>
+    <button data-f="stuck" onclick="setFilter('stuck',this)">🟡 滞留</button>
+    <button data-f="report" onclick="setFilter('report',this)">⚖ 報告候補</button>
+    <span class="sep">|</span>
+    <span id="fStageLabel" style="font-size:11.5px;color:#58a6ff;font-weight:700;display:none"></span>
+    <button id="fStageClear" onclick="clearStageFilter()" style="display:none;background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.4);color:#58a6ff;font-size:11px;padding:3px 9px;border-radius:999px;cursor:pointer;">✕ 絞り込み解除</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="td-wtg">号機</th>
+        <th class="td-title">異常タイトル</th>
+        <th class="td-dt">検知日時</th>
+        <th class="td-stage">現在地</th>
+        <th class="td-risk">重要度</th>
+        <th class="td-wo">作業票</th>
+        <th class="td-num">経過日数</th>
+        <th class="td-flags">フラグ</th>
+        <th class="td-act">詳細</th>
+      </tr>
+    </thead>
+    <tbody id="rows"><tr><td colspan="9" class="empty">読み込み中…</td></tr></tbody>
+  </table>
+
+</div>
+
+<!-- ドロワー（タイムライン） -->
+<div id="ov" onclick="if(event.target.id==='ov')closeDrawer()">
+  <div id="drawer">
+    <div class="dhd"><h2 id="dTitle">案件タイムライン</h2><button class="x" onclick="closeDrawer()">×</button></div>
+    <div class="dbody" id="dBody"></div>
+  </div>
+</div>
+
+<script src="./lib/supabase.js"></script>
+<script>
+const esc = sb.esc;
+
+const STAGES = [
+  {key:'未評価',       no:1, color:'#8b949e', link:'./defect-rca.html'},
+  {key:'一次判断済',   no:2, color:'#d29922',  link:'./defect-rca.html'},
+  {key:'作業票起票済', no:3, color:'#58a6ff',  link:'./work-orders.html'},
+  {key:'PTW/KY待ち',  no:4, color:'#e3b341',  link:'./ky-loto.html'},
+  {key:'承認待ち',     no:5, color:'#bc8cff',  link:'./approvals.html'},
+  {key:'作業中',       no:6, color:'#ff7b72',  link:'./work-execution.html'},
+  {key:'復旧確認待ち', no:7, color:'#3fb950',  link:'./restoration.html'},
+  {key:'クローズ',     no:8, color:'#7ee787',  link:'./closeout.html'}
+];
+
+let ALL = [], PIPE_MAP = {}, WO_MAP = {}, WTG_MAP = {};
+let curFilter = 'open', curStage = null;
+
+/* ===== データ取得 ===== */
+async function load(){
+  document.getElementById('rows').innerHTML = '<tr><td colspan="9" class="empty">取得中…</td></tr>';
+  try{
+    const [findings, pipe, turbines, wos] = await Promise.all([
+      sb.get('defect_findings?select=id,finding_title,detected_at,turbine_id,safety_impact,operation_impact,status&order=detected_at.desc'),
+      sb.get('v_case_pipeline?select=*').catch(()=>[]),
+      sb.get('turbines?select=id,turbine_no'),
+      sb.get('work_orders?select=id,work_order_no,defect_finding_id,approval_status,status&order=created_at.desc').catch(()=>[])
+    ]);
+
+    (turbines||[]).forEach(t => WTG_MAP[t.id] = t.turbine_no);
+    (pipe||[]).forEach(p => PIPE_MAP[p['案件id']] = p);
+    (wos||[]).forEach(w => { if(w.defect_finding_id) WO_MAP[w.defect_finding_id] = w; });
+    ALL = (findings||[]).map(r => ({ ...r, _pipe: PIPE_MAP[r.id]||null, _wo: WO_MAP[r.id]||null }));
+
+    renderKpi();
+    renderMap();
+    renderTable();
+  }catch(e){
+    document.getElementById('rows').innerHTML = `<tr><td colspan="9" class="empty">取得エラー: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+/* ===== KPI ===== */
+function renderKpi(){
+  const open = ALL.filter(r => r._pipe?.['現在地'] !== 'クローズ');
+  document.getElementById('kTotal').textContent   = ALL.length;
+  document.getElementById('kOverdue').textContent = ALL.filter(r=>r._pipe?.is_overdue).length;
+  document.getElementById('kStuck').textContent   = ALL.filter(r=>r._pipe?.is_stuck).length;
+  document.getElementById('kReport').textContent  = ALL.filter(r=>r._pipe?.is_report_candidate).length;
+  const d30 = new Date(Date.now()-30*86400000);
+  document.getElementById('kClosed').textContent  = ALL.filter(r=>r._pipe?.['現在地']==='クローズ' && new Date(r.detected_at)>d30).length;
+}
+
+/* ===== 駅マップ ===== */
+function renderMap(){
+  const el = document.getElementById('stationMap');
+  const counts = {};
+  STAGES.forEach(s => counts[s.key] = 0);
+  ALL.forEach(r => {
+    const here = r._pipe?.['現在地'];
+    if(here && counts[here] !== undefined) counts[here]++;
+  });
+  const maxC = Math.max(1, ...Object.values(counts));
+
+  el.innerHTML = STAGES.map((s,i) => {
+    const n = counts[s.key]||0;
+    const pct = Math.round(n/maxC*100);
+    const isActive = curStage === s.key;
+    return `${i>0?'<div class="connector" style="color:#30363d;margin-top:4px">›</div>':''}
+    <div class="station${n>0?' has-cases':''}${isActive?' active':''}" onclick="stageClick('${esc(s.key)}')" style="color:${s.color}">
+      <div class="station-inner">
+        <div class="station-dot" style="${n>0?`color:${s.color};border-color:${s.color};background:${s.color}22`:''}">${i+1}</div>
+        <div class="station-label">${esc(s.key)}</div>
+        <div class="station-count" style="color:${n>0?s.color:'var(--muted)'}">${n}</div>
+        <div class="station-bar-wrap"><div class="station-bar" style="width:${pct}%;background:${s.color}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ===== フィルタ ===== */
+function setFilter(f, btn){
+  curFilter = f;
+  document.querySelectorAll('.fbar button[data-f]').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act');
+  renderTable();
+}
+function stageClick(key){
+  if(curStage === key){ clearStageFilter(); return; }
+  curStage = key;
+  const sl = document.getElementById('fStageLabel');
+  const sc = document.getElementById('fStageClear');
+  sl.textContent = `🚉 ${key}で絞り込み中`;
+  sl.style.display='inline';
+  sc.style.display='inline-block';
+  renderMap(); renderTable();
+}
+function clearStageFilter(){
+  curStage = null;
+  document.getElementById('fStageLabel').style.display='none';
+  document.getElementById('fStageClear').style.display='none';
+  renderMap(); renderTable();
+}
+
+/* ===== テーブル ===== */
+function renderTable(){
+  let d = ALL;
+  if(curFilter==='open')    d = d.filter(r => r._pipe?.['現在地'] !== 'クローズ');
+  if(curFilter==='overdue') d = d.filter(r => r._pipe?.is_overdue);
+  if(curFilter==='stuck')   d = d.filter(r => r._pipe?.is_stuck);
+  if(curFilter==='report')  d = d.filter(r => r._pipe?.is_report_candidate);
+  if(curStage)              d = d.filter(r => r._pipe?.['現在地'] === curStage);
+
+  const rows = document.getElementById('rows');
+  if(!d.length){ rows.innerHTML = '<tr><td colspan="9" class="empty">該当する案件はありません</td></tr>'; return; }
+
+  rows.innerHTML = d.map(r => {
+    const p = r._pipe;
+    const wo = r._wo;
+    const tno = WTG_MAP[r.turbine_id]||'–';
+    const here = p?.['現在地']||'–';
+    const stg = STAGES.find(s=>s.key===here);
+    const color = stg?.color||'#8b949e';
+    const days = Math.floor((Date.now()-new Date(r.detected_at))/86400000);
+
+    const stageBadge = here!=='–'
+      ? `<span class="badge-stage" style="background:${color}22;color:${color};border:1px solid ${color}66;">${esc(here)}</span>`
+      : '<span style="color:var(--muted)">–</span>';
+
+    const flags = [];
+    if(p?.is_overdue)          flags.push('<span class="badge-flag badge-overdue">期限超過</span>');
+    if(p?.is_stuck)            flags.push('<span class="badge-flag badge-stuck">滞留</span>');
+    if(p?.is_report_candidate) flags.push('<span class="badge-flag badge-report">報告候補</span>');
+    if(p?.is_rca_required)     flags.push('<span class="badge-flag badge-rca">RCA</span>');
+
+    // 重要度バッジ（安全影響 + 発電影響）
+    const si = r.safety_impact||'';
+    const oi = r.operation_impact||'';
+    const safetyBadge =
+      si==='high'   ? '<span class="risk-s-high">🛡 高</span>' :
+      si==='medium' ? '<span class="risk-s-mid">🛡 中</span>'  :
+      si==='low'    ? '<span class="risk-s-low">🛡 低</span>'  : '';
+    const opBadge =
+      oi==='stop'                       ? '<span class="risk-o-stop">⚡ 停止</span>'  :
+      (oi==='derate'||oi==='curtailment')? '<span class="risk-o-drt">⚡ 制限</span>'  : '';
+    const riskCell = (safetyBadge||opBadge)
+      ? `<div style="display:flex;flex-direction:column;gap:1px;">${safetyBadge}${opBadge}</div>`
+      : '<span style="color:var(--muted);font-size:11px;">–</span>';
+
+    const dtStr = r.detected_at ? String(r.detected_at).slice(5,16).replace('T',' ') : '–';
+    const woNo = wo?.work_order_no||'–';
+
+    return `<tr onclick="openDrawer('${esc(r.id)}')">
+      <td class="td-wtg">${esc(tno)}</td>
+      <td class="td-title" title="${esc(r.finding_title||'')}">${esc(r.finding_title||'–')}</td>
+      <td class="td-dt">${esc(dtStr)}</td>
+      <td class="td-stage">${stageBadge}</td>
+      <td class="td-risk">${riskCell}</td>
+      <td class="td-wo" title="${esc(woNo)}">${woNo!=='–'&&wo?.id?`<a href="./work-orders.html?open=${encodeURIComponent(wo.id)}" onclick="event.stopPropagation()">${esc(woNo)}</a>`:esc(woNo)||'–'}</td>
+      <td class="td-num" style="${days>7?'color:#f85149':days>3?'color:#d29922':''}">${days}日</td>
+      <td class="td-flags">${flags.join('')||'–'}</td>
+      <td class="td-act"><button onclick="event.stopPropagation();openDrawer('${esc(r.id)}')" style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;">経緯</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ===== タイムラインドロワー ===== */
+function openDrawer(id){
+  const r = ALL.find(x=>x.id===id);
+  if(!r) return;
+  const p = r._pipe;
+  const wo = r._wo;
+  const tno = WTG_MAP[r.turbine_id]||'–';
+  const here = p?.['現在地']||null;
+  const hereNo = here ? (STAGES.find(s=>s.key===here)?.no||0) : 0;
+
+  document.getElementById('dTitle').textContent = `${tno} — ${r.finding_title||'（タイトルなし）'}`;
+
+  const tl = STAGES.map(s => {
+    const isDone    = s.no < hereNo;
+    const isCurrent = s.no === hereNo;
+    const cls = isDone?'done':isCurrent?'current':'future';
+    let content = '';
+    if(s.no===1) content = `<div class="tl-content">異常タイトル: ${esc(r.finding_title||'–')}</div><div class="tl-meta">安全影響: ${esc(r.safety_impact||'–')} / 運転影響: ${esc(r.operation_impact||'–')}</div>`;
+    else if(s.no===3 && wo) content = `<div class="tl-content">作業票: <a href="./work-orders.html?open=${encodeURIComponent(wo.id)}" style="color:#58a6ff;font-family:monospace">${esc(wo.work_order_no||'')}</a></div><div class="tl-meta">承認状態: ${esc(wo.approval_status||'–')}</div>`;
+    const icon = isDone?'✓':isCurrent?'▶':'';
+    return `<div class="tl-item ${cls}">
+      <div class="tl-step">${icon} Step ${s.no}: ${esc(s.key)}</div>
+      ${content?`<div style="padding:6px 10px;background:var(--panel2);border-radius:6px;margin-top:4px;">${content}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const flags = [];
+  if(p?.is_overdue)          flags.push('<span class="badge-flag badge-overdue">🔴 期限超過</span>');
+  if(p?.is_stuck)            flags.push('<span class="badge-flag badge-stuck">🟡 滞留</span>');
+  if(p?.is_report_candidate) flags.push('<span class="badge-flag badge-report">⚖ 報告候補</span>');
+
+  const stg = here?STAGES.find(s=>s.key===here):null;
+  const color = stg?.color||'#8b949e';
+
+  document.getElementById('dBody').innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+      ${here?`<span class="badge-stage" style="font-size:13px;padding:4px 12px;background:${color}22;color:${color};border:1px solid ${color}66;">▶ ${esc(here)}</span>`:''}
+      ${flags.join('')}
+    </div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:16px;">
+      ${esc(tno)} ／ 検知: ${r.detected_at?String(r.detected_at).slice(0,16).replace('T',' '):'–'}
+      ／ 経過: ${Math.floor((Date.now()-new Date(r.detected_at))/86400000)}日
+    </div>
+    <div style="font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:10px;">📍 進行タイムライン</div>
+    <div class="timeline">${tl}</div>
+    <div style="margin-top:20px;display:flex;gap:9px;flex-wrap:wrap;">
+      <a href="./defect-rca.html?defect_id=${esc(id)}" style="font-size:12px;padding:6px 12px;background:rgba(88,166,255,.1);color:#58a6ff;border:1px solid rgba(88,166,255,.35);border-radius:7px;">📋 異常判断へ</a>
+      ${wo?`<a href="./work-orders.html?open=${encodeURIComponent(wo.id)}" style="font-size:12px;padding:6px 12px;background:rgba(210,153,34,.1);color:#d29922;border:1px solid rgba(210,153,34,.35);border-radius:7px;">📝 作業票（詳細）</a>`:''}
+      ${stg?`<a href="${stg.link}${wo?'?work_order_id='+encodeURIComponent(wo.id):''}" style="font-size:12px;padding:6px 12px;background:${color}1a;color:${color};border:1px solid ${color}44;border-radius:7px;">▶ 現在地へ</a>`:''}
+    </div>`;
+
+  document.getElementById('ov').classList.add('show');
+}
+function closeDrawer(){ document.getElementById('ov').classList.remove('show'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+
+sb.requireLogin({ onReady: load });
+</script>
+</body>
+</html>

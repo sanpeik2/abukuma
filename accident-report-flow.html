@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>保安規定 事故報告フロー — 阿武隈風力発電</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --safety:#bc8cff;
+    --info:#58a6ff; --ai:#ff7b72; --ok:#3fb950; --stop:#ff5630; --legal:#db61a2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:32px;line-height:1.6;max-width:1180px;margin:0 auto}
+  h1{font-size:24px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .disclaimer{background:#2d2212;border-left:3px solid var(--work);padding:12px 16px;border-radius:6px;margin-bottom:24px;font-size:12.5px;color:#e3c98b}
+  .disclaimer b{color:#ffd479}
+  h2.section{font-size:16px;margin:34px 0 12px;color:#fff;border-left:4px solid var(--legal);padding-left:10px}
+  h2.section small{color:var(--muted);font-weight:normal;font-size:12px;margin-left:8px}
+  .note{background:#1c2128;border-left:3px solid var(--master);padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px}
+  .note b{color:#fff}
+
+  /* 報告対象テーブル */
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px;margin-bottom:8px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:#fff;font-size:12px;letter-spacing:.03em}
+  tr:last-child td{border-bottom:none}
+  td.cat{color:#fff;font-weight:600;white-space:nowrap}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);white-space:nowrap}
+  .tag.must{background:rgba(248,81,73,.15);border-color:var(--defect);color:#ff9b94}
+  .tag.maybe{background:rgba(210,153,34,.15);border-color:var(--work);color:#e3c98b}
+  .tag.no{background:rgba(63,185,80,.12);border-color:var(--insp);color:#7ee787}
+
+  /* フロー縦並び */
+  .flow{display:flex;flex-direction:column;gap:0;margin:8px 0 8px}
+  .step{display:flex;gap:14px;align-items:stretch}
+  .step .rail{display:flex;flex-direction:column;align-items:center;width:42px;flex-shrink:0}
+  .step .num{width:36px;height:36px;border-radius:50%;background:var(--panel2);border:2px solid var(--legal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
+  .step .line{flex:1;width:2px;background:var(--line);margin:4px 0}
+  .step:last-child .line{display:none}
+  .step .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px;margin-bottom:14px;flex:1}
+  .step .card h3{font-size:14.5px;color:#fff;margin-bottom:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .step .card .who{font-size:11px;padding:2px 8px;border-radius:10px;background:#0d1117;border:1px solid var(--line);color:var(--master)}
+  .step .card .deadline{font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(219,97,162,.15);border:1px solid var(--legal);color:#f0a6cd}
+  .step .card p{font-size:12.5px;color:var(--txt)}
+  .step .card .meta{font-size:11.5px;color:var(--muted);margin-top:6px}
+  .step .card code{color:var(--info);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px}
+  @media(max-width:780px){.twocol{grid-template-columns:1fr}}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .box h3{font-size:13.5px;color:#fff;margin-bottom:8px}
+  .box ul{list-style:none;font-size:12.5px}
+  .box li{padding:4px 0 4px 18px;position:relative;border-bottom:1px solid rgba(48,54,61,.5)}
+  .box li:last-child{border-bottom:none}
+  .box li::before{content:"▸";position:absolute;left:0;color:var(--legal)}
+
+  .branch{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 18px}
+  .branch .b{flex:1;min-width:240px;border-radius:10px;padding:12px 14px;font-size:12.5px}
+  .branch .b.yes{background:rgba(248,81,73,.10);border:1px solid var(--defect)}
+  .branch .b.no{background:rgba(63,185,80,.10);border:1px solid var(--insp)}
+  .branch .b h4{font-size:13px;color:#fff;margin-bottom:5px}
+
+  footer{margin-top:36px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
+  .schema{background:#11171f;border:1px dashed var(--line);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--muted);margin-top:10px}
+  .schema code{color:var(--info);background:#0d1117;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+  <h1>保安規定にもとづく「事故報告」フロー図</h1>
+  <div class="sub">阿武隈風力発電所 / 電気事業法・電気関係報告規則・保安規定にもとづく標準的な事故報告の流れ（一般的な記載に準拠）</div>
+
+  <div class="disclaimer">
+    <b>⚠ 本図は一般的な保安規定の記載に寄せた説明用です。</b>
+    報告の要否・様式・期限（速報の時間、詳報の日数など）は、最新の<b>電気関係報告規則</b>および自所の<b>保安規定</b>の条文が正本です。
+    個別事案の最終判断は<b>電気主任技術者</b>が行い、必要に応じて管轄の<b>産業保安監督部</b>に確認してください。本図の数値は目安です。
+  </div>
+
+  <div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #58a6ff;border-radius:10px;padding:14px 18px;margin-bottom:22px;font-size:12.5px;line-height:1.7">
+    <div style="color:#9cd2ff;font-weight:700;font-size:12px;letter-spacing:.04em;margin-bottom:8px">📘 このDocsの使い方</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:5px 18px">
+      <div><b style="color:#8b949e">👥 対象者</b>　電気主任技術者・保安担当・当直</div>
+      <div><b style="color:#8b949e">🕐 使う場面</b>　事故・重大アラーム覚知時／報告要否の判断時</div>
+      <div><b style="color:#8b949e">⚖️ 最終判断</b>　電気主任技術者（必要に応じ産業保安監督部に確認）</div>
+      <div><b style="color:#8b949e">📋 残す証跡</b>　<code>defect_findings</code> / <code>work_orders</code> / <code>attachments</code>(BOX) / <code>approvals</code></div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="color:#8b949e">🔗 接続ライブ画面：</span>
+      <a href="./report-candidates.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">⚖ 保安規定 報告候補</a>
+      <a href="./defect-rca.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">🔧 故障/RCA</a>
+      <a href="./menu.html" style="color:#58a6ff;border:1px solid #30363d;border-radius:999px;padding:3px 11px;text-decoration:none;font-size:11.5px">≡ メニュー</a>
+    </div>
+  </div>
+
+  <!-- ───────── 0. 緊急時チェックリスト ───────── -->
+  <h2 class="section" style="border-left-color:var(--defect)">🚨 緊急時チェックリスト<small>覚知したらこの順で。チェックは目視確認用（記録は下記ライブ画面に残す）</small></h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-bottom:10px">
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--defect);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">A. 初動（人命・二次災害防止が最優先）</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">負傷者の有無を確認・救護／119番</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">当該設備を停止・隔離（必要ならLOTO）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">二次災害防止（退避・消火・立入禁止）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">電気主任技術者へ即連絡</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">現場保全・写真記録（原因調査用）</label>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--work);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">B. 報告要否の判定（主任技術者）</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">①の分類表で「要報告」に該当するか確認</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">人身／火災／他物損壊・波及／主要機器破損／風車損壊か</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">供給支障の規模を確認（規模次第の判定）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">迷う場合は産業保安監督部に確認</label>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--legal);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">C. 期限管理（要報告の場合）</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">速報：覚知後 速やかに（目安24時間以内）</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">詳報：発生から（目安30日以内）報告書提出</label>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">※具体時間・日数は最新の電気関係報告規則／自所の保安規定の条文が正本</div>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--insp);border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px">D. 証跡・完了確認</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">写真・運転記録・点検記録をBOXに保存</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">速報・詳報の控えを記録</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">RCA・再発防止・横展開を起票</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0;cursor:pointer"><input type="checkbox" style="margin-top:3px">主任技術者の承認を取得</label>
+    </div>
+  </div>
+
+  <div class="note" style="border-color:var(--insp)">
+    <b>📋 記録はここに残す（このページはチェック用・記録はライブ画面）:</b>
+    覚知・停止 → <code>defect_findings</code> / <code>work_orders</code>（<a href="./defect-rca.html" style="color:var(--master)">🔧 故障/RCA</a>） ／
+    報告候補の抽出 → <a href="./report-candidates.html" style="color:var(--master)">⚖ 保安規定 報告候補</a> ／
+    証跡写真・報告書 → BOX＋<code>attachments</code> ／
+    承認 → <a href="./approvals.html" style="color:var(--master)">✅ 承認待ち一覧</a>（<code>approvals</code>）
+  </div>
+
+  <!-- ───────── 1. そもそも報告対象か ───────── -->
+  <h2 class="section">① まず「国への報告対象の事故か」を判定する<small>電気関係報告規則 第3条（事故報告）の典型分類</small></h2>
+  <div class="note">
+    保安規定では通常、最初に「報告すべき事故（=国＝産業保安監督部へ報告）」を定義します。
+    風力発電所で典型的に挙がるのは次のとおり。<b>計画停止・軽微な不具合・自動復帰したアラームは原則「報告対象外」</b>です。
+  </div>
+  <table>
+    <tr><th style="width:30%">事故の種類（典型）</th><th>内容の例</th><th style="width:14%">国へ報告</th></tr>
+    <tr><td class="cat">感電・人身事故</td><td>作業者・第三者の死傷（治療を要するもの）</td><td><span class="tag must">要報告</span></td></tr>
+    <tr><td class="cat">電気火災事故</td><td>電気工作物が原因で発生した火災</td><td><span class="tag must">要報告</span></td></tr>
+    <tr><td class="cat">他物損壊・波及事故</td><td>自所の電気工作物の故障で他者の設備を損壊／系統に波及</td><td><span class="tag must">要報告</span></td></tr>
+    <tr><td class="cat">主要電気工作物の破損事故</td><td>変圧器・主要機器等の破損で運転が不能・支障</td><td><span class="tag must">要報告</span></td></tr>
+    <tr><td class="cat">風車の損壊事故</td><td>ブレード・ナセル・タワー等の倒壊・落下・破断</td><td><span class="tag must">要報告</span></td></tr>
+    <tr><td class="cat">供給支障事故</td><td>一定規模以上の出力抑制・供給停止に至ったもの</td><td><span class="tag maybe">規模次第</span></td></tr>
+    <tr><td class="cat">計画停止・軽微不具合</td><td>定期点検停止、自動復帰アラーム、軽微な部品劣化</td><td><span class="tag no">対象外</span></td></tr>
+  </table>
+  <div class="note" style="border-color:var(--work)">
+    <b>判定の入口（O&M OS連携）:</b> <code>defect_findings.regulation_impact = 'yes'</code> または リスク評価 <code>recommended_action = 'stop'(F判定)</code> が立ったものを「報告候補」として自動抽出 → 主任技術者がこの表で要否を最終確認する運用にできます。
+  </div>
+
+  <!-- ───────── 2. 報告対象だった場合のフロー ───────── -->
+  <h2 class="section">② 報告対象の場合：保安規定にもとづく報告フロー<small>覚知 → 速報 → 詳報 → 記録</small></h2>
+
+  <div class="flow">
+    <div class="step">
+      <div class="rail"><div class="num">1</div><div class="line"></div></div>
+      <div class="card">
+        <h3>事故の発生・覚知 <span class="who">発見者／当直</span></h3>
+        <p>SCADAアラーム、巡視、点検、第三者通報などで事故を覚知。まず人命安全・二次災害防止（停止・隔離・退避・消火）を最優先で実施する。</p>
+        <div class="meta">O&M OS: 起票 <code>work_orders</code> ／ 異常 <code>defect_findings</code> ／ 停止記録 <code>downtime_minutes</code></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="num">2</div><div class="line"></div></div>
+      <div class="card">
+        <h3>電気主任技術者へ連絡 <span class="who">現場 → 主任技術者</span></h3>
+        <p>保安規定の指揮命令系統に従い、ただちに電気主任技術者へ報告。主任技術者が事故の種類・報告要否・応急措置を判断・指示する。</p>
+        <div class="meta">保安規定の「事故時の措置」「保安組織」条項に対応</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="num">3</div><div class="line"></div></div>
+      <div class="card">
+        <h3>速報（第一報）<span class="who">主任技術者／保安担当</span><span class="deadline">目安：覚知後24時間以内</span></h3>
+        <p>管轄の<b>産業保安監督部</b>へ電話・FAX・電子メール等で速やかに第一報。判明している範囲（発生日時・場所・事故概要・被害・応急措置）を連絡する。</p>
+        <div class="meta">※「速やかに」の具体時間は規則・保安規定の条文に従う（24時間は一般的な目安）</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="num">4</div><div class="line"></div></div>
+      <div class="card">
+        <h3>詳報（報告書の提出）<span class="who">主任技術者／保安担当</span><span class="deadline">目安：発生から30日以内</span></h3>
+        <p>所定様式の事故報告書を作成し産業保安監督部へ提出。発生状況・原因・被害・再発防止対策・復旧状況を記載する。</p>
+        <div class="meta">添付：写真・図面・運転記録・点検記録 → <code>attachments</code>（BOX証跡リンク）で管理</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="num">5</div><div class="line"></div></div>
+      <div class="card">
+        <h3>原因調査・再発防止 <span class="who">保安組織</span></h3>
+        <p>RCA（根本原因分析）を実施し、恒久対策・水平展開・必要に応じMOC（変更管理）を行う。対策の有効性を確認する。</p>
+        <div class="meta">O&M OS: <code>rca_investigations</code> ／ <code>corrective_actions</code> ／ <code>moc_changes</code> ／ <code>closeout_reviews</code></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="num">6</div></div>
+      <div class="card">
+        <h3>記録の保存 <span class="who">保安担当</span></h3>
+        <p>事故・措置・報告・是正の一連を保安記録として保存。保安規定で定める期間（一般に数年〜法定年限）保管し、保安監査・立入検査に備える。</p>
+        <div class="meta">証跡正本：BOX ／ メタ・索引：<code>attachments</code> ／ 監査ログ：各テーブル履歴</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── 3. 報告対象外だった場合 ───────── -->
+  <h2 class="section">③ 報告対象外でも「社内の保安記録」は残す<small>保安規定の自主保安義務</small></h2>
+  <div class="branch">
+    <div class="b yes">
+      <h4>国への報告対象（①で要報告）</h4>
+      速報＋詳報を産業保安監督部へ提出。外部報告＋社内記録の両方を残す（上記②のフル手順）。
+    </div>
+    <div class="b no">
+      <h4>報告対象外（計画停止・軽微不具合）</h4>
+      国への報告は不要だが、<b>保安規定にもとづく社内記録（点検・補修・運転記録）</b>は必須。
+      点検報告書・作業記録として残し、傾向分析・予防保全に活用する。
+    </div>
+  </div>
+
+  <!-- ───────── 4. 速報と詳報の中身 ───────── -->
+  <h2 class="section">④ 速報・詳報に書く項目（一般的な記載例）</h2>
+  <div class="twocol">
+    <div class="box">
+      <h3>速報（第一報）の記載項目</h3>
+      <ul>
+        <li>事故発生・覚知の日時</li>
+        <li>事業場の名称・場所（号機）</li>
+        <li>事故の種類・概要</li>
+        <li>人身被害・設備被害の有無</li>
+        <li>系統・供給への影響</li>
+        <li>応急措置の状況</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>詳報（報告書）の記載項目</h3>
+      <ul>
+        <li>速報の全項目（確定値）</li>
+        <li>事故に至った経過・運転状況</li>
+        <li>原因（直接原因・根本原因）</li>
+        <li>被害の詳細・復旧状況</li>
+        <li>再発防止対策・水平展開</li>
+        <li>添付資料（写真・記録・図面）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ───────── 5. O&Mスキーマ対応 ───────── -->
+  <h2 class="section">⑤ O&M OS スキーマとの対応</h2>
+  <div class="schema">
+    報告候補の抽出： <code>defect_findings.regulation_impact='yes'</code> ＋ リスク評価F判定（<code>risk_assessments.recommended_action='stop'</code>）<br>
+    停止規模の把握： <code>work_orders.downtime_minutes</code> ／ SCADA <code>alarm_events</code><br>
+    原因・是正の証跡： <code>rca_investigations</code> → <code>corrective_actions</code> → <code>closeout_reviews</code><br>
+    変更管理： <code>moc_changes</code>（保護値・周期・手順の変更を伴う場合）<br>
+    報告書・写真の正本： <b>BOX</b> ＋ <code>attachments</code>（box_file_id / box_url リンク）<br>
+    承認証跡： <code>approvals</code>（主任技術者の確認・承認履歴）
+  </div>
+
+  <footer>
+    凡例：<span class="tag must">要報告</span>=国（産業保安監督部）への報告対象の典型 ／ <span class="tag maybe">規模次第</span>=出力・供給支障の規模により判断 ／ <span class="tag no">対象外</span>=社内記録のみ。<br>
+    本図は一般的な保安規定・電気関係報告規則の記載に準拠した説明資料。条文・様式・期限の正本は最新法令と自所の保安規定。最終判断は電気主任技術者。
+  </footer>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 異常→作業→安全ゲート 導線ガイド</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;
+        --insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--blue:#58a6ff;--ok:#3fb950;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.6;max-width:1080px;margin:0 auto;padding:24px 18px 60px}
+  a.back{color:var(--blue);text-decoration:none;font-size:12.5px}
+  h1{font-size:22px;margin:10px 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-bottom:20px}
+  .lg{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:6px;border-left:5px solid var(--line)}
+  .step.s-insp{border-left-color:var(--insp)} .step.s-defect{border-left-color:var(--defect)}
+  .step.s-appr{border-left-color:var(--ok)} .step.s-work{border-left-color:var(--work)}
+  .step.s-permit{border-left-color:var(--legal)} .step.s-report{border-left-color:var(--legal)}
+  .shead{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:10px}
+  .snum{width:26px;height:26px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex:0 0 auto}
+  .stitle{font-size:15.5px;font-weight:800;color:#fff}
+  .screen{font-size:11px;font-family:monospace;color:var(--blue);background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.3);border-radius:5px;padding:2px 8px}
+  .desc{font-size:12.5px;color:var(--muted);margin-bottom:11px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:11px;font-weight:700}
+  td:nth-child(1){white-space:nowrap}
+  .btn{display:inline-block;font-weight:700;font-size:12px;border-radius:7px;padding:4px 11px;white-space:nowrap}
+  .b-go{background:#238636;color:#fff} .b-work{background:var(--work);color:#11161d}
+  .b-blue{background:#1f6feb;color:#fff} .b-ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  .b-green{background:rgba(63,185,80,.14);border:1px solid rgba(63,185,80,.5);color:#7ee787}
+  .b-amber{background:rgba(210,153,34,.14);border:1px solid rgba(210,153,34,.5);color:#e3b341}
+  .dest{font-family:monospace;font-size:11px;color:var(--blue)}
+  .ok{color:var(--ok);font-weight:700} .cond{color:var(--work);font-weight:700} .no{color:var(--defect);font-weight:700}
+  .arrow{display:flex;justify-content:center;color:var(--muted);font-size:20px;margin:2px 0}
+  .gate{margin-top:11px;background:rgba(210,153,34,.06);border:1px dashed rgba(210,153,34,.45);border-radius:8px;padding:9px 12px;font-size:12px}
+  .gate b{color:#e3b341}
+  code{font-family:monospace;color:#9cd2ff;background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
+  footer{margin-top:26px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+  <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+  <h1>異常 → 作業 → 安全ゲート 導線ガイド</h1>
+  <div class="sub">点検で異常を見つけてから、作業票・作業許可（KY/PTW/LOTO）・作業完了・報告までの「流れ」と「ボタン」の対応表です。各ボタンは実装済みです。</div>
+
+  <div class="legend">
+    <span class="lg"><span class="ok">●</span> 実装済み（押せる）</span>
+    <span class="lg"><span class="cond">●</span> 条件付き（ゲート充足時のみ押せる）</span>
+    <span class="lg">画面：<span class="screen">file.html</span></span>
+  </div>
+
+  <!-- 1 -->
+  <div class="step s-insp">
+    <div class="shead"><span class="snum">1</span><span class="stitle">点検実施</span><a class="screen" href="./inspection-input.html">inspection-input.html</a></div>
+    <div class="desc">点検結果を「異常あり」で記録すると、状態が自動で「🚨 異常判断中」になります。</div>
+    <table><tr><th>ボタン</th><th>遷移先</th><th>状態</th></tr>
+      <tr><td><span class="btn b-work">🔧 異常判断へ</span></td><td class="dest">defect-rca.html?inspection_result_id=…&plan_id=…<br><span style="color:var(--muted)">（NG項目を引き継ぎ）</span></td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-blue">📨 承認申請</span><span style="color:var(--muted);font-size:11px"> ※異常なし時</span></td><td class="dest">点検結果の承認（approvals.html）</td><td class="ok">✅</td></tr>
+    </table>
+  </div>
+  <div class="arrow">▼</div>
+
+  <!-- 2 -->
+  <div class="step s-defect">
+    <div class="shead"><span class="snum">2</span><span class="stitle">異常判断（一次評価・RCA）</span><a class="screen" href="./defect-rca.html">defect-rca.html</a></div>
+    <div class="desc">異常の安全影響・原因・判定を評価し、承認申請・作業票起票・法令分類を行います。</div>
+    <table><tr><th>ボタン</th><th>遷移先 / 動作</th><th>状態</th></tr>
+      <tr><td><span class="btn b-green">📨 承認申請</span></td><td class="dest">submitDefectApproval() → 承認画面で承認</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-work">📝 作業票を作成</span></td><td class="dest">work-orders.html?defect_finding_id=…&inspection_result_id=…<br><span style="color:var(--muted)">（号機・異常内容・判定・NG項目を引き継ぎ）</span></td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-ghost">点検結果を見る →</span></td><td class="dest">inspection-input.html?…&readonly=1</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-ghost">⚖ 法令・報告分類（A〜F）</span></td><td class="dest">report-candidates.html（報告候補で確認）</td><td class="ok">✅</td></tr>
+    </table>
+  </div>
+  <div class="arrow">▼</div>
+
+  <!-- 3 -->
+  <div class="step s-appr">
+    <div class="shead"><span class="snum">3</span><span class="stitle">承認（異常報告）</span><a class="screen" href="./approvals.html">approvals.html</a></div>
+    <div class="desc">主任が異常報告（defect_finding）を承認します。承認は承認画面に集約。</div>
+    <table><tr><th>ボタン</th><th>動作</th><th>状態</th></tr>
+      <tr><td><span class="btn b-green">✅ 承認</span></td><td class="dest">defect_findings.status=assessed / approval_status=approved（証跡は approvals）</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-amber">↩ 差戻し</span></td><td class="dest">approval_status=returned</td><td class="ok">✅</td></tr>
+    </table>
+  </div>
+  <div class="arrow">▼</div>
+
+  <!-- 4 -->
+  <div class="step s-work">
+    <div class="shead"><span class="snum">4</span><span class="stitle">作業票（要否の設定・進行管理）</span><a class="screen" href="./work-orders.html">work-orders.html</a></div>
+    <div class="desc">作業票は KY/PTW/LOTO の<b>要否</b>を持ち、安全実施状況を<b>サマリ表示</b>します。実施・証跡は作業許可側です。</div>
+    <table><tr><th>ボタン</th><th>遷移先 / 動作</th><th>状態</th></tr>
+      <tr><td><span class="btn b-ghost">✏ 編集</span></td><td class="dest">安全要件 KY要 / PTW要 / LOTO要 を設定（要否）</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-green">📨 承認申請</span></td><td class="dest">作業票の承認（approvals.html）</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-amber">⚠ 作業許可・KY/LOTOを開く</span></td><td class="dest">ky-loto.html?work_order_id=…</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-go">▶ 作業開始</span></td><td class="dest">status=in_progress<br><span style="color:var(--muted)">安全ゲート充足時のみ有効</span></td><td class="cond">条件付</td></tr>
+      <tr><td><span class="btn b-blue">✅ 作業完了・クローズ</span></td><td class="dest">status=completed<br><span style="color:var(--muted)">LOTO解除まで完了時のみ有効</span></td><td class="cond">条件付</td></tr>
+    </table>
+    <div class="gate">
+      <b>🔒 安全ゲート（v_work_order_safety_status で判定）</b><br>
+      ・<b>作業開始可</b>＝ KY実施済 ＋ PTW=<code>approved</code>（closedは不可）＋ LOTO施錠済<br>
+      ・<b>クローズ可</b>＝ KY実施済 ＋ PTW=<code>approved</code>または<code>closed</code> ＋ LOTO施錠 かつ <b>解除済</b><br>
+      ・未完了は赤帯で表示：<span class="no">KY未実施 / PTW未承認 / LOTO未施錠 / LOTO未解除</span>
+    </div>
+  </div>
+  <div class="arrow">▼</div>
+
+  <!-- 5 -->
+  <div class="step s-permit">
+    <div class="shead"><span class="snum">5</span><span class="stitle">作業許可・KY・LOTO（実施・承認・解除の正本）</span><a class="screen" href="./ky-loto.html">ky-loto.html</a></div>
+    <div class="desc">作業票の要否を読み込み、必要な安全ゲートと「次にやること」を提示します。証跡はここに記録。</div>
+    <table><tr><th>操作</th><th>動作 / 記録先</th><th>状態</th></tr>
+      <tr><td><span class="btn b-green">KY記録を作成・確定</span></td><td class="dest">ky_records（confirmed_at）</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-amber">PTW 申請 → 承認</span></td><td class="dest">work_permits（permit_status=approved）／<a class="screen" href="./permits.html">permits.html</a>・approvals.html</td><td class="ok">✅</td></tr>
+      <tr><td><span class="btn b-blue">LOTO 施錠 → 解除</span></td><td class="dest">loto_records（status=locked → unlocked）</td><td class="ok">✅</td></tr>
+    </table>
+  </div>
+  <div class="arrow">▼</div>
+
+  <!-- 6 -->
+  <div class="step s-report">
+    <div class="shead"><span class="snum">6</span><span class="stitle">クローズ・報告候補</span><a class="screen" href="./report-candidates.html">report-candidates.html</a></div>
+    <div class="desc">作業完了（LOTO解除済）でクローズ。保安規定の報告候補は電気主任技術者が最終判断。</div>
+    <table><tr><th>確認</th><th>動作</th><th>状態</th></tr>
+      <tr><td><span class="btn b-ghost">⚖ 報告候補を確認</span></td><td class="dest">v_report_candidates（法令分類A〜F・報告候補フラグ）</td><td class="ok">✅</td></tr>
+    </table>
+  </div>
+
+  <!-- ===== リレーション（ER）と導線 ===== -->
+  <h1 style="font-size:19px;margin:34px 0 4px;">リレーション（ER）と導線</h1>
+  <div class="sub">異常・作業票・作業許可(PTW)・KY・LOTO のテーブル関係と、画面間のつながりです。</div>
+
+  <div class="step" style="border-left-color:var(--work)">
+    <div class="shead"><span class="snum" style="background:var(--work);color:#11161d">ER</span><span class="stitle">テーブル関係図</span></div>
+    <pre style="font-family:monospace;font-size:11.5px;color:#c9d1d9;background:#0d1117;border:1px solid var(--line);border-radius:9px;padding:14px;overflow-x:auto;line-height:1.5;">
+inspection_results ─(result_id)──────┐
+inspection_plans ───(source_id・多態)─┤
+                                      ▼
+defect_findings ─(defect_finding_id)─► <b style="color:#d29922">work_orders</b> ─┬─(work_order_id)─► <b style="color:#db61a2">work_permits</b>  PTW
+   (異常)              1 : N           (作業票)  1│N    └ permit_status / approved_at
+                                              │
+                                              ├─(work_order_id)─► <b style="color:#3fb950">ky_records</b>   KY
+                                              │     └ confirmed_at ／ permit_id ─► work_permits
+                                              │
+                                              └─(work_order_id)─► <b style="color:#58a6ff">loto_records</b> LOTO
+                                                    └ status(locked/unlocked) ／ plan_id ─► inspection_plans
+
+          集約ビュー: <b style="color:#9cd2ff">v_work_order_safety_status</b>（KY/PTW/LOTO の要否・状態・ready/ブロック理由）</pre>
+  </div>
+
+  <div class="step" style="border-left-color:var(--legal)">
+    <div class="shead"><span class="snum" style="background:var(--legal);color:#11161d">FK</span><span class="stitle">外部キーと多重度</span></div>
+    <table>
+      <tr><th>親 → 子</th><th>FKカラム</th><th>多重度</th><th>現状データ</th></tr>
+      <tr><td>defect_findings → work_orders</td><td><code>work_orders.defect_finding_id</code>（NULL可）</td><td><b>1 : N</b>（UNIQUEなし）</td><td>11異常=11作業票（実質1:1）</td></tr>
+      <tr><td>inspection_results → work_orders</td><td><code>work_orders.result_id</code></td><td>1 : N</td><td>点検結果起点の作業票</td></tr>
+      <tr><td>work_orders → work_permits（PTW）</td><td><code>work_permits.work_order_id</code></td><td><b>1 : N</b></td><td>10許可 / 8作業票（複数許可あり）</td></tr>
+      <tr><td>work_orders → ky_records（KY）</td><td><code>ky_records.work_order_id</code></td><td>1 : N</td><td>0件（KY未記録）</td></tr>
+      <tr><td>work_permits → ky_records</td><td><code>ky_records.permit_id</code></td><td>1 : N（任意）</td><td>KYを許可に紐付け可</td></tr>
+      <tr><td>work_orders → loto_records（LOTO）</td><td><code>loto_records.work_order_id</code></td><td>1 : N</td><td>0件（LOTO未記録）</td></tr>
+      <tr><td>inspection_plans → loto_records</td><td><code>loto_records.plan_id</code></td><td>1 : N（任意）</td><td>点検計画起点のLOTOも可</td></tr>
+    </table>
+  </div>
+
+  <div class="step" style="border-left-color:var(--work)">
+    <div class="shead"><span class="snum" style="background:var(--work);color:#11161d">↔</span><span class="stitle">作業票 ⇄ 作業許可・KY/LOTO の導線</span></div>
+    <table>
+      <tr><th>向き</th><th>きっかけ / ボタン</th><th>遷移・連携</th></tr>
+      <tr><td>作業票 → 作業許可</td><td><span class="btn b-amber">⚠ 作業許可・KY/LOTOを開く</span></td><td class="dest">ky-loto.html?work_order_id=…（要否を読み込み）</td></tr>
+      <tr><td>作業許可で記録</td><td>KY記録／PTW申請・承認／LOTO施錠・解除</td><td class="dest">ky_records / work_permits / loto_records に証跡保存（work_order_id で紐付け）</td></tr>
+      <tr><td>作業許可 → 作業票（戻り）</td><td>記録すると自動反映</td><td class="dest">作業票詳細「安全実施状況サマリ」＝ v_work_order_safety_status を再取得</td></tr>
+      <tr><td>ゲート判定</td><td><span class="btn b-go">▶ 作業開始</span> / <span class="btn b-blue">✅ 完了・クローズ</span></td><td class="dest">safety_ready_to_start / safety_ready_to_close で有効化</td></tr>
+    </table>
+    <div class="gate">
+      <b>ポイント</b>：作業票は<b>要否（ky/ptw/loto_required）</b>を持ち、PTW/KY/LOTOの<b>実施証跡</b>は各記録テーブルが <code>work_order_id</code> で作業票にぶら下がります。<br>
+      作業票は実施チェックを持たず（二重管理なし）、<code>v_work_order_safety_status</code> が3つの証跡を集約して状態を返します。
+    </div>
+  </div>
+
+  <footer>
+    要否は<b>作業票</b>、実施・承認・解除の証跡は<b>作業許可/KY・LOTO</b>。同じ実施チェックを二重管理しません。<br>
+    安全ゲート判定ビュー：<code>v_work_order_safety_status</code>（ky/ptw/loto の要否・状態・<code>safety_ready_to_start</code>・<code>safety_ready_to_close</code>・<code>blocking_reasons</code>）。
+  </footer>
+</body>
+</html>

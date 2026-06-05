@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="ja">
+
+
+
+
+<head>
+
+
+
+
+<meta charset="UTF-8">
+
+
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+
+<title>阿武隈OS — 作業許可 (PTW) 一覧（ライブ）</title>
+
+
+
+
+<style>
+
+
+
+
+  :root{
+
+
+
+
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+
+
+
+
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --legal:#db61a2; --ai:#ff7b72;
+
+
+
+
+  }
+
+
+
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+
+
+
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.55}
+
+
+
+
+  a{color:var(--master);text-decoration:none}
+
+
+
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+
+
+
+
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+
+
+
+
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+
+
+
+
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+
+
+
+
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+
+
+
+
+  .wrap{padding:18px 22px 50px}
+
+
+
+
+  .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+
+
+
+
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+
+
+
+
+  .filters button.active{color:#fff;border-color:var(--master);background:rgba(88,166,255,.1)}
+
+
+
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+  table colgroup col.col-no{width:13%}
+  table colgroup col.col-wtg{width:7%}
+  table colgroup col.col-type{width:6%}
+  table colgroup col.col-desc{width:18%}
+  table colgroup col.col-st{width:8%}
+  table colgroup col.col-risk{width:7%}
+  table colgroup col.col-safe{width:10%}
+  table colgroup col.col-wind{width:6%}
+  table colgroup col.col-time{width:13%}
+  table colgroup col.col-h{width:5%}
+  table colgroup col.col-op{width:7%}
+  th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top;overflow:hidden;word-break:break-word}
+  td.col-desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+
+
+
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;background:var(--bg)}
+
+
+
+
+  tr.submitted{background:rgba(219,97,162,.06)}
+
+
+
+
+  .no{font-family:monospace;font-size:11px;color:var(--master);white-space:nowrap}
+
+
+
+
+  .b{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+
+
+
+
+  .b-on{color:#f0c674;border-color:var(--work);background:rgba(210,153,34,.12)}
+
+
+
+
+  .b-off{color:var(--muted);border-color:var(--line)}
+
+
+
+
+  .typ{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
+
+
+
+
+  .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+
+
+
+
+  .empty{color:var(--muted);font-size:14px;padding:40px 0;text-align:center}
+
+
+
+
+  .err{color:#ff9a92;font-size:13px;padding:14px;border:1px solid var(--defect);border-radius:8px;background:rgba(248,81,73,.07);margin:18px 0}
+
+
+
+
+  .note{font-size:12px;color:var(--muted);margin-bottom:14px}
+
+
+
+
+
+  /* ── Drawer ── */
+  .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none}
+  .drawer-overlay.open{display:block}
+  .drawer-panel{position:fixed;top:0;right:0;width:460px;max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden}
+  .drawer-panel.open{transform:translateX(0)}
+  .drawer-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-shrink:0}
+  .drawer-head h3{font-size:14px;color:#fff;font-weight:700;flex:1}
+  .drawer-head button{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px}
+  .drawer-body{flex:1;overflow-y:auto;padding:18px}
+  .drawer-body .fld{margin-bottom:14px}
+  .drawer-body .fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
+  .drawer-body .fld input,.drawer-body .fld select,.drawer-body .fld textarea{display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;box-sizing:border-box}
+  .drawer-body .fld textarea{min-height:70px;resize:vertical}
+  .drawer-body .fld input[readonly],.drawer-body .fld select[disabled],.drawer-body .fld textarea[readonly]{opacity:.6;cursor:default;background:#0d1117}
+  .drawer-body .cb-row{display:flex;align-items:center;gap:8px;font-size:13px}
+  .drawer-body .cb-row input[type=checkbox]{width:auto;display:inline}
+  .drawer-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0}
+  .drawer-foot button{font-size:13px;font-weight:700;padding:8px 16px;border-radius:6px;cursor:pointer;border:none}
+  .btn-save{background:#238636;color:#fff}
+  .btn-save:disabled{opacity:.5;cursor:default}
+  .btn-submit{background:rgba(219,97,162,.2);color:#db61a2;border:1px solid rgba(219,97,162,.5)!important}
+  .btn-close-drawer{background:var(--panel2);color:var(--muted);border:1px solid var(--line)!important}
+  .readonly-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.4);margin-left:8px}
+
+</style>
+
+
+
+
+</head>
+
+
+
+
+<body>
+
+
+
+
+<nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:14px 18px 12px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;"><span style="display:flex;flex-direction:column;line-height:1.15;border-left:3px solid rgb(210,153,34);padding-left:9px;flex:0 0 auto;"><b style="color:#e6edf3;font-size:12.5px;font-weight:800;letter-spacing:.04em;">業務フロー</b><span style="color:#6e7681;font-size:10px;">現在地</span></span><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(210,153,34);background:rgba(210,153,34,.13);border:1px solid rgba(210,153,34,.45);">🟠 異常〜作業フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">7 / 11</span><span style="flex:0 0 auto;display:inline-block;width:120px;max-width:30vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:60%;border-radius:999px;background:rgb(210,153,34);"></span></span></div><div style="display:flex;align-items:flex-start;flex-wrap:wrap;row-gap:6px;"><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./index.html" title="今日の管制塔（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">今日の管制塔</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./live-board.html" title="監視（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">監視</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-plan.html" title="点検計画（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検計画</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-input.html" title="点検実施（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="異常判断（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">異常判断</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業票（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">作業票</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><div title="現在この画面です" aria-current="step" style="display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:rgb(210,153,34);color:#11161d;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:2px solid rgb(210,153,34);box-shadow:0 0 0 4px rgba(210,153,34,.22);box-sizing:border-box;">7</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#fff;font-weight:800;max-width:78px;word-break:break-word;">PTW/KY</span></div></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./approvals.html" title="承認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">8</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">承認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">9</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="復旧確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">10</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">復旧確認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./report-candidates.html" title="クローズ・報告確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">11</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">クローズ・報告確認</span></a></div></div></nav>
+
+
+
+
+  <div class="topbar">
+
+
+
+
+    <div class="mark">AW</div>
+
+
+
+
+    <div>
+
+
+
+
+      <h1>作業許可 (PTW) 一覧</h1>
+
+
+
+
+      <div class="sub">阿武隈OS ライブ盤 — 高所・電気・LOTO・火気などの許可管理</div>
+
+
+
+
+    </div>
+
+
+
+
+    <a class="back" href="./menu.html">≡ メニューへ戻る</a>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="wrap">
+
+
+
+
+    <div class="note">作業許可証 (Permit To Work) の一覧。承認待ちの許可は <a href="./approvals.html">承認待ち一覧</a> から承認できます。</div>
+
+
+
+
+    <div class="filters" id="filters">
+
+
+
+
+      <button data-f="all" class="active">すべて</button>
+
+
+
+
+      <button data-f="submitted">承認待ち</button>
+
+
+
+
+      <button data-f="approved">承認済</button>
+
+
+
+
+      <button data-f="closed">クローズ</button>
+
+
+
+
+      <button data-f="draft">下書き</button>
+
+
+
+
+    </div>
+
+
+
+
+    <div id="body" class="loading">読み込み中…</div>
+    <button onclick="openNewPtw()" style="margin-top:12px;background:rgba(219,97,162,.15);color:#db61a2;border:1px solid rgba(219,97,162,.4);font-weight:700;font-size:13px;padding:9px 20px;border-radius:8px;cursor:pointer;">＋ 新規PTW申請起票</button>
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+
+
+  
+  <!-- PTW ドロワー -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer-panel" id="drawerPanel">
+    <div class="drawer-head">
+      <h3 id="drawerTitle">作業許可証</h3>
+      <button onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </div>
+
+  <script src="./lib/supabase.js"></script>
+
+
+
+
+  <script>
+
+
+
+
+    const esc = sb.esc;
+
+
+
+
+    const state = { rows: [], filter: "all" };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function render(){
+
+
+
+
+      const body = document.getElementById("body");
+
+
+
+
+      let rows = state.rows.slice();
+
+
+
+
+      if(state.filter !== "all") rows = rows.filter(r => r["状態"] === state.filter);
+
+
+
+
+      if(!rows.length){ body.innerHTML = '<div class="empty">該当する作業許可はありません。</div>'; return; }
+
+
+
+
+      const trs = rows.map(r => `<tr class="${esc(r["状態"]||"")}">
+
+
+
+
+        <td class="no"><a onclick="openDrawer('${esc(r["id"]||"")}',event)" style="color:#58a6ff;cursor:pointer;font-family:monospace;font-size:12px;font-weight:700;">${esc(r["permit_no"]||r["ptw番号"]||"—")}</a></td>
+
+
+
+
+        <td style="white-space:nowrap"><b style="color:#fff">${esc(r["風車"]||"—")}</b></td>
+        <td><span class="typ">${esc(typeLabel[r["許可種別"]]||r["許可種別"]||"")}</span></td>
+        <td class="col-desc" title="${esc(r["作業内容"]||"")}">${esc((r["作業内容"]||"").split("\n")[0])}</td>
+
+
+
+
+        <td style="white-space:nowrap">${esc(r["状態表示"]||r["状態"]||"")}</td>
+
+
+
+
+        <td style="white-space:nowrap">${esc(r["リスク表示"]||r["リスクレベル"]||"")}</td>
+
+
+
+
+        <td>
+
+
+
+
+          <span class="b ${r["loto要否"]?'b-on':'b-off'}">LOTO ${r["loto要否"]?"要":"不要"}</span>
+
+
+
+
+          <span class="b ${r["隔離要否"]?'b-on':'b-off'}">隔離 ${r["隔離要否"]?"要":"不要"}</span>
+
+
+
+
+        </td>
+
+
+
+
+        <td style="white-space:nowrap">${r["風速制限ms"]!=null?esc(r["風速制限ms"])+" m/s":"–"}</td>
+
+
+
+
+        <td style="white-space:nowrap;color:var(--muted)">${esc(r["作業開始_jst"]||"–")}<br>${esc(r["作業終了_jst"]||"")}</td>
+
+
+
+
+        <td style="white-space:nowrap">${r["作業時間h"]!=null?esc(r["作業時間h"])+" h":"–"}</td>
+        <td style="white-space:nowrap">${
+          (r['状態']==='draft')
+            ? `<button onclick="event.stopPropagation();submitPermitApproval('${esc(r['id']||'')}','${esc(r['permit_no']||'')}',event)" style="font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:3px 8px;cursor:pointer">📨 承認申請</button>`
+            : (r['状態']==='submitted'
+                ? '<span style="font-size:11px;color:#db61a2;font-weight:700">⏳ 申請中</span>'
+                : (r['状態']==='approved'
+                    ? '<span style="font-size:11px;color:#3fb950;font-weight:700">✅ 承認済</span>'
+                    : ''))
+        }</td>
+      </tr>`).join("");
+
+
+
+
+      const cg = `<colgroup><col class="col-no"><col class="col-wtg"><col class="col-type"><col class="col-desc"><col class="col-st"><col class="col-risk"><col class="col-safe"><col class="col-wind"><col class="col-time"><col class="col-h"><col class="col-op"></colgroup>`;
+      body.innerHTML = `<table>${cg}<thead><tr>
+        <th>PTW番号</th><th>号機</th><th>種別</th><th>作業内容</th><th>状態</th><th>リスク</th><th>安全要件</th><th>風速制限</th><th>作業時間帯</th><th>所要</th><th>操作</th>
+      </tr></thead><tbody>${trs}</tbody></table>`;
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    document.querySelectorAll("#filters button").forEach(btn =>
+
+
+
+
+      btn.addEventListener("click", () => {
+
+
+
+
+        document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
+
+
+
+
+        btn.classList.add("active");
+
+
+
+
+        state.filter = btn.dataset.f;
+
+
+
+
+        render();
+
+
+
+
+      }));
+
+
+
+
+
+
+
+
+
+    
+    /* ======== PTW ドロワー ======== */
+    const typeLabel = { electrical:"電気", height:"高所", lifting:"揚重", hot_work:"火気", confined_space:"閉所", inspection:"点検", maintenance:"保全" };
+
+    let _drawerData = null;
+
+    function openDrawer(id, ev) {
+      if(ev) ev.stopPropagation();
+      const r = state.rows.find(x => x["id"] === id);
+      if(!r){ alert('データが見つかりません'); return; }
+      _drawerData = r;
+      renderDrawer(r);
+      document.getElementById('drawerOverlay').classList.add('open');
+      document.getElementById('drawerPanel').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawerOverlay').classList.remove('open');
+      document.getElementById('drawerPanel').classList.remove('open');
+      _drawerData = null;
+    }
+
+    function renderDrawer(r) {
+      const locked = ['approved','closed'].includes(r['状態'] || r['permit_status'] || '');
+      const pno    = r['permit_no'] || r['ptw番号'] || '—';
+      const status = r['状態表示'] || r['状態'] || '';
+
+      document.getElementById('drawerTitle').innerHTML =
+        '<span style="font-family:monospace">' + esc(pno) + '</span>'
+        + (locked ? '<span class="readonly-badge">参照のみ</span>' : '');
+
+      const ro = locked ? ' readonly' : '';
+      const ds = locked ? ' disabled' : '';
+
+      const permitTypes = ['electrical','height','lifting','hot_work','confined_space','inspection','maintenance'];
+      const typeOpts = permitTypes.map(v =>
+        `<option value="${v}" ${r['許可種別']===v?'selected':''}>${typeLabel[v]||v}</option>`
+      ).join('');
+
+      const riskOpts = ['high','medium','low'].map(v =>
+        `<option value="${v}" ${r['リスクレベル']===v?'selected':''}>${{high:'🔴 高',medium:'🟡 中',low:'🟢 低'}[v]}</option>`
+      ).join('');
+
+      const fmtDT = s => {
+        if(!s) return '';
+        const d = new Date(s);
+        const pad = n => String(n).padStart(2,'0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      };
+
+      document.getElementById('drawerBody').innerHTML = `
+        <div class="fld"><label>状態</label><div>${esc(status)}</div></div>
+        <div class="fld"><label>号機</label><input id="dw_turbine" value="${esc(r['風車']||'')}"${ro} placeholder="例: WT-01"></div>
+        <div class="fld"><label>許可種別</label><select id="dw_type"${ds}>${typeOpts}</select></div>
+        <div class="fld"><label>作業内容</label><textarea id="dw_desc"${ro}>${esc(r['作業内容']||'')}</textarea></div>
+        <div class="fld"><label>リスクレベル</label><select id="dw_risk"${ds}>${riskOpts}</select></div>
+        <div class="fld"><label>安全要件</label>
+          <div class="cb-row"><input type="checkbox" id="dw_loto" ${r['loto要否']?'checked':''} ${locked?'disabled':''}> LOTO 要</div>
+          <div class="cb-row" style="margin-top:6px"><input type="checkbox" id="dw_iso"  ${r['隔離要否']?'checked':''} ${locked?'disabled':''}> 隔離 要</div>
+        </div>
+        <div class="fld"><label>風速制限 (m/s)</label><input id="dw_wind" type="number" step="0.1" value="${r['風速制限ms']??''}"${ro}></div>
+        <div class="fld"><label>作業開始</label><input id="dw_start" type="datetime-local" value="${fmtDT(r['作業開始_jst']||r['start_at']||'')}"${ro}></div>
+        <div class="fld"><label>作業終了</label><input id="dw_end"   type="datetime-local" value="${fmtDT(r['作業終了_jst']||r['end_at']||'')}"${ro}></div>
+        <div class="fld"><label>備考</label><textarea id="dw_remarks"${ro}>${esc(r['remarks']||'')}</textarea></div>
+        ${r['承認日時_jst'] ? `<div class="fld"><label>承認日時</label><div style="font-size:12px;color:var(--muted)">${esc(String(r['承認日時_jst']))}</div></div>` : ''}
+      `;
+
+      const foot = document.getElementById('drawerFoot');
+      const printBtn = `<a href="./print.html?type=ptw&id=${esc(r['id']||'')}" target="_blank" style="font-size:13px;font-weight:700;padding:8px 14px;border-radius:6px;cursor:pointer;background:var(--panel2);color:var(--muted);border:1px solid var(--line);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">🖨 印刷</a>`;
+      if(locked) {
+        foot.innerHTML = printBtn + `<button class="btn-close-drawer" onclick="closeDrawer()">閉じる</button>`;
+      } else {
+        const st = r['状態'] || '';
+        foot.innerHTML =
+          `<button class="btn-save" id="dwSaveBtn" onclick="saveDrawer('${esc(r['id']||'')}')">💾 保存</button>`
+          + (st === 'draft' ? `<button class="btn-submit" onclick="submitDrawer('${esc(r['id']||'')}')">📤 承認申請</button>` : '')
+          + printBtn
+          + `<button class="btn-close-drawer" onclick="closeDrawer()">閉じる</button>`;
+      }
+    }
+
+    async function saveDrawer(id) {
+      const btn = document.getElementById('dwSaveBtn');
+      if(btn){ btn.disabled = true; btn.textContent = '保存中…'; }
+      try {
+        const body = {
+          permit_type:         document.getElementById('dw_type').value,
+          work_description:    document.getElementById('dw_desc').value,
+          risk_level:          document.getElementById('dw_risk').value,
+          loto_required:       document.getElementById('dw_loto').checked,
+          isolations_required: document.getElementById('dw_iso').checked,
+          weather_limit_ms:    document.getElementById('dw_wind').value !== '' ? parseFloat(document.getElementById('dw_wind').value) : null,
+          start_at:            document.getElementById('dw_start').value || null,
+          end_at:              document.getElementById('dw_end').value   || null,
+          remarks:             document.getElementById('dw_remarks').value || null,
+          updated_at:          new Date().toISOString()
+        };
+        await sb.write('PATCH', `work_permits?id=eq.${encodeURIComponent(id)}`, body);
+        await loadAll();
+        closeDrawer();
+      } catch(e) {
+        alert('保存エラー: ' + e.message);
+        if(btn){ btn.disabled = false; btn.textContent = '💾 保存'; }
+      }
+    }
+
+    async function submitDrawer(id) {
+      if(!confirm('承認申請しますか？')) return;
+      try {
+        await sb.write('PATCH', `work_permits?id=eq.${encodeURIComponent(id)}`, { permit_status:'submitted', updated_at: new Date().toISOString() });
+        await loadAll();
+        closeDrawer();
+      } catch(e) { alert('申請エラー: ' + e.message); }
+    }
+    /* ================================ */
+
+    
+    async function submitPermitApproval(id, pno, ev) {
+      if(ev) ev.stopPropagation();
+      if(!confirm(`PTW ${pno} を承認申請しますか？`)) return;
+      try {
+        await sb.write('PATCH', `work_permits?id=eq.${encodeURIComponent(id)}`,
+          { permit_status:'submitted', updated_at: new Date().toISOString() });
+        await loadAll();
+      } catch(e) { alert('申請エラー: ' + e.message); }
+    }
+
+    /* ===== 作業票連携（?work_order_id=…） ===== */
+    const WO_ID = new URLSearchParams(location.search).get('work_order_id');
+    let WO_CTX = null;
+    async function loadWoCtx(){
+      if(!WO_ID) return;
+      try{
+        const wos = await sb.get(`work_orders?id=eq.${encodeURIComponent(WO_ID)}&select=id,work_order_no,turbine_id,work_type,anomaly_description,ptw_required`);
+        const w = wos&&wos[0]; if(!w) return;
+        let tno=''; try{ const ts=await sb.get(`turbines?id=eq.${encodeURIComponent(w.turbine_id)}&select=turbine_no`); tno=(ts&&ts[0]&&ts[0].turbine_no)||''; }catch(e){}
+        WO_CTX={ work_order_id:w.id, work_order_no:w.work_order_no, turbine_id:w.turbine_id, turbine_no:tno, desc:(w.anomaly_description||w.work_type||''), ptw_required:w.ptw_required };
+        renderWoBanner();
+      }catch(e){}
+    }
+    function renderWoBanner(){
+      if(!WO_CTX) return;
+      let el=document.getElementById('woCtxBanner');
+      const ref=document.getElementById('body');
+      if(!el){ el=document.createElement('div'); el.id='woCtxBanner'; if(ref&&ref.parentNode) ref.parentNode.insertBefore(el,ref); else document.body.prepend(el); }
+      el.style.cssText='margin:0 0 14px;padding:11px 14px;border:1px solid rgba(219,97,162,.45);border-radius:9px;background:rgba(219,97,162,.07);display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+      el.innerHTML=`<span style="color:#db61a2;font-weight:700;">🔧 作業票のPTW</span><b style="color:#fff;">${esc(WO_CTX.turbine_no||'')}</b><span style="font-family:monospace;color:#9cd2ff;font-size:12px;">${esc(WO_CTX.work_order_no||'')}</span>${WO_CTX.ptw_required?'<span style="font-size:11px;color:#e3b341;border:1px solid rgba(210,153,34,.5);border-radius:5px;padding:1px 7px;">PTW必要</span>':'<span style="font-size:11px;color:#8b949e;">PTW不要設定</span>'}<span style="color:var(--muted);font-size:11.5px;">この作業票のPTWのみ表示中</span><button onclick="openNewPtw()" style="margin-left:auto;background:#db61a2;color:#fff;border:none;font-weight:700;border-radius:7px;padding:6px 13px;font-size:12px;cursor:pointer;">＋ この作業票のPTWを起票</button><a href="./work-orders.html" style="font-size:12px;color:#58a6ff;text-decoration:none;">← 作業票へ戻る</a>`;
+    }
+
+    function openNewPtw() {
+      const sel = document.getElementById('np_turbine');
+      if(sel && sel.options.length <= 1) {
+        sb.get('turbines?select=id,turbine_no&order=turbine_no').then(rows => {
+          rows.forEach(t => { const o = document.createElement('option'); o.value=t.id; o.textContent=t.turbine_no; sel.appendChild(o); });
+          if(WO_CTX){ sel.value=WO_CTX.turbine_id||''; }
+        }).catch(()=>{});
+      } else if(WO_CTX && sel){ sel.value=WO_CTX.turbine_id||''; }
+      if(WO_CTX){ const dsc=document.getElementById('np_desc'); if(dsc && !dsc.value) dsc.value=WO_CTX.desc||''; }
+      document.getElementById('newPtwOverlay').style.display = 'block';
+      document.getElementById('newPtwPanel').style.transform = 'translateX(0)';
+    }
+    function closeNewPtw() {
+      document.getElementById('newPtwOverlay').style.display = 'none';
+      document.getElementById('newPtwPanel').style.transform = 'translateX(100%)';
+    }
+    async function saveNewPtw() {
+      const desc = document.getElementById('np_desc').value.trim();
+      if(!desc){ alert('作業内容は必須です'); return; }
+      const btn = document.getElementById('newPtwSaveBtn');
+      btn.disabled=true; btn.textContent='保存中…';
+      try {
+        const body = {
+          turbine_id:          document.getElementById('np_turbine').value || null,
+          permit_type:         document.getElementById('np_type').value,
+          work_description:    desc,
+          risk_level:          document.getElementById('np_risk').value,
+          loto_required:       document.getElementById('np_loto').checked,
+          isolations_required: document.getElementById('np_iso').checked,
+          start_at:            document.getElementById('np_start').value ? new Date(document.getElementById('np_start').value).toISOString() : null,
+          end_at:              document.getElementById('np_end').value   ? new Date(document.getElementById('np_end').value).toISOString()   : null,
+          remarks:             document.getElementById('np_remarks').value || null,
+          work_order_id:       WO_ID || (WO_CTX && WO_CTX.work_order_id) || null,
+          permit_status:       'draft'
+        };
+        await sb.write('POST', 'work_permits', body);
+        closeNewPtw();
+        await loadAll();
+      } catch(e) {
+        alert('保存エラー: ' + e.message);
+        btn.disabled=false; btn.textContent='💾 下書き保存';
+      }
+    }
+
+    async function loadAll(){
+
+
+
+
+      try{
+
+
+
+
+        state.rows = await sb.get("v_permits_full?order=作業開始_jst.desc.nullslast");
+        if(WO_ID){ await loadWoCtx(); state.rows = (state.rows||[]).filter(r => r.work_order_id === WO_ID); }
+        render();
+
+
+
+
+      }catch(e){
+
+
+
+
+        document.getElementById("body").innerHTML = '<div class="err">データ取得に失敗しました: ' + esc(e.message) + '</div>';
+
+
+
+
+      }
+
+
+
+
+    }
+
+
+
+
+    sb.requireLogin({ onReady: loadAll });
+
+
+
+
+  </script>
+
+
+
+
+
+  <!-- 新規PTW起票ドロワー -->
+  <div id="newPtwOverlay" onclick="closeNewPtw()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none"></div>
+  <div id="newPtwPanel" style="position:fixed;top:0;right:0;width:460px;max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-shrink:0">
+      <h3 style="font-size:14px;color:#fff;font-weight:700;flex:1">📄 新規PTW申請起票</h3>
+      <button onclick="closeNewPtw()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:18px">
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">号機</label>
+        <select id="np_turbine" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px"><option value="">— 選択 —</option></select>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">許可種別</label>
+        <select id="np_type" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+          <option value="electrical">電気</option><option value="height">高所</option>
+          <option value="hot_work">火気</option><option value="lifting">揚重</option>
+          <option value="confined_space">閉所</option><option value="inspection">点検</option><option value="maintenance">保全</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">作業内容 <span style="color:#f85149">*</span></label>
+        <textarea id="np_desc" rows="3" placeholder="作業内容を具体的に記入" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;resize:vertical"></textarea>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">リスクレベル</label>
+        <select id="np_risk" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+          <option value="low">🟢 低</option><option value="medium" selected>🟡 中</option><option value="high">🔴 高</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;display:flex;gap:16px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="np_loto"> LOTO 要</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="np_iso"> 隔離 要</label>
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">作業開始予定</label>
+        <input id="np_start" type="datetime-local" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">作業終了予定</label>
+        <input id="np_end" type="datetime-local" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">備考</label>
+        <textarea id="np_remarks" rows="2" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0">
+      <button id="newPtwSaveBtn" onclick="saveNewPtw()" style="flex:1;background:#238636;color:#fff;border:none;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-size:13px">💾 下書き保存</button>
+      <button onclick="closeNewPtw()" style="background:var(--panel2);color:var(--muted);border:1px solid var(--line);font-weight:700;padding:9px 16px;border-radius:6px;cursor:pointer;font-size:13px">閉じる</button>
+    </div>
+  </div>
+
+</body>
+
+
+
+
+</html>
+
+
+
+

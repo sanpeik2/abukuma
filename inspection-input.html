@@ -23,7 +23,7 @@
 
 
 
-<title>阿武隈OS — 点検実績入力（ライブ）</title>
+<title>阿武隈OS — 点検実施（ライブ）</title>
 
 
 
@@ -93,7 +93,7 @@
 
 
 
-  .wrap{padding:18px 22px 50px;max-width:1100px;margin:0 auto}
+  .wrap{padding:18px 10px 50px}
 
 
 
@@ -514,7 +514,15 @@
   <div class="drawer-body" id="drawerBody"></div>
 </div>
 
-
+<!-- ▼ 点検実施 詳細ドロワー（閲覧専用・計画画面の詳細パネルと同トーン） -->
+<div class="drawer-overlay" id="detailOverlay" onclick="closeExecutionDetail()"></div>
+<div class="drawer-panel" id="detailPanel">
+  <div class="drawer-header">
+    <h2 id="detailTitle">点検実施 詳細</h2>
+    <button class="close-btn" onclick="closeExecutionDetail()">✕</button>
+  </div>
+  <div class="drawer-body" id="detailBody"></div>
+</div>
 
 
 <nav id="omFlowBar" aria-label="業務フローステータスバー" style="background:linear-gradient(180deg,#11161d,#0d1117);border-bottom:1px solid #30363d;padding:14px 18px 12px;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;"><span style="display:flex;flex-direction:column;line-height:1.15;border-left:3px solid rgb(63,185,80);padding-left:9px;flex:0 0 auto;"><b style="color:#e6edf3;font-size:12.5px;font-weight:800;letter-spacing:.04em;">業務フロー</b><span style="color:#6e7681;font-size:10px;">現在地</span></span><span style="display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:rgb(63,185,80);background:rgba(63,185,80,.13);border:1px solid rgba(63,185,80,.45);">🟢 点検フェーズ</span><span style="flex:1 1 auto;"></span><span style="flex:0 0 auto;color:#8b949e;font-size:11px;font-weight:700;">4 / 11</span><span style="flex:0 0 auto;display:inline-block;width:120px;max-width:30vw;height:5px;border-radius:999px;background:#30363d;overflow:hidden;"><span style="display:block;height:100%;width:30%;border-radius:999px;background:rgb(63,185,80);"></span></span></div><div style="display:flex;align-items:flex-start;flex-wrap:wrap;row-gap:6px;"><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./index.html" title="今日の管制塔（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">今日の管制塔</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./live-board.html" title="監視（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">監視</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./inspection-plan.html" title="点検計画（完了・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#238636;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:2px solid #238636;box-sizing:border-box;">✓</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#8b949e;font-weight:600;max-width:78px;word-break:break-word;">点検計画</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#238636;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><div title="現在この画面です" aria-current="step" style="display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:rgb(63,185,80);color:#11161d;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:2px solid rgb(63,185,80);box-shadow:0 0 0 4px rgba(63,185,80,.22);box-sizing:border-box;">4</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#fff;font-weight:800;max-width:78px;word-break:break-word;">点検実施</span></div></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="異常判断（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">5</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">異常判断</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業票（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">6</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業票</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./permits.html" title="PTW/KY（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">7</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">PTW/KY</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./approvals.html" title="承認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">8</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">承認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./work-orders.html" title="作業実施（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">9</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">作業実施</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./defect-rca.html" title="復旧確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">10</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">復旧確認</span></a></div><div style="flex:1 1 12px;min-width:8px;height:2px;margin-top:14px;border-radius:2px;background:#30363d;"></div><div style="flex:0 0 auto;width:84px;display:flex;justify-content:center;"><a href="./report-candidates.html" title="クローズ・報告確認（未着手・移動）" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;text-align:center;"><span style="width:28px;height:28px;border-radius:50%;background:#0d1117;color:#6e7681;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid #30363d;box-sizing:border-box;">11</span><span style="margin-top:7px;font-size:10.5px;line-height:1.25;color:#6e7681;font-weight:600;max-width:78px;word-break:break-word;">クローズ・報告確認</span></a></div></div></nav>
@@ -537,12 +545,12 @@
 
 
 
-      <h1>点検実績入力</h1>
+      <h1>点検実施</h1>
 
 
 
 
-      <div class="sub">阿武隈OS ライブ盤 — 項目別チェック（測定値→基準で自動判定）</div>
+      <div class="sub">承認済み点検計画・臨時点検・異常確認点検を実施し、結果を記録する画面</div>
 
 
 
@@ -1037,21 +1045,12 @@
 
 
 
-    <div class="card">
-
-
-
-
-      <h2>📋 最近の点検実績</h2>
-
-
-
-
+    <!-- 履歴は「🕘 直近の実績」フィルターに統合（旧履歴カードは閲覧モードでのみ使用） -->
+    <div class="card" id="historyCard" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h2 style="margin:0;">📋 点検結果</h2>
+      </div>
       <div id="listBody" class="loading">読み込み中…</div>
-
-
-
-
     </div>
 
 
@@ -1089,7 +1088,9 @@
       document.querySelector('.topbar .sub').textContent = '点検結果を表示しています（入力・登録不可）';
       const allCards = document.querySelectorAll('.wrap .card');
       allCards[0].style.display = 'none';
-      allCards[1].querySelector('h2').textContent = '📋 点検結果（閲覧モード）';
+      // 結果は #historyCard 内の #listBody に描画されるため、閲覧モードでは必ず表示する
+      const hc = document.getElementById('historyCard');
+      if(hc){ hc.style.display = 'block'; const hh=hc.querySelector('h2'); if(hh) hh.textContent='📋 点検結果（閲覧モード）'; const sub=hc.querySelector('div[style*="margin-bottom:10px"]'); if(sub) sub.style.display='none'; }
       const body = $('listBody');
 
       // ── 臨時点検（result_id 直接指定）──
@@ -1302,7 +1303,8 @@
       submitting:false, adhocMode:false,
       dbTemplates:[],   // inspection_checklist_templates
       dbItems:[],       // 現在選択中テンプレートの items（UI形式に変換済み）
-      templateId:null   // 現在選択中テンプレートのUUID
+      templateId:null,  // 現在選択中テンプレートのUUID
+      planTemplates:[]  // 計画に紐づく点検票（junction由来）[{tid,tname,tcode}]
     };
 
 
@@ -1316,8 +1318,9 @@
     /* DB アイテムを UI 形式に変換 */
     function dbItemToUiItem(d){
       const isVisual = (d.input_type==='visual'||d.input_type==='boolean'||d.input_type==='text');
-      if(isVisual) return { k:d.item_code, n:d.item_name, visual:true, crit:d.criteria_text||'確認', dbId:d.id };
-      return { k:d.item_code, n:d.item_name, unit:d.unit||'', min:Number(d.criteria_min)||0, max:Number(d.criteria_max)||9999, dbId:d.id };
+      const base = { k:d.id, dbId:d.id, tid:d.template_id||null, so:d.sort_order||0 };
+      if(isVisual) return Object.assign(base, { n:d.item_name, visual:true, crit:d.criteria_text||'確認' });
+      return Object.assign(base, { n:d.item_name, unit:d.unit||'', min:Number(d.criteria_min)||0, max:Number(d.criteria_max)||9999 });
     }
 
     function curItems(){
@@ -1425,9 +1428,15 @@
       if(!its.length){ wrap.innerHTML=""; return; }
 
 
-
-
+      const multiTpl = (state.planTemplates && state.planTemplates.length>1);
+      let _lastTid = null;
       wrap.innerHTML = its.map(it=>{
+        let _hdr = '';
+        if(multiTpl && it.tid !== _lastTid){
+          _lastTid = it.tid;
+          _hdr = `<div style="margin:12px 0 6px;padding:6px 10px;border-left:3px solid #7ee787;background:rgba(126,231,135,.06);font-size:12.5px;font-weight:700;color:#7ee787;border-radius:4px;">📋 ${esc(it.tname||'点検票')}</div>`;
+        }
+        return _hdr + (function(){
 
 
 
@@ -1533,10 +1542,7 @@
 
 
         </div>`;
-
-
-
-
+        })();
       }).join("");
 
 
@@ -1770,6 +1776,42 @@
         // イベント再バインド
         setsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', onSetClick));
       }catch(e){ console.warn('テンプレート読込失敗:', e.message); }
+    }
+
+    /* ===== 計画に紐づく点検票（junction）を自動ロードして結合表示 ===== */
+    async function loadPlanChecklists(planId){
+      try{
+        const links = await sb.get(`inspection_plan_checklists?inspection_plan_id=eq.${encodeURIComponent(planId)}&select=template_id,sort_order,inspection_checklist_templates(template_name,template_code)&order=sort_order.asc`);
+        if(!links || !links.length) return false;
+        state.planTemplates = links.map(l=>({
+          tid:l.template_id,
+          tname:(l.inspection_checklist_templates&&l.inspection_checklist_templates.template_name)||'',
+          tcode:(l.inspection_checklist_templates&&l.inspection_checklist_templates.template_code)||''
+        }));
+        const tids = state.planTemplates.map(l=>l.tid);
+        const orderIndex={}, tnameById={};
+        state.planTemplates.forEach((t,i)=>{ orderIndex[t.tid]=i; tnameById[t.tid]=t.tname; });
+        const items = await sb.get(`inspection_check_items?template_id=in.(${tids.join(',')})&is_active=eq.true&order=sort_order.asc`);
+        const ui = (items||[]).map(d=>{ const u=dbItemToUiItem(d); u.tname=tnameById[d.template_id]||''; return u; });
+        ui.sort((a,b)=> ((orderIndex[a.tid]??99)-(orderIndex[b.tid]??99)) || (a.so-b.so));
+        state.dbItems = ui;
+        state.items = {};
+        state.set = 'plan';                 // 手動セット選択をスキップ
+        state.templateId = tids[0]||null;
+        // 手動セット選択UIを隠し、計画点検票バナーを表示
+        const setsEl=$("sets"); if(setsEl) setsEl.style.display='none';
+        const eSetEl=$("e_set"); if(eSetEl) eSetEl.style.display='none';
+        let banner=document.getElementById('planClBanner');
+        if(!banner){
+          banner=document.createElement('div');
+          banner.id='planClBanner';
+          banner.style.cssText='margin:0 0 10px;padding:9px 12px;border:1px solid rgba(126,231,135,.4);border-radius:8px;background:rgba(126,231,135,.08);color:#7ee787;font-size:12.5px;';
+          const head=document.querySelector('.clhead'); if(head&&head.parentElement) head.parentElement.insertBefore(banner, head);
+        }
+        banner.innerHTML='📋 計画の点検票（'+state.planTemplates.length+'種）: '+state.planTemplates.map(t=>'<b>'+esc(t.tname)+'</b>').join(' ／ ')+' <span style="color:#8b949e;">— 全'+ui.length+'項目</span>';
+        renderChecklist(); validate();
+        return true;
+      }catch(e){ console.warn('計画点検票の読込失敗:', e.message); return false; }
     }
 
     async function onSetClick(){
@@ -2162,7 +2204,7 @@
 
 
 
-        <div class="crow"><div class="ck">点検セット</div><div class="cv">${esc((state.dbTemplates.find(t=>t.template_code===state.set)||{}).template_name||state.set||'—')}</div></div>
+        <div class="crow"><div class="ck">点検票</div><div class="cv">${esc(state.set==='plan' ? (state.planTemplates.map(t=>t.tname).join(' ／ ')+'（'+state.planTemplates.length+'種）') : ((state.dbTemplates.find(t=>t.template_code===state.set)||{}).template_name||state.set||'—'))}</div></div>
 
 
 
@@ -2432,7 +2474,7 @@
           return { result_id:resultId,
             check_item:it.n,
             check_item_id: it.dbId || null,
-            checklist_template_id: state.templateId || null,
+            checklist_template_id: it.tid || state.templateId || null,
             check_result:j,
 
 
@@ -2503,8 +2545,9 @@
 
 
         state.weather=""; state.sev=""; state.set=""; state.items={};
-
-
+        state.dbItems=[]; state.planTemplates=[]; state.templateId=null;
+        { const _b=document.getElementById('planClBanner'); if(_b) _b.remove();
+          const _s=$("sets"); if(_s) _s.style.display=''; }
 
 
         $("sets").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
@@ -2578,85 +2621,53 @@
 
 
     function renderList(rows){
-
-
-
-
       const body=$("listBody");
-
-
-
-
       if(!rows.length){ body.innerHTML='<div style="color:var(--muted)">点検実績はまだありません。</div>'; return; }
 
+      // PTW/KY/LOTO バッジ
+      const safetyCell = (r)=>{
+        const chip=(on,lbl,col)=>`<span style="display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:3px;${on?('background:'+col+'22;color:'+col+';border:1px solid '+col+'66;'):'background:transparent;color:#3a4250;border:1px solid #262c36;'}">${lbl}</span>`;
+        const ptwOn = !!(r["ptw番号"] || r.ptw_required);
+        return chip(ptwOn,'P','#58a6ff')+chip(r.ky_confirmed,'K','#db61a2')+chip(r.loto_confirmed,'L','#e3b341');
+      };
+      // 次アクション
+      const nextAction = (r)=>{
+        const rid=r.id, pid=r.plan_id;
+        const A=(t,h,c)=>`<a href="${h}" onclick="event.stopPropagation()" style="text-decoration:none;font-size:11.5px;font-weight:700;border-radius:6px;padding:4px 9px;${c}">${t}</a>`;
+        if(r["異常あり"]){
+          const h = rid ? `./defect-rca.html?inspection_result_id=${encodeURIComponent(rid)}${pid?'&plan_id='+encodeURIComponent(pid):''}` : `./defect-rca.html${pid?'?plan_id='+encodeURIComponent(pid):''}`;
+          return A('🔧 異常判断へ', h, 'color:#d29922;border:1px solid rgba(210,153,34,.5);');
+        }
+        const ap=(r.approval_status||'draft');
+        if(ap==='draft' && rid) return `<button onclick="event.stopPropagation();submitResultApproval('${rid}')" style="background:#1f6feb;color:#fff;font-weight:700;border:none;border-radius:6px;padding:4px 9px;font-size:11.5px;cursor:pointer;">📨 承認申請</button>`;
+        if(ap==='returned' && rid) return `<button onclick="event.stopPropagation();submitResultApproval('${rid}')" style="background:transparent;color:#f0c674;border:1px solid rgba(210,153,34,.5);border-radius:6px;padding:4px 9px;font-size:11.5px;cursor:pointer;">↩ 再申請</button>`;
+        if(ap==='pending') return '<span style="color:#8b949e;font-size:11.5px;">⏳ 承認待ち</span>';
+        if(rid) return A('🖨 帳票', `./print.html?type=insp&id=${encodeURIComponent(rid)}`, 'color:#8b949e;border:1px solid var(--line);');
+        return '<span style="color:#8b949e;font-size:11.5px;">—</span>';
+      };
 
-
-
-      const trs=rows.map(r=>`<tr class="${r["異常あり"]?'anom':''}">
-
-
-
-
+      const trs=rows.map(r=>{
+        const ng=r["ng項目数"]||0, ck=r["チェック項目数"]||0;
+        return `<tr class="${r["異常あり"]?'anom':''}">
+        <td style="white-space:nowrap;font-family:monospace;font-size:11.5px;color:#9cd2ff;">${esc(r["実施番号"]||"")}</td>
+        <td style="white-space:nowrap;font-family:monospace;font-size:11.5px;color:#58a6ff;">${r["計画番号"]?esc(r["計画番号"]):'<span style="color:#3a4250;">—</span>'}</td>
         <td style="white-space:nowrap">${esc(r["実施日"]||"")}</td>
-
-
-
-
         <td><b style="color:#fff">${esc(r["風車"]||"")}</b></td>
-
-
-
-
+        <td style="font-size:11.5px;color:#7ee787;">${r["点検表名"]?esc(r["点検表名"]):'<span style="color:#3a4250;">—</span>'}</td>
+        <td style="white-space:nowrap;font-size:11.5px;">${esc(r["点検区分"]||"—")}</td>
+        <td style="font-size:11.5px;color:var(--muted);max-width:200px;">${esc(r["作業種別内容"]||"—")}</td>
         <td style="white-space:nowrap">${esc(r["結果表示"]||r["結果"]||"")}</td>
-
-
-
-
-        <td style="white-space:nowrap">NG ${r["ng項目数"]||0}/${r["チェック項目数"]||0}</td>
-
-
-
-
-        <td>${esc(r["異常内容"]||"")}</td>
-
-
-
-
+        <td style="white-space:nowrap;text-align:center;">${r["異常あり"]?'<span style="color:#f0c674;font-weight:700;">⚠ 異常</span>':'<span style="color:#3fb950;">○ 正常</span>'}</td>
+        <td style="white-space:nowrap;text-align:center;${ng>0?'color:#f0c674;font-weight:700;':'color:var(--muted);'}">${ng}/${ck}</td>
         <td style="white-space:nowrap">${esc(r["深刻度"]||"–")}</td>
-
-
-
-
-        <td style="white-space:nowrap;color:var(--muted)">${esc(r["天候"]||"")} ${r["風速ms"]!=null?esc(r["風速ms"])+"m/s":""}</td>
-
-
-
-
-        <td style="color:var(--muted)">${esc(r["コメント"]||"")}</td>
-
-
-
-
-      </tr>`).join("");
-
-
-
+        <td style="white-space:nowrap">${esc(r["承認表示"]||"")}</td>
+        <td style="white-space:nowrap">${safetyCell(r)}</td>
+        <td style="white-space:nowrap">${nextAction(r)}</td>
+      </tr>`;}).join("");
 
       body.innerHTML=`<table><thead><tr>
-
-
-
-
-        <th>実施日</th><th>号機</th><th>判定</th><th>チェック</th><th>異常内容</th><th>深刻度</th><th>天候</th><th>コメント</th>
-
-
-
-
+        <th>実施番号</th><th>計画番号</th><th>点検日</th><th>号機</th><th>点検表名</th><th>点検区分</th><th>作業種別・内容</th><th>点検ステータス</th><th>異常</th><th>NG/全</th><th>深刻度</th><th>承認</th><th>PTW/KY/LOTO</th><th>次アクション</th>
       </tr></thead><tbody>${trs}</tbody></table>`;
-
-
-
-
     }
 
 
@@ -2733,6 +2744,8 @@
           if(ptwNum)  { ptwNum.value = p.ptw_number; }
           if(ptwWrap) { ptwWrap.style.display = 'block'; }
         }
+        // 計画に紐づく点検票（junction）を自動ロード
+        await loadPlanChecklists(pid);
         validate();
         if(p.status==="planned"){ try{ await sb.write("PATCH",`inspection_plans?id=eq.${encodeURIComponent(pid)}`,{status:"in_progress"}); }catch(e){} }
       }catch(e){}
@@ -2784,7 +2797,7 @@
 
 
 
-        await reloadList();
+        // 履歴（最近の点検実績）はデフォルト非表示。ヘッダの「履歴を表示」で遅延ロード。
 
 
 
@@ -2794,7 +2807,7 @@
 
 
 
-        $("listBody").innerHTML='<div class="err">データ取得に失敗しました: '+esc(e.message)+'</div>';
+        const _lb=$("listBody"); if(_lb) _lb.innerHTML='<div class="err">データ取得に失敗しました: '+esc(e.message)+'</div>';
 
 
 
@@ -2956,30 +2969,31 @@
     }
 
     // ── 点検ステータスバッジ ──
+    // 状態列は「点検ステータス（業務の現在地）」のみ。承認状態は混ぜない（承認列で別表示）。
     const _EXEC_ST = {
-      not_started:      {lbl:'📅 実施待ち',     c:'#c9d1d9',bg:'rgba(201,209,217,.08)',bd:'#30363d'},
-      in_progress:      {lbl:'🔧 点検中',        c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
-      on_hold:          {lbl:'⏸ 保留',           c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
-      done:             {lbl:'📝 結果記録済',    c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
-      result_pending:   {lbl:'⏳ 結果承認待ち', c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
-      result_approved:  {lbl:'✅ 結果承認済',   c:'#7ee787',bg:'rgba(63,185,80,.08)',  bd:'rgba(63,185,80,.3)'},
-      done_anomaly:     {lbl:'🚨 異常判断中',   c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
-      anomaly_approved: {lbl:'⚠ 異常・承認済',  c:'#ff7b72',bg:'rgba(255,123,114,.08)',bd:'rgba(255,123,114,.3)'},
-      work_ordered:     {lbl:'🔧 作業票化',      c:'#d29922',bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
-      cancelled:        {lbl:'✖ 中止',           c:'#6e7681',bg:'transparent',          bd:'#30363d'},
+      not_started:      {lbl:'📅 実施待ち',   c:'#c9d1d9',bg:'rgba(201,209,217,.08)',bd:'#30363d'},
+      in_progress:      {lbl:'🔧 点検中',     c:'#9cd2ff',bg:'rgba(88,166,255,.08)', bd:'rgba(88,166,255,.3)'},
+      on_hold:          {lbl:'⏸ 保留',        c:'#e3b341',bg:'rgba(210,153,34,.08)', bd:'rgba(210,153,34,.3)'},
+      done:             {lbl:'📝 記録済',     c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
+      result_pending:   {lbl:'📝 記録済',     c:'#c9d1d9',bg:'rgba(201,209,217,.06)',bd:'#30363d'},
+      result_approved:  {lbl:'✅ クローズ',   c:'#7ee787',bg:'rgba(63,185,80,.08)',  bd:'rgba(63,185,80,.3)'},
+      done_anomaly:     {lbl:'🚨 異常判断中', c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+      anomaly_approved: {lbl:'🚨 異常判断中', c:'#ff9a92',bg:'rgba(248,81,73,.08)',  bd:'rgba(248,81,73,.3)'},
+      work_ordered:     {lbl:'🔧 作業票化',   c:'#d29922',bg:'rgba(210,153,34,.12)', bd:'rgba(210,153,34,.5)'},
+      cancelled:        {lbl:'✖ 中止',        c:'#6e7681',bg:'transparent',          bd:'#30363d'},
     };
     function _execStBadge(r){
       const c = _EXEC_ST[r.execution_status||'not_started']||_EXEC_ST.not_started;
-      return `<span style="font-size:10.5px;font-weight:700;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:2px 7px;white-space:nowrap;">${c.lbl}</span>`;
+      return `<span style="font-size:12px;font-weight:500;color:${c.c};background:${c.bg};border:1px solid ${c.bd};border-radius:5px;padding:3px 9px;white-space:nowrap;">${c.lbl}</span>`;
     }
 
     // ── 結果承認バッジ ──
     function _irApprovalBadge(r){
       const st = r.latest_ir_approval;
-      if(!st||st==='draft') return '<span style="font-size:10.5px;color:var(--muted);">未申請</span>';
-      if(st==='pending')  return '<span style="font-size:10.5px;color:#e3b341;font-weight:700;">⏳ 申請中</span>';
-      if(st==='approved') return '<span style="font-size:10.5px;color:#7ee787;font-weight:700;">✅ 承認済</span>';
-      if(st==='returned') return '<span style="font-size:10.5px;color:#ff9a92;font-weight:700;">↩ 差戻し</span>';
+      if(!st||st==='draft') return '<span style="font-size:12px;color:var(--muted);">未申請</span>';
+      if(st==='pending')  return '<span style="font-size:12px;color:#e3b341;">⏳ 申請中</span>';
+      if(st==='approved') return '<span style="font-size:12px;color:#7ee787;">🔒 承認済</span>';
+      if(st==='returned') return '<span style="font-size:12px;color:#ff9a92;">↩ 差戻し</span>';
       return '';
     }
 
@@ -2990,81 +3004,296 @@
       const rid = r.latest_result_id ? r.latest_result_id : '';
       const ridE = rid ? encodeURIComponent(rid) : '';
       const isAdhoc = r.inspection_kind==='adhoc';
-      const A=(l,h,s)=>`<a href="${h}" style="font-size:11.5px;font-weight:700;text-decoration:none;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</a>`;
-      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:4px 10px;border-radius:6px;${s}">${l}</button>`;
-      const resultHref = isAdhoc&&rid
-        ? `./inspection-input.html?readonly=1&result_id=${ridE}`
-        : pid ? `./inspection-input.html?plan_id=${pid}&readonly=1` : '#';
+      const A=(l,h,s)=>`<a href="${h}" style="font-size:10.5px;font-weight:600;text-decoration:none;white-space:nowrap;padding:3px 8px;border-radius:6px;${s}">${l}</a>`;
+      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:10.5px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;padding:3px 8px;border-radius:6px;${s}">${l}</button>`;
+      const dash = '<span style="color:#6e7681;">—</span>';
 
       switch(st){
         case 'not_started':
-          return B('点検開始',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#238636;color:#fff;')
+          return B('▶ 点検を開始',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#238636;color:#fff;')
                + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
         case 'in_progress':
           return B('続きから →',`openDrawerForPlan(event,'${r.plan_id}')`, 'background:#1f6feb;color:#fff;')
                + (pid ? B('⏸',`setOnHold(event,'${r.plan_id}')`, 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#e3b341;margin-left:4px;') : '');
         case 'on_hold':
           return B('▶ 再開',`setResume(event,'${r.plan_id}')`, 'background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.4);color:#9cd2ff;');
-        case 'done': {
-          const subBtn = (rid && r.latest_ir_approval!=='pending' && r.latest_ir_approval!=='approved')
-            ? B('📨 承認申請', `submitResultApproval('${rid}')`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;margin-left:4px;')
-            : '';
-          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);') + subBtn;
-        }
+        case 'done':
+          return (rid && r.latest_ir_approval!=='pending' && r.latest_ir_approval!=='approved')
+            ? B('📨 承認申請', `submitResultApproval('${rid}')`, 'background:#1f6feb;color:#fff;')
+            : dash;
         case 'result_pending':
           return '<span style="font-size:11.5px;color:#e3b341;font-weight:700;">⏳ 承認待ち</span>';
         case 'result_approved':
-          return A('🔒 結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+          return dash;
         case 'done_anomaly': {
           // inspection_result_id も渡して点検結果NG項目を異常判断に引き継ぐ
           const _anomHref = rid
             ? `./defect-rca.html?inspection_result_id=${ridE}&plan_id=${pid}`
             : `./defect-rca.html?plan_id=${pid}`;
-          return A('🚨 異常判断へ', _anomHref, 'background:#d29922;color:#11161d;font-weight:700;')
-               + A('結果', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);margin-left:4px;');
+          return A('🔧 異常判断へ', _anomHref, 'background:transparent;color:#d29922;border:1px solid rgba(210,153,34,.5);');
         }
         case 'anomaly_approved':
-          return A('結果を見る', resultHref, 'background:transparent;border:1px solid var(--line);color:var(--muted);');
+          return dash;
         case 'work_ordered':
           return A('🔧 作業票を見る', './work-orders.html', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#d29922;');
         default:
-          return '';
+          return dash;
       }
     }
 
-    // ── 行生成 ──
-    function _makeExecRow(r){
-      const isAdhoc = r.inspection_kind==='adhoc';
-      const p = _execPriority(r);
-      const time = [r.time_start_fmt, r.time_end_fmt].filter(Boolean).join('〜')||'—';
-      const ptw  = r.ptw_required
-        ? (r.ptw_number
-            ? `<span style="font-size:10.5px;color:#7ee787;font-family:monospace;">✅ ${esc(r.ptw_number)}</span>`
-            : '<span style="font-size:10.5px;color:#ff9a92;">⚠ 未取得</span>')
-        : '<span style="color:var(--muted);font-size:11px;">—</span>';
-      const anomaly = r.has_anomaly
-        ? '<span style="font-size:10.5px;font-weight:700;color:#ff9a92;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 6px;">🔴 あり</span>'
-        : '<span style="color:var(--muted);font-size:11px;">—</span>';
-      const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
-      const workLabel = isAdhoc
-        ? `<span style="font-size:10px;font-weight:700;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:3px;padding:1px 5px;margin-right:4px;">臨時</span>${esc((r.source_reason||r.work_type||'').slice(0,25))}`
-        : esc(r.work_type||'');
+    // ── 安全確認チップ（PTW/KY/LOTO） ──
+    function _safetyChips(r){
+      const done = ['done','done_anomaly','result_pending','result_approved','anomaly_approved','work_ordered'].includes(r.execution_status);
+      const chip=(initial,full,state)=>{
+        const col={ok:'#3fb950',req:'#e3b341',none:'#3a4250'}[state];
+        const bg ={ok:'rgba(63,185,80,.12)',req:'rgba(210,153,34,.12)',none:'transparent'}[state];
+        const tip={ok:'確認済/取得済',req:'要',none:'対象外'}[state];
+        return `<span title="${full}: ${tip}" style="display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-right:3px;color:${col};background:${bg};border:1px solid ${col}55;">${initial}</span>`;
+      };
+      const ptwState  = (r.ptw_required && r.ptw_number) ? 'ok' : (r.ptw_required ? 'req' : 'none');
+      const kyState   = done ? (r.ky_confirmed?'ok':(r.ky_required?'req':'none'))   : (r.ky_required?'req':'none');
+      const lotoState = done ? (r.loto_confirmed?'ok':(r.loto_required?'req':'none')) : (r.loto_required?'req':'none');
+      return chip('P','PTW',ptwState)+chip('K','KY',kyState)+chip('L','LOTO',lotoState);
+    }
 
-      return `<tr style="${rowBg?'background:'+rowBg+';':''}cursor:default;">
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:15px;text-align:center;">${p.icon}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:12px;">${esc(r.planned_date||'')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-weight:700;color:#fff;font-family:monospace;font-size:13px;">${esc(r.turbine_no||'')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${workLabel}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execStBadge(r)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_irApprovalBadge(r)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;">${anomaly}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);white-space:nowrap;">${esc(time)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${esc(r.required_qualification||'—')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;text-align:right;">${r.worker_count!=null?r.worker_count:'—'}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${ptw}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${_execNextAction(r)}</td>
+    // ── 結果バッジ ──
+    function _resultBadge(rs){
+      if(!rs) return '<span style="color:#6e7681;">—</span>';
+      if(rs==='ok')          return '<span style="font-size:12px;color:#3fb950;">✅ 異常なし</span>';
+      if(rs==='ng')          return '<span style="font-size:12px;color:#ff7b72;">🔴 異常あり</span>';
+      if(rs==='conditional') return '<span style="font-size:12px;color:#e3b341;">🟡 条件付き合格</span>';
+      return esc(rs);
+    }
+
+    // ── 実施番号テキスト（IR-YYYYMMDD-XXXX） ──
+    function _execResultNo(r){
+      if(!r.latest_result_id) return null;
+      return `IR-${(r.latest_executed_date||'').replace(/-/g,'')}-${String(r.latest_result_id).slice(0,4).toUpperCase()}`;
+    }
+
+    // ── 緊急度（異常がある行のみ。異常なしは「—」） ──
+    function _urgencyCell(r){
+      const isAnom = r.has_anomaly || r.result_status==='ng';
+      if(!isAnom) return '<span style="color:#6e7681;">—</span>';
+      const map={
+        critical:['🔴 重大','#ff7b72'],
+        high:    ['🟠 高',  '#ff9a92'],
+        medium:  ['🟡 中',  '#e3b341'],
+        low:     ['低',     '#8b949e']
+      };
+      const m=map[r.severity];
+      if(!m) return '<span style="color:#ff9a92;white-space:nowrap;">⚠ 要確認</span>';
+      return `<span style="color:${m[1]};white-space:nowrap;">${m[0]}</span>`;
+    }
+
+    // ── 行生成（統合実績レイアウト：固定幅・折り返しで全列を画面内に収める） ──
+    function _makeExecRow(r){
+      const rowBg = r.execution_status==='done_anomaly'?'rgba(248,81,73,.03)':r.execution_status==='in_progress'?'rgba(88,166,255,.02)':'';
+      // td  = 折り返し可（長い自由文用） / tdn = 折り返さず1行（短いトークン・バッジ用）
+      const td  = 'padding:7px 7px;border-bottom:1px solid var(--line);vertical-align:top;font-size:11.5px;word-break:break-word;overflow-wrap:anywhere;line-height:1.4;';
+      const tdn = 'padding:7px 7px;border-bottom:1px solid var(--line);vertical-align:top;font-size:11.5px;white-space:nowrap;line-height:1.4;';
+      const hasResult = !!r.latest_result_id;
+
+      // 実施番号（実績がある行は青リンク→詳細ドロワー。なければ未実施）／計画番号はホバーで表示
+      const no = _execResultNo(r);
+      const planTip = r.plan_no ? `計画番号 ${esc(r.plan_no)}（クリックで詳細）` : '計画なし（臨時／異常確認点検）';
+      const noCell = no
+        ? `<a onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" style="font-family:monospace;font-size:11px;font-weight:700;color:#58a6ff;cursor:pointer;text-decoration:none;">${esc(no)}</a>`
+        : '<span style="font-size:11px;color:#6e7681;">未実施</span>';
+      // 点検表名（なければ区分から推定）→ クリックで詳細ドロワー
+      const clText = r.checklist_names ? esc(r.checklist_names) : `（${esc(r.inspection_category||'点検')}）`;
+      const clCell = `<span onclick="openExecutionDetail('${r.latest_result_id||''}','${r.plan_id||''}')" title="クリックで詳細を表示" style="cursor:pointer;color:${r.checklist_names?'#7ee787':'#9cd2ff'};border-bottom:1px dashed rgba(156,210,255,.45);">${clText}</span>`;
+      // 作業種別・内容
+      const content = esc(r.inspection_content || '');
+      const contentCell = content ? `<span style="color:var(--txt);">${content}</span>` : '<span style="color:#6e7681;">—</span>';
+      // NG/全
+      const ng = Number(r.ng_count||0), tot = Number(r.total_check_count||0);
+      const ngCell = hasResult
+        ? `<span style="${ng>0?'color:#f0c674;font-weight:700;':'color:var(--muted);'}">${ng}/${tot}</span>`
+        : '<span style="color:#6e7681;">—</span>';
+      // 結果（履歴表の「異常」表示に合わせる：⚠ 異常 / ○ 正常）
+      const resultCell = hasResult
+        ? (r.has_anomaly
+            ? '<span style="color:#f0c674;font-weight:700;">⚠ 異常</span>'
+            : '<span style="color:#3fb950;">○ 正常</span>')
+        : '<span style="color:#6e7681;">—</span>';
+      // 承認（点検結果承認レーンは「異常なしルート」のみ。異常ありは異常報告レーンで承認するため「—」）
+      const apprCell = r.has_anomaly
+        ? '<span style="color:#6e7681;" title="異常ありは異常報告レーンで承認（作業票化で本画面は終了）">—</span>'
+        : _irApprovalBadge(r);
+
+      return `<tr style="${rowBg?'background:'+rowBg+';':''}">
+        <td style="${tdn}" title="${planTip}">${noCell}</td>
+        <td style="${tdn}">${esc(r.planned_date||'')}</td>
+        <td style="${tdn}font-weight:700;color:#fff;font-family:monospace;font-size:13px;">${esc(r.turbine_no||'')}</td>
+        <td style="${td}">${clCell}</td>
+        <td style="${td}">${contentCell}</td>
+        <td style="${tdn}">${_execStBadge(r)}</td>
+        <td style="${tdn}">${resultCell}</td>
+        <td style="${tdn}text-align:center;">${ngCell}</td>
+        <td style="${tdn}text-align:center;">${_urgencyCell(r)}</td>
+        <td style="${tdn}">${apprCell}</td>
+        <td style="${tdn}">${_safetyChips(r)}</td>
+        <td style="${tdn}">${_execNextAction(r)}</td>
       </tr>`;
     }
+
+    /* ===== 点検実施 詳細ドロワー ===== */
+    function closeExecutionDetail(){
+      document.getElementById('detailOverlay')?.classList.remove('open');
+      document.getElementById('detailPanel')?.classList.remove('open');
+    }
+
+    function _ckResultChip(res){
+      const map={ok:['✅','#3fb950','異常なし'],ng:['🔴','#ff7b72','異常'],conditional:['🟡','#e3b341','条件付'],na:['—','#6e7681','対象外'],not_applicable:['—','#6e7681','対象外']};
+      const m=map[res]; if(!m) return res?esc(res):'<span style="color:#6e7681;">—</span>';
+      return `<span style="color:${m[1]};font-weight:700;font-size:12px;white-space:nowrap;">${m[0]} ${m[2]}</span>`;
+    }
+
+    async function openExecutionDetail(resultId, planId){
+      resultId = (resultId && resultId!=='null') ? resultId : '';
+      planId   = (planId   && planId!=='null')   ? planId   : '';
+      const row = _execAllRows.find(r=> (resultId && r.latest_result_id===resultId) || (!resultId && planId && r.plan_id===planId)) || {};
+      const ov = document.getElementById('detailOverlay');
+      const pn = document.getElementById('detailPanel');
+      const body = document.getElementById('detailBody');
+      const no = _execResultNo(row);
+      document.getElementById('detailTitle').textContent = no ? no : '点検実施 詳細';
+      body.innerHTML = '<div style="color:var(--muted);padding:24px;">読み込み中…</div>';
+      ov.classList.add('open'); pn.classList.add('open');
+      let result=null, checklist=[];
+      try{
+        if(resultId){
+          const rs = await sb.get(`inspection_results?id=eq.${encodeURIComponent(resultId)}&select=*`);
+          result = rs && rs[0];
+          checklist = await sb.get(`result_checklist?result_id=eq.${encodeURIComponent(resultId)}&select=*&order=created_at.asc`).catch(()=>[]);
+        }
+      }catch(e){
+        body.innerHTML='<div class="err" style="margin:16px;">取得エラー: '+esc(e.message)+'</div>';
+        return;
+      }
+      body.innerHTML = _renderExecutionDetail(row, result, checklist||[]);
+    }
+
+    function _renderExecutionDetail(row, result, checklist){
+      const DASH = '<span style="color:#6e7681;">—</span>';
+      const F=(label,val)=>`<div><div style="font-size:11px;color:var(--muted);margin-bottom:3px;">${label}</div><div style="font-size:13.5px;color:var(--txt);">${(val===0||val)?val:DASH}</div></div>`;
+      const SEC=(t)=>`<div style="font-size:11px;color:#9cd2ff;font-weight:700;margin:18px 0 9px;border-left:3px solid #9cd2ff;padding-left:8px;">${t}</div>`;
+      const GRID=(html)=>`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">${html}</div>`;
+
+      const no = _execResultNo(row);
+      const rid = result ? result.id : (row.latest_result_id||'');
+      const pid = row.plan_id||'';
+      const isAdhoc = row.inspection_kind==='adhoc';
+
+      // ── 見出し ──
+      const head = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
+        <span style="font-family:monospace;font-size:15px;font-weight:700;color:${no?'#9cd2ff':'#6e7681'};">${no?esc(no):'未実施'}</span>
+        ${_execStBadge(row)}
+      </div>`;
+
+      // ── 基本情報 ──
+      const planNoVal = row.plan_no
+        ? `<span style="font-family:monospace;color:#58a6ff;">${esc(row.plan_no)}</span>`
+        : `<span style="font-size:11px;color:#db61a2;background:rgba(219,97,162,.12);border:1px solid rgba(219,97,162,.4);border-radius:4px;padding:1px 7px;">計画なし（${esc(row.inspection_category||'臨時')}）</span>`;
+      const basic = SEC('基本情報') + GRID(
+        F('計画番号', planNoVal)
+        + F('点検日', esc((result&&result.executed_date)||row.planned_date||''))
+        + F('号機', `<span style="font-family:monospace;font-weight:700;color:#fff;">${esc(row.turbine_no||'')}</span>`)
+        + F('点検区分', esc(row.inspection_category||SOURCE_LABEL?.[row.source_type]||'—'))
+        + F('点検表名', row.checklist_names?`<span style="color:#7ee787;">${esc(row.checklist_names)}</span>`:`<span style="color:#8b949e;">（${esc(row.inspection_category||'点検')}）</span>`)
+      );
+
+      // ── 点検内容 ──
+      const contentSec = SEC('点検内容') + `<div style="font-size:13px;color:var(--txt);white-space:pre-wrap;">${esc(row.inspection_content||row.checklist_names||row.inspection_category||'—')}</div>`;
+
+      if(!rid){
+        // 未実施：計画情報のみ
+        return head + basic + contentSec
+          + `<div style="margin-top:18px;padding:14px 16px;background:rgba(201,209,217,.05);border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:13px;text-align:center;">まだ点検結果はありません。</div>`
+          + _renderDetailLinks(row, result, '');
+      }
+
+      // ── 実施状況 ──
+      const sev = (result&&result.severity)||row.severity;
+      const rstatus = (result&&result.result_status)||row.result_status;
+      const hasA = result ? result.has_anomaly : row.has_anomaly;
+      const ng = Number(row.ng_count||0);
+      const statusSec = SEC('実施状況') + GRID(
+        F('実施ステータス', _execStBadge(row))
+        + F('結果', _resultBadge(rstatus))
+        + F('異常有無', hasA?'<span style="color:#ff9a92;font-weight:700;">🔴 あり</span>':'<span style="color:#3fb950;">○ なし</span>')
+        + F('NG項目数', `<span style="${ng>0?'color:#f0c674;font-weight:700;':''}">${ng}</span>`)
+        + F('深刻度', sev?`<span style="${(sev==='high'||sev==='critical')?'color:#ff7b72;font-weight:700;':''}">${esc(sevLabel[sev]||sev)}</span>`:'—')
+      );
+
+      // ── 安全確認 ──
+      const safeRow = Object.assign({}, row, result?{ptw_required:result.ptw_required,ptw_number:result.ptw_number,ky_confirmed:result.ky_confirmed,loto_confirmed:result.loto_confirmed}:{});
+      const safeSec = SEC('安全確認（PTW / KY / LOTO）') + `<div>${_safetyChips(safeRow)}</div>`
+        + (result&&result.ptw_number?`<div style="font-size:12px;color:var(--muted);margin-top:6px;">PTW番号: <span style="font-family:monospace;color:#9cd2ff;">${esc(result.ptw_number)}</span></div>`:'');
+
+      // ── コメント ──
+      const cmt = (result&&(result.comments||result.anomaly_description))||'';
+      const cmtSec = SEC('コメント') + `<div style="font-size:13px;color:var(--txt);white-space:pre-wrap;">${cmt?esc(cmt):DASH}</div>`;
+
+      // ── チェック項目一覧 ──
+      const ckBody = checklist.length
+        ? `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;">
+            <thead><tr>${['点検項目','結果','測定値','基準','コメント'].map(h=>`<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;white-space:nowrap;">${h}</th>`).join('')}</tr></thead>
+            <tbody>${checklist.map(c=>{
+              const mv = c.measured_text || (c.measured_value!=null?c.measured_value+(c.unit?' '+esc(c.unit):''):'');
+              const crit = c.criteria_text || ((c.criteria_min!=null||c.criteria_max!=null)?`${c.criteria_min??''}〜${c.criteria_max??''}${c.unit?' '+esc(c.unit):''}`:'');
+              return `<tr>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--line);">${esc(c.check_item||'')}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--line);">${_ckResultChip(c.check_result)}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">${esc(mv)||'—'}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--muted);">${esc(crit)||'—'}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted);">${esc(c.comment||'')||'—'}</td>
+              </tr>`;
+            }).join('')}</tbody></table>`
+        : '<div style="color:#6e7681;font-size:12px;padding:8px 0;">チェック項目の記録はありません。</div>';
+      const ckSec = SEC(`チェック項目一覧（${checklist.length}件）`) + ckBody;
+
+      // ── 承認状態 ──（異常ありは異常報告レーンで承認するため、本画面の承認は対象外）
+      const apprSec = SEC('承認状態') + (row.has_anomaly
+        ? '<div style="font-size:12.5px;color:var(--muted);">— 異常ありのため、承認は<b style="color:#d29922;">異常報告レーン</b>で実施（作業票化で本画面は終了）</div>'
+        : `<div>${_irApprovalBadge(row)}</div>`);
+
+      return head + basic + contentSec + statusSec + safeSec + cmtSec + ckSec + apprSec + _renderDetailLinks(row, result, rid);
+    }
+
+    function _renderDetailLinks(row, result, rid){
+      const pid = row.plan_id||'';
+      const pidE = pid?encodeURIComponent(pid):'';
+      const ridE = rid?encodeURIComponent(rid):'';
+      const isAdhoc = row.inspection_kind==='adhoc';
+      const A=(l,h,s)=>`<a href="${h}" style="font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap;padding:7px 14px;border-radius:8px;${s}">${l}</a>`;
+      const B=(l,f,s)=>`<button onclick="${f}" style="font-size:12.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;padding:7px 14px;border-radius:8px;${s}">${l}</button>`;
+      const ghost='background:transparent;border:1px solid var(--line);color:var(--txt);';
+      const links=[];
+      // 点検記録を見る
+      if(rid){
+        const href = isAdhoc ? `./inspection-input.html?readonly=1&result_id=${ridE}` : (pid?`./inspection-input.html?plan_id=${pidE}&readonly=1`:'#');
+        links.push(A('📄 点検記録を見る', href, ghost));
+      }
+      // 異常判断へ
+      if(row.has_anomaly || row.execution_status==='done_anomaly' || row.execution_status==='anomaly_approved'){
+        const href = rid?`./defect-rca.html?inspection_result_id=${ridE}&plan_id=${pidE}`:`./defect-rca.html?plan_id=${pidE}`;
+        links.push(A('🚨 異常判断へ', href, 'background:#d29922;color:#11161d;'));
+      }
+      // 作業票を見る
+      if(row.has_wo || row.execution_status==='work_ordered'){
+        links.push(A('🔧 作業票を見る', './work-orders.html', 'background:transparent;border:1px solid rgba(210,153,34,.4);color:#d29922;'));
+      }
+      // 承認申請
+      if(rid && row.execution_status==='done' && row.latest_ir_approval!=='pending' && row.latest_ir_approval!=='approved'){
+        links.push(B('📨 承認申請', `submitResultApproval('${rid}');closeExecutionDetail();`, 'background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);color:#7ee787;'));
+      }
+      // 印刷
+      links.push(B('🖨 印刷', 'window.print()', ghost));
+      return SECLINK('関連リンク') + `<div style="display:flex;gap:8px;flex-wrap:wrap;">${links.join('')}</div>`;
+    }
+    function SECLINK(t){ return `<div style="font-size:11px;color:#9cd2ff;font-weight:700;margin:18px 0 9px;border-left:3px solid #9cd2ff;padding-left:8px;">${t}</div>`; }
 
     // ── フィルター定義 ──
     const _EXEC_FILTERS = [
@@ -3075,6 +3304,7 @@
       {key:'anomaly',         lbl:'🚨 異常あり'},
       {key:'approval_pending',lbl:'⏳ 承認待ち'},
       {key:'approved',        lbl:'✅ 承認済'},
+      {key:'recent',          lbl:'🕘 直近の実績'},
     ];
 
     function _execFilter(rows, key){
@@ -3089,6 +3319,9 @@
       if(key==='anomaly')         return rows.filter(r=>r.has_anomaly);
       if(key==='approval_pending')return rows.filter(r=>r.latest_ir_approval==='pending');
       if(key==='approved')        return rows.filter(r=>r.latest_ir_approval==='approved');
+      if(key==='recent')          return rows.filter(r=>r.latest_result_id)
+                                    .sort((a,b)=>(b.latest_executed_date||'').localeCompare(a.latest_executed_date||''))
+                                    .slice(0,30);
       return rows.filter(r=>r.execution_status===key);
     }
 
@@ -3099,10 +3332,20 @@
         return;
       }
       const PORD = {done_anomaly:1,in_progress:2,on_hold:3,result_pending:4,not_started:5,done:6,work_ordered:7,result_approved:8,anomaly_approved:8,cancelled:9};
-      const sorted = [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
-      const thead = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr>${['優先','点検日','号機','作業種別','点検ステータス','承認','異常','時間','資格','人数','PTW','次アクション']
-          .map(h=>`<th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px;white-space:nowrap;">${h}</th>`).join('')}
+      // 全行が実績ありなら「直近順（実施日降順）」、それ以外は業務の現在地（ステータス）順
+      const allExecuted = rows.length && rows.every(r=>r.latest_result_id);
+      const sorted = allExecuted
+        ? [...rows].sort((a,b)=>(b.latest_executed_date||'').localeCompare(a.latest_executed_date||''))
+        : [...rows].sort((a,b)=>(PORD[a.execution_status||'not_started']||10)-(PORD[b.execution_status||'not_started']||10)||(a.planned_date||'').localeCompare(b.planned_date||''));
+      // 列幅（合計100%）：固定レイアウトで全列を画面内に収める
+      const cols = [
+        ['実施番号',9],['点検日',7],['号機',5],['点検表名',11],
+        ['作業種別・内容',24],['状態',9],['結果',5],['NG/全',5],['深刻度',5],['承認',4],['P/K/L',6],['次アクション',10]
+      ];
+      const colgroup = '<colgroup>'+cols.map(c=>`<col style="width:${c[1]}%">`).join('')+'</colgroup>';
+      const thead = `<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;">
+        ${colgroup}
+        <thead><tr>${cols.map(c=>`<th style="text-align:left;padding:7px 7px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;word-break:break-word;line-height:1.3;">${c[0]}</th>`).join('')}
         </tr></thead><tbody>`;
       body.innerHTML = thead + sorted.map(_makeExecRow).join('') + '</tbody></table>';
     }
@@ -3114,6 +3357,8 @@
       const card = document.createElement('div');
       card.id = 'execListCard';
       card.className = 'card';
+      // フルワイド表示（端から端まで）
+      card.style.cssText = 'background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 14px;margin-bottom:24px;width:100%;';
 
       // フィルタータブ HTML
       const filterHtml = _EXEC_FILTERS.map(f=>
@@ -3124,17 +3369,16 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
           <h2 style="margin:0;">点検実施</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="activateAnomalyCheckMode()" style="background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);font-weight:700;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔍 異常確認点検</button>
-            <button onclick="activateAdhocMode()" style="background:#db61a2;color:#fff;font-weight:700;border:none;padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;">🔴 臨時点検を記録</button>
+            <button onclick="activateAdhocMode()" title="計画外の臨時点検を新規記録します" style="background:var(--panel);color:var(--muted);border:1px solid var(--line);font-weight:600;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;">＋ 臨時点検</button>
           </div>
         </div>
         <div id="execFilters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${filterHtml}</div>
         <div id="execKpi" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
-        <div id="execListBody" class="loading">読み込み中…</div>`;
+        <div id="execListBody" class="loading" style="overflow-x:hidden;">読み込み中…</div>`;
       wrap.insertAdjacentElement('afterbegin', card);
       // フィルタータブにイベント付与
-      const _fStyle  = 'background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;';
-      const _fStyleA = 'background:rgba(88,166,255,.1);border:1px solid var(--master);color:#fff;font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:700;';
+      const _fStyle  = 'background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;';
+      const _fStyleA = 'background:rgba(88,166,255,.1);border:1px solid var(--master);color:#fff;font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:700;';
       card.querySelectorAll('.exec-f').forEach(btn=>{
         btn.style.cssText = _fStyle;
         btn.addEventListener('click',()=>{
@@ -3168,8 +3412,8 @@
         kpiEl.innerHTML=KPI_DEFS.map(k=>{
           const cnt=_execAllRows.filter(r=>(r.execution_status||'not_started')===k.st).length;
           return cnt>0
-            ? `<span style="font-size:12px;font-weight:700;color:${k.c};background:${k.bg};border:1px solid ${k.bd};border-radius:20px;padding:3px 12px;white-space:nowrap;cursor:pointer;" onclick="_execRender(_execFilter(_execAllRows,'${k.st}'))">${k.lbl} ${cnt}</span>`
-            : `<span style="font-size:12px;color:var(--muted);border:1px solid #30363d;border-radius:20px;padding:3px 12px;white-space:nowrap;">${k.lbl} 0</span>`;
+            ? `<span style="font-size:13px;font-weight:700;color:${k.c};background:${k.bg};border:1px solid ${k.bd};border-radius:20px;padding:4px 14px;white-space:nowrap;cursor:pointer;" onclick="_execRender(_execFilter(_execAllRows,'${k.st}'))">${k.lbl} ${cnt}</span>`
+            : `<span style="font-size:13px;color:var(--muted);border:1px solid #30363d;border-radius:20px;padding:4px 14px;white-space:nowrap;">${k.lbl} 0</span>`;
         }).join('');
 
         _execRender(_execFilter(_execAllRows,'all'));
@@ -3235,6 +3479,21 @@
     function activateAdhocMode(){ openDrawer('adhoc'); }
     function activateAnomalyCheckMode(){ openDrawer('anomaly'); }
 
+    // 履歴（最近の点検実績）の開閉トグル ＋ 遅延ロード
+    let _historyLoaded = false;
+    function toggleHistory(){
+      const card = document.getElementById('historyCard');
+      const btn  = document.getElementById('histBtn');
+      if(!card) return;
+      const show = card.style.display === 'none' || !card.style.display;
+      card.style.display = show ? 'block' : 'none';
+      if(btn) btn.innerHTML = show ? '🕘 履歴を隠す' : '🕘 履歴を表示';
+      if(show){
+        if(!_historyLoaded){ _historyLoaded = true; reloadList(); }
+        card.scrollIntoView({behavior:'smooth', block:'start'});
+      }
+    }
+
     async function openDrawerForPlan(ev, planId){
       ev.stopPropagation();
       openDrawer(false);
@@ -3274,6 +3533,8 @@
                 if(kyChk) kyChk.parentElement.style.border = '1px solid rgba(219,97,162,.5)';
               }
             }
+            // 計画に紐づく点検票（junction）を自動ロード
+            await loadPlanChecklists(planId);
             validate();
           }
         }catch(e){}
