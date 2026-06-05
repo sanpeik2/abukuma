@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初動トリアージ — 阿武隈風力 O&M OS</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d;
+    --txt:#c9d1d9; --muted:#8b949e;
+    --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922;
+    --legal:#db61a2; --warn:#e3a008;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px 24px;max-width:860px;margin:0 auto;line-height:1.6}
+
+  .back{font-size:12px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:5px;margin-bottom:18px}
+  .back:hover{color:#fff}
+
+  h1{font-size:22px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:12.5px;margin-bottom:22px}
+
+  /* ─── 緊急バナー ─── */
+  .emergency-banner{
+    background:linear-gradient(135deg,rgba(248,81,73,.18),rgba(248,81,73,.06));
+    border:1.5px solid var(--defect);border-radius:10px;padding:14px 18px;
+    margin-bottom:24px;display:flex;gap:14px;align-items:flex-start
+  }
+  .emergency-banner .icon{font-size:26px;line-height:1}
+  .emergency-banner .text h3{font-size:14px;color:#ff9492;margin-bottom:3px}
+  .emergency-banner .text p{font-size:12px;color:var(--muted)}
+
+  /* ─── タイマー ─── */
+  .timer-bar{
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:10px 16px;margin-bottom:22px;display:flex;align-items:center;gap:14px;
+    font-size:13px
+  }
+  .timer-bar .label{color:var(--muted)}
+  .timer-val{font-size:20px;font-weight:700;color:var(--defect);font-variant-numeric:tabular-nums;min-width:60px}
+  .timer-note{font-size:11px;color:var(--muted);margin-left:auto}
+
+  /* ─── トリアージフォーム ─── */
+  .section{margin-bottom:20px}
+  .section-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .section-title .num{background:var(--panel2);border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+
+  .q-group{display:flex;flex-direction:column;gap:8px}
+  .q-item{
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:13px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;
+    transition:border-color .15s
+  }
+  .q-item.answered-yes{border-color:var(--defect);background:linear-gradient(135deg,rgba(248,81,73,.08),var(--panel))}
+  .q-item.answered-no{border-color:var(--insp);background:linear-gradient(135deg,rgba(63,185,80,.06),var(--panel))}
+  .q-item .qlabel{font-size:13.5px;flex:1}
+  .q-item .qlabel small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+  .q-item .btns{display:flex;gap:7px;flex-shrink:0}
+  .btn-yn{
+    padding:6px 18px;border-radius:7px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;
+    transition:background .12s,border-color .12s
+  }
+  .btn-yn.yes{background:rgba(248,81,73,.18);border-color:var(--defect);color:#ff9492}
+  .btn-yn.no{background:rgba(63,185,80,.14);border-color:var(--insp);color:#7ee787}
+  .btn-yn.active-yes{background:rgba(248,81,73,.35)!important;border-color:#ff6a63!important;color:#fff!important}
+  .btn-yn.active-no{background:rgba(63,185,80,.3)!important;border-color:#56d364!important;color:#fff!important}
+
+  /* ─── 判定結果 ─── */
+  #result{display:none;margin-top:28px}
+  .result-header{
+    display:flex;align-items:center;gap:12px;padding:16px 20px;border-radius:10px;
+    margin-bottom:20px;border:1.5px solid
+  }
+  .result-header.level-red{border-color:var(--defect);background:linear-gradient(135deg,rgba(248,81,73,.18),rgba(248,81,73,.05))}
+  .result-header.level-yellow{border-color:var(--warn);background:linear-gradient(135deg,rgba(227,160,8,.15),rgba(227,160,8,.04))}
+  .result-header.level-green{border-color:var(--insp);background:linear-gradient(135deg,rgba(63,185,80,.12),rgba(63,185,80,.03))}
+  .result-header .icon{font-size:32px}
+  .result-header h2{font-size:18px;color:#fff}
+  .result-header .sub2{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .action-list{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
+  .action-list li{
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:11px 15px;display:flex;align-items:flex-start;gap:10px;font-size:13px
+  }
+  .action-list li .seq{
+    background:var(--panel2);border:1px solid var(--line);border-radius:50%;
+    width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:var(--muted)
+  }
+  .action-list li.urgent .seq{background:rgba(248,81,73,.2);border-color:var(--defect);color:#ff9492}
+  .action-list li .act-body{flex:1}
+  .action-list li .act-title{color:#fff;font-weight:600;margin-bottom:2px}
+  .action-list li .act-note{font-size:11.5px;color:var(--muted)}
+  .tag-legal{background:rgba(219,97,162,.15);border:1px solid var(--legal);color:var(--legal);border-radius:12px;padding:2px 10px;font-size:11px;margin-left:8px}
+  .tag-stop{background:rgba(248,81,73,.15);border:1px solid var(--defect);color:#ff9492;border-radius:12px;padding:2px 10px;font-size:11px;margin-left:8px}
+
+  .deadline-box{
+    background:linear-gradient(135deg,rgba(219,97,162,.12),var(--panel));
+    border:1px solid rgba(219,97,162,.4);border-radius:9px;
+    padding:13px 16px;margin-bottom:20px
+  }
+  .deadline-box h4{font-size:13px;color:var(--legal);margin-bottom:8px}
+  .deadline-box .dl-row{display:flex;gap:10px;align-items:baseline;font-size:12.5px;margin-bottom:4px}
+  .deadline-box .dl-label{color:var(--muted);min-width:70px}
+  .deadline-box .dl-time{color:#fff;font-weight:700}
+  .deadline-box .dl-note{color:var(--muted);font-size:11px}
+
+  .next-links{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px}
+  a.next-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:12px 15px;text-decoration:none;color:var(--txt);transition:border-color .14s
+  }
+  a.next-card:hover{border-color:var(--master)}
+  a.next-card .nt{font-size:13.5px;font-weight:600;color:#fff;margin-bottom:3px}
+  a.next-card .nd{font-size:11.5px;color:var(--muted)}
+
+  .btn-judge{
+    width:100%;padding:13px;border:none;border-radius:9px;font-size:14.5px;font-weight:700;
+    cursor:pointer;background:var(--master);color:#04101f;margin-top:22px;transition:opacity .14s
+  }
+  .btn-judge:hover{opacity:.85}
+  .btn-reset{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    border-radius:8px;padding:8px 20px;font-size:12.5px;cursor:pointer;margin-top:14px
+  }
+  .btn-reset:hover{border-color:#fff;color:#fff}
+
+  /* ─── 覚知情報入力 ─── */
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  @media(max-width:560px){.info-grid{grid-template-columns:1fr}}
+  .field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px}
+  .field input,.field select,.field textarea{
+    width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);
+    padding:8px 11px;border-radius:7px;font-size:13px
+  }
+  .field textarea{resize:vertical;min-height:62px}
+</style>
+</head>
+<script src="./lib/supabase.js"></script>
+<body>
+
+<a class="back" href="./menu.html">← メニューに戻る</a>
+
+<h1>🚨 初動トリアージ</h1>
+<div class="sub">異常覚知直後の判断支援 — 人身安全・停止要否・主任技術者連絡・法令報告フラグを即時整理する</div>
+
+<!-- 経過タイマー -->
+<div class="timer-bar">
+  <span class="label">覚知からの経過時間</span>
+  <span class="timer-val" id="timerVal">00:00</span>
+  <span class="timer-note">⚖ 事故速報は覚知から<b style="color:#db61a2">24時間以内</b></span>
+</div>
+
+<!-- 覚知情報 -->
+<div class="section">
+  <div class="section-title"><span class="num">0</span>覚知情報（任意入力）</div>
+  <div class="info-grid">
+    <div class="field">
+      <label>号機</label>
+      <select id="wtg">
+        <option value="">選択…</option>
+        <option>WTG-01</option><option>WTG-02</option><option>WTG-03</option>
+        <option>WTG-04</option><option>WTG-05</option><option>WTG-06</option>
+        <option>WTG-07</option><option>WTG-08</option><option>複数号機</option><option>場内共通</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>覚知区分</label>
+      <select id="source">
+        <option value="">選択…</option>
+        <option>SCADAアラーム</option><option>現場目視</option><option>定期点検</option>
+        <option>通報（外部）</option><option>通報（社内）</option><option>その他</option>
+      </select>
+    </div>
+    <div class="field" style="grid-column:1/-1">
+      <label>異常概要（簡潔に）</label>
+      <textarea id="summary" placeholder="例：WTG-03 ギアボックス異音。SCADAで振動アラーム。"/>
+    </div>
+  </div>
+</div>
+
+<!-- Q1〜Q5 -->
+<div class="section">
+  <div class="section-title"><span class="num">1</span>安全・停止判定 — 5項目を回答してください</div>
+  <div class="q-group" id="qGroup">
+
+    <div class="q-item" id="q1" data-key="q1">
+      <div class="qlabel">
+        🧑 人身被害の可能性または現在進行中の危険がある
+        <small>感電・墜落・はさまれ・転倒など。作業者が今危険な状態か</small>
+      </div>
+      <div class="btns">
+        <button class="btn-yn yes" onclick="answer('q1',true)">はい</button>
+        <button class="btn-yn no" onclick="answer('q1',false)">いいえ</button>
+      </div>
+    </div>
+
+    <div class="q-item" id="q2" data-key="q2">
+      <div class="qlabel">
+        🔥 火災・煙・異臭・爆発の兆候がある
+        <small>タービン内・変圧器・制御盤・ケーブルなど</small>
+      </div>
+      <div class="btns">
+        <button class="btn-yn yes" onclick="answer('q2',true)">はい</button>
+        <button class="btn-yn no" onclick="answer('q2',false)">いいえ</button>
+      </div>
+    </div>
+
+    <div class="q-item" id="q3" data-key="q3">
+      <div class="qlabel">
+        ⚡ 主要電気工作物の損壊または異常停止が発生・疑われる
+        <small>発電機・変圧器・主回路・制御装置・ブレード破損など</small>
+      </div>
+      <div class="btns">
+        <button class="btn-yn yes" onclick="answer('q3',true)">はい</button>
+        <button class="btn-yn no" onclick="answer('q3',false)">いいえ</button>
+      </div>
+    </div>
+
+    <div class="q-item" id="q4" data-key="q4">
+      <div class="qlabel">
+        🌀 当該号機は今すぐ停止・隔離が必要と判断する
+        <small>既に停止済みの場合も「はい」を選択。LOTOが必要な状態か</small>
+      </div>
+      <div class="btns">
+        <button class="btn-yn yes" onclick="answer('q4',true)">はい</button>
+        <button class="btn-yn no" onclick="answer('q4',false)">いいえ</button>
+      </div>
+    </div>
+
+    <div class="q-item" id="q5" data-key="q5">
+      <div class="qlabel">
+        📉 発電量の欠損（停止または出力制限）が発生・継続している
+        <small>系統への供給影響・電力会社への連絡要否に直結</small>
+      </div>
+      <div class="btns">
+        <button class="btn-yn yes" onclick="answer('q5',true)">はい</button>
+        <button class="btn-yn no" onclick="answer('q5',false)">いいえ</button>
+      </div>
+    </div>
+
+  </div>
+  <button class="btn-judge" onclick="judge()">🧭 判定を実行する</button>
+</div>
+
+<!-- 保存状態バナー（判定後に表示） -->
+<div id="saveBanner" style="display:none;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:8px;padding:9px 14px;font-size:12px;color:#7ee787;margin-bottom:16px;"></div>
+
+<!-- 判定結果 -->
+<div id="result">
+  <div class="result-header" id="resultHeader">
+    <div class="icon" id="resultIcon"></div>
+    <div>
+      <h2 id="resultTitle"></h2>
+      <div class="sub2" id="resultSub"></div>
+    </div>
+  </div>
+
+  <ul class="action-list" id="actionList"></ul>
+
+  <div class="deadline-box" id="deadlineBox" style="display:none">
+    <h4>⚖ 法令報告期限（電気関係報告規則 第3条）</h4>
+    <div class="dl-row"><span class="dl-label">速報</span><span class="dl-time" id="t24h">—</span><span class="dl-note">— 覚知から24時間以内・産業保安監督部へ</span></div>
+    <div class="dl-row"><span class="dl-label">詳報</span><span class="dl-time" id="t30d">—</span><span class="dl-note">— 覚知から30日以内・書面提出</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">※最終判断は電気主任技術者。report-candidates画面で正式スクリーニングを行うこと</div>
+  </div>
+
+  <div class="next-links" id="nextLinks"></div>
+
+  <div style="text-align:center;margin-top:18px">
+    <button class="btn-reset" onclick="reset()">🔄 トリアージをやり直す</button>
+  </div>
+</div>
+
+<script>
+const answers = {};
+let startTime = Date.now();
+let savedIds = { nmId: null, dfId: null }; // Supabase保存後にIDを格納
+
+// タイマー
+setInterval(()=>{
+  const s = Math.floor((Date.now()-startTime)/1000);
+  const m = Math.floor(s/60), ss = s%60;
+  const el = document.getElementById('timerVal');
+  el.textContent = String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+  el.style.color = m >= 20 ? '#db61a2' : m >= 10 ? '#e3a008' : '#f85149';
+}, 1000);
+
+function answer(key, val){
+  answers[key] = val;
+  const item = document.getElementById(key);
+  item.className = 'q-item ' + (val ? 'answered-yes' : 'answered-no');
+  const btns = item.querySelectorAll('.btn-yn');
+  btns[0].className = 'btn-yn yes' + (val ? ' active-yes' : '');
+  btns[1].className = 'btn-yn no' + (!val ? ' active-no' : '');
+}
+
+// ──────────────────────────────────────────────
+// Supabase保存
+// ──────────────────────────────────────────────
+async function saveTriage(level, isLegal) {
+  try {
+    const wtgNo     = document.getElementById('wtg').value;
+    const srcVal    = document.getElementById('source').value;
+    const summaryVal = (document.getElementById('summary').value || '').trim() || '（概要未入力）';
+    const q1=answers.q1, q2=answers.q2, q3=answers.q3, q5=answers.q5;
+
+    // 号機UUID取得（選択あり・複数/共通でない場合）
+    let turbineId = null;
+    if (wtgNo && !['複数号機','場内共通',''].includes(wtgNo)) {
+      try {
+        const rows = await sb.get(`turbines?turbine_no=eq.${encodeURIComponent(wtgNo)}&select=id&limit=1`);
+        if (rows && rows[0]) turbineId = rows[0].id;
+      } catch(e) { /* 取得失敗は無視して続行 */ }
+    }
+
+    // event_type / severity 決定
+    const eventType = (q1||q2) ? 'accident' : (q3||q5) ? 'equipment_anomaly' : 'near_miss';
+    const severity  = level==='red' ? 'critical' : level==='yellow' ? 'high' : 'low';
+
+    // source_type マッピング（defect_findings 用）
+    const srcTypeMap = {
+      'SCADAアラーム':'scada','現場目視':'patrol','定期点検':'inspection',
+      '通報（外部）':'manual','通報（社内）':'manual','その他':'manual'
+    };
+
+    // ① near_miss_reports に保存（安全・ヒヤリ系）
+    const nmPayload = {
+      turbine_id  : turbineId,
+      occurred_at : new Date().toISOString(),
+      event_type  : eventType,
+      severity    : severity,
+      description : summaryVal,
+      status      : 'open',
+      ...(srcVal && { location: srcVal })
+    };
+    const nmRows = await sb.write('POST', 'near_miss_reports', nmPayload);
+    savedIds.nmId = nmRows && nmRows[0] ? nmRows[0].id : null;
+
+    // ② 設備損壊(q3)の場合 → defect_findings にも保存
+    if (q3) {
+      const dfPayload = {
+        turbine_id        : turbineId,
+        source_type       : srcTypeMap[srcVal] || 'manual',
+        finding_title     : summaryVal.substring(0, 100),
+        finding_detail    : summaryVal,
+        detected_at       : new Date().toISOString(),
+        safety_impact     : (q1||q2) ? 'critical' : 'high',
+        operation_impact  : q5 ? 'stop' : 'none',
+        regulation_impact : isLegal ? 'report_required' : 'none',
+        status            : 'open',
+        severity          : severity,
+        report_required_flag : isLegal
+      };
+      const dfRows = await sb.write('POST', 'defect_findings', dfPayload);
+      savedIds.dfId = dfRows && dfRows[0] ? dfRows[0].id : null;
+    }
+
+    // 保存完了バナーを表示
+    const banner = document.getElementById('saveBanner');
+    if (banner) {
+      banner.textContent = savedIds.dfId
+        ? `✅ 保存完了 — 安全報告 & 異常判断レコードを作成 (ID末尾: …${savedIds.nmId.slice(-6)})`
+        : `✅ 保存完了 — 安全報告レコードを作成 (ID末尾: …${savedIds.nmId ? savedIds.nmId.slice(-6) : '?'})`;
+      banner.style.display = 'block';
+    }
+    // 保存後にリンクURLを更新
+    updateLinks();
+  } catch(err) {
+    console.warn('triage save error:', err);
+    const banner = document.getElementById('saveBanner');
+    if (banner) {
+      banner.textContent = '⚠ 保存失敗（オフラインまたは未ログイン）。内容はメモに残してください。';
+      banner.style.color = '#e3a008';
+      banner.style.display = 'block';
+    }
+  }
+}
+
+function buildParam() {
+  const p = new URLSearchParams();
+  if (savedIds.nmId) p.set('near_miss_id', savedIds.nmId);
+  if (savedIds.dfId) p.set('defect_finding_id', savedIds.dfId);
+  const wtg = document.getElementById('wtg').value;
+  if (wtg) p.set('wtg', wtg);
+  return p.toString() ? '?' + p.toString() : '';
+}
+
+function updateLinks() {
+  // 既存リンクカードのhrefにIDパラメータを追記
+  document.querySelectorAll('#nextLinks a.next-card').forEach(a => {
+    const base = a.getAttribute('href').split('?')[0];
+    const params = buildParam();
+    a.setAttribute('href', base + params);
+  });
+}
+
+// ──────────────────────────────────────────────
+// 判定
+// ──────────────────────────────────────────────
+function judge(){
+  const keys = ['q1','q2','q3','q4','q5'];
+  const missing = keys.filter(k => answers[k] === undefined);
+  if(missing.length){
+    alert('すべての項目を回答してください（'+missing.length+'項目未回答）');
+    return;
+  }
+
+  const q1=answers.q1, q2=answers.q2, q3=answers.q3, q4=answers.q4, q5=answers.q5;
+  const isLegal     = q2 || q3 || (q5 && q3);
+  const isEmergency = q1 || q2;
+  const needStop    = q4;
+
+  let level, icon, title, sub;
+  if(isEmergency){
+    level='red'; icon='🚨'; title='緊急対応レベル — 即時行動';
+    sub='人身安全または火災の危険あり。今すぐ以下のアクションを実施してください';
+  } else if(needStop || isLegal){
+    level='yellow'; icon='⚠'; title='要対応レベル — 主任技術者判断';
+    sub='停止・損壊または発電支障あり。主任技術者の判断を仰いでください';
+  } else {
+    level='green'; icon='✅'; title='通常対応レベル — 記録・監視継続';
+    sub='即時停止・法令報告は不要と判断。記録を残してRCA判断へ';
+  }
+
+  const rh = document.getElementById('resultHeader');
+  rh.className = 'result-header level-'+level;
+  document.getElementById('resultIcon').textContent = icon;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent = sub;
+
+  const actions = [];
+  let seq = 1;
+  if(q1) actions.push({urgent:true,  seq:seq++, title:'119番・救急・安全確保', note:'人命最優先。作業者の安全を確保してから設備対応に移る'});
+  if(q2) actions.push({urgent:true,  seq:seq++, title:'119番・消防通報 + 全員退避', note:'火災・煙の場合は設備より退避を優先。電源遮断は退避後'});
+  if(q4) actions.push({urgent:q1||q2, seq:seq++, title:'当該号機の緊急停止・LOTO実施', note:'停止確認後にLOTOシートへ進む', tag:'stop'});
+  actions.push({urgent:false, seq:seq++, title:'電気主任技術者へ即時連絡', note:'覚知事実・停止状況・人身被害の有無を第一報として伝える'});
+  if(isLegal) actions.push({urgent:false, seq:seq++, title:'法令報告スクリーニング開始', note:'速報期限のカウントが始まっています。report-candidatesで正式スクリーニングを行う', tag:'legal'});
+  actions.push({urgent:false, seq:seq++, title:'安全・異常報告に覚知内容を登録', note:'safety-incidentsに初期記録を残す（60秒クイック報告）'});
+  actions.push({urgent:false, seq:seq++, title:'故障/RCA画面で一次評価を開始', note:'A〜F判定を行い作業票または法令報告へつなぐ'});
+
+  document.getElementById('actionList').innerHTML = actions.map(a=>`
+    <li class="${a.urgent?'urgent':''}">
+      <span class="seq">${a.seq}</span>
+      <div class="act-body">
+        <div class="act-title">${a.title}${a.tag==='legal'?'<span class="tag-legal">⚖ 法令報告</span>':''}${a.tag==='stop'?'<span class="tag-stop">🔒 LOTO</span>':''}</div>
+        <div class="act-note">${a.note}</div>
+      </div>
+    </li>`).join('');
+
+  // 法令期限
+  if(isLegal){
+    const now=new Date();
+    const t24=new Date(now.getTime()+24*3600*1000);
+    const t30=new Date(now.getTime()+30*24*3600*1000);
+    const fmt=d=>d.toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('t24h').textContent=fmt(t24);
+    document.getElementById('t30d').textContent=t30.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit'});
+    document.getElementById('deadlineBox').style.display='block';
+  } else {
+    document.getElementById('deadlineBox').style.display='none';
+  }
+
+  // 次のステップリンク（初期：IDなし。保存後updateLinksで更新）
+  const links = [];
+  if(q4)      links.push({href:'./ky-loto.html',          t:'⚡🔒 KY・LOTOシート',   d:'停止・隔離を記録する'});
+  links.push(  {href:'./safety-incidents.html',            t:'⚠ 安全・異常報告',      d:'覚知内容を60秒で登録'});
+  if(isLegal) links.push({href:'./report-candidates.html', t:'⚖ 保安規定 報告候補',   d:'法令報告スクリーニング'});
+  links.push(  {href:'./defect-rca.html',                  t:'🔧 故障/RCA',           d:'一次評価・是正判断へ'});
+  if(!q4&&!isLegal) links.push({href:'./work-orders.html', t:'📝 作業票',             d:'是正作業票を起票する'});
+  links.push(  {href:'./approvals.html',                   t:'✅ 承認待ち',            d:'主任技術者承認フロー'});
+
+  document.getElementById('nextLinks').innerHTML = links.map(l=>`
+    <a class="next-card" href="${l.href}">
+      <div class="nt">${l.t}</div>
+      <div class="nd">${l.d}</div>
+    </a>`).join('');
+
+  document.getElementById('result').style.display='block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'});
+
+  // Supabaseに非同期保存（UIをブロックしない）
+  saveTriage(level, isLegal);
+}
+
+function reset(){
+  ['q1','q2','q3','q4','q5'].forEach(k=>{
+    delete answers[k];
+    const item = document.getElementById(k);
+    item.className = 'q-item';
+    item.querySelectorAll('.btn-yn').forEach(b=>{
+      b.className = b.classList.contains('yes') ? 'btn-yn yes' : 'btn-yn no';
+    });
+  });
+  savedIds = { nmId: null, dfId: null };
+  document.getElementById('result').style.display='none';
+  const banner = document.getElementById('saveBanner');
+  if(banner){ banner.style.display='none'; }
+  startTime = Date.now();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

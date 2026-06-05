@@ -139,13 +139,14 @@ body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku
         <div class="step-desc">各風車のリアルタイムデータ（発電量・風速・温度・アラーム）をモニタリング。</div>
         <div class="info-box">
           <b>アラーム発生時の動線：</b><br>
-          アラーム確認 → 一次確認（現地または遠隔） → <b>STEP 5（異常判断）</b> が基本動線。<br>
+          アラーム確認 → <b>🚨 初動トリアージ（重大度・緊急度の即断）</b> → <b>STEP 5（異常判断）</b> が基本動線。<br>
           計画的な定期点検は <b>STEP 3（点検計画）</b> から開始。アラームから直接 STEP 3 へは行きません。
         </div>
         <div class="step-tags" style="margin-top:8px">
           <span class="screen-tag t-blue">live-board.html</span>
+          <span class="screen-tag t-red">triage.html（初動トリアージ）</span>
           <span class="tag t-muted">センサーデータ</span>
-          <span class="tag t-red">アラーム検知 → STEP 5</span>
+          <span class="tag t-red">アラーム検知 → トリアージ → STEP 5</span>
           <span class="tag t-blue">定期点検予定 → STEP 3</span>
         </div>
       </div>
@@ -383,12 +384,12 @@ body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku
       <div class="step-role role-blue">担当者</div>
       <div class="step-box box-purple">
         <div class="step-title">🔧 作業実施（修理・保全・取替）</div>
-        <div class="step-desc">作業票・PTW（必要な場合）・KY・LOTO（必要な場合）が全て揃った状態で作業開始。作業完了後、LOTO解除（施錠していた場合）を実施してから結果を作業票に記録。</div>
+        <div class="step-desc">作業票・PTW（必要な場合）・KY・LOTO（必要な場合）が全て揃った状態で作業開始。作業内容・開始/完了時刻・未完了理由・次アクションを作業実施記録として保存。</div>
         <div class="step-tags">
-          <span class="screen-tag t-yellow">work-orders.html</span>
-          <span class="tag t-yellow">status: in_progress → completed</span>
+          <span class="screen-tag t-yellow">work-execution.html</span>
+          <span class="tag t-yellow">DB: work_execution_results</span>
           <span class="tag t-red">LOTO解除（施錠していた場合）</span>
-          <span class="tag t-yellow">停止時間・発電影響を記録</span>
+          <span class="tag t-yellow">作業実績・未完了理由を記録</span>
         </div>
       </div>
     </div>
@@ -404,11 +405,11 @@ body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku
       <div class="step-role role-yellow">主任・管理者</div>
       <div class="step-box box-green">
         <div class="step-title">▶ 復旧確認・運転許可</div>
-        <div class="step-desc">修理完了・LOTO解除確認後、主任技術者または管理責任者が設備の健全性を確認して運転再開を許可。不具合ステータスをクローズに更新。停止影響（時間・発電量・売電額）を確定。</div>
+        <div class="step-desc">修理完了・LOTO解除確認後、主任技術者または管理責任者が設備の健全性を確認して運転再開を許可。試運転・アラーム・SCADA・発電再開可否を復旧確認記録として保存。</div>
         <div class="step-tags">
-          <span class="screen-tag t-red">defect-rca.html</span>
-          <span class="tag t-green">defect_findings → closed</span>
-          <span class="tag t-green">work_orders → completed</span>
+          <span class="screen-tag t-green">restoration.html</span>
+          <span class="tag t-green">DB: restoration_checks</span>
+          <span class="tag t-green">復旧状態: pending → restored</span>
           <span class="tag t-green">→ 運転再開 ✅</span>
           <span class="law-tag">⚖ 電気事業法 第42条</span>
         </div>
@@ -426,13 +427,14 @@ body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku
       <div class="step-role role-yellow">主任・管理者</div>
       <div class="step-box box-green">
         <div class="step-title">📊 記録・報告・クローズ</div>
-        <div class="step-desc">一連の業務をクローズ。報告書候補を確認し、法令に基づく定期報告・事故報告の作成へ。全証跡（点検記録・不具合・作業・承認履歴）がDBにトレース可能な状態で保存される。</div>
+        <div class="step-desc">一連の業務をクローズ。報告要否・証跡不足・再発防止・残課題を確認し、法令に基づく定期報告・事故報告の作成へつなげる。</div>
         <div class="info-box">
           <b>保存される証跡：</b> 点検計画（PN-番号） → 点検結果 → 不具合起票 → 作業票 → PTW → KY/LOTO → 承認履歴 → 復旧確認　すべて日時・担当者付きで記録
         </div>
         <div class="step-tags" style="margin-top:8px">
-          <span class="screen-tag t-green">report-candidates.html</span>
-          <span class="tag t-green">全証跡DBに保存</span>
+          <span class="screen-tag t-green">closeout.html</span>
+          <span class="tag t-green">DB: closeout_reviews</span>
+          <span class="tag t-green">review_status: open → closed</span>
           <span class="law-tag">⚖ 電気事業法 定期報告</span>
           <span class="law-tag">⚖ 保安規定 事故報告</span>
         </div>
