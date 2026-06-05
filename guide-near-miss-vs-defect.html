@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — ヒヤリハット vs 異常報告の考え方</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--ai:#ff7b72;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.7}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:24px 22px 60px;max-width:900px;margin:0 auto}
+
+  /* 目的ボックス */
+  .purpose{border:1px solid var(--master);background:rgba(88,166,255,.08);border-radius:10px;padding:15px 18px;margin-bottom:20px}
+  .purpose .l{font-size:11px;color:#9cd2ff;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+  .purpose p{font-size:15px;color:#fff}
+
+  h2{font-size:14px;color:#fff;margin:30px 0 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h3{font-size:13px;color:#fff;margin:18px 0 8px;font-weight:700}
+
+  /* 2カラム比較 */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  @media(max-width:600px){.compare{grid-template-columns:1fr}}
+  .box{border-radius:12px;padding:18px 20px;border:1.5px solid}
+  .box-nm{border-color:rgba(227,160,8,.5);background:linear-gradient(135deg,rgba(227,160,8,.08),var(--panel))}
+  .box-df{border-color:rgba(248,81,73,.5);background:linear-gradient(135deg,rgba(248,81,73,.08),var(--panel))}
+  .box .bhead{font-size:16px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .box-nm .bhead{color:#e3b341}
+  .box-df .bhead{color:#ff9492}
+  .box .btable{width:100%;font-size:12.5px;border-collapse:collapse}
+  .box .btable th{text-align:left;color:var(--muted);font-size:11px;font-weight:700;padding:4px 0;border-bottom:1px solid var(--line)}
+  .box .btable td{padding:5px 0;vertical-align:top;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+  .box .btable td:first-child{color:var(--muted);font-size:11.5px;min-width:70px;padding-right:8px}
+  .box .screen-tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:6px;font-family:monospace;margin-top:6px}
+  .box-nm .screen-tag{background:rgba(227,160,8,.15);border:1px solid rgba(227,160,8,.4);color:#e3b341}
+  .box-df .screen-tag{background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.4);color:#ff9492}
+
+  /* どちらが先？ フローチャート */
+  .decision{border:1px solid var(--line);border-radius:12px;padding:18px 22px;background:var(--panel);margin:14px 0}
+  .decision .q{font-size:15px;font-weight:700;color:#fff;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .decision-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+  .case{border-radius:9px;padding:13px 15px;font-size:13px}
+  .case-nm{border:1px solid rgba(227,160,8,.4);background:rgba(227,160,8,.06)}
+  .case-df{border:1px solid rgba(248,81,73,.35);background:rgba(248,81,73,.05)}
+  .case-both{border:1px solid rgba(188,140,255,.4);background:rgba(188,140,255,.06)}
+  .case .ctag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:7px;display:inline-block}
+  .case-nm .ctag{background:rgba(227,160,8,.2);color:#e3b341}
+  .case-df .ctag{background:rgba(248,81,73,.18);color:#ff9492}
+  .case-both .ctag{background:rgba(188,140,255,.18);color:#d0b0ff}
+  .case .ctitle{color:#fff;font-weight:700;margin-bottom:4px}
+  .case .cdesc{font-size:12px;color:var(--muted);line-height:1.5}
+  .case .cex{font-size:11.5px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)}
+  .case .cex b{color:#c9d1d9}
+
+  /* 接続フロー */
+  .flow-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .flow-box{border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;white-space:nowrap}
+  .fb-nm{background:rgba(227,160,8,.15);border:1px solid rgba(227,160,8,.4);color:#e3b341}
+  .fb-df{background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.4);color:#ff9492}
+  .fb-wo{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);color:#d29922}
+  .fb-ap{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.4);color:#7ee787}
+  .fb-rc{background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.4);color:#9cd2ff}
+  .fb-muted{background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+  .arr{color:var(--muted);font-size:16px}
+  .cond{font-size:11px;color:var(--muted);padding:3px 8px;border-radius:999px;border:1px dashed var(--line);white-space:nowrap}
+
+  /* Tip / Warn */
+  .tip,.warn,.note{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .tip{border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.06)}
+  .tip .h{color:#7ee787;font-weight:700;margin-bottom:5px}
+  .warn{border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.06)}
+  .warn .h{color:#ff9a92;font-weight:700;margin-bottom:5px}
+  .note{border:1px solid rgba(88,166,255,.35);background:rgba(88,166,255,.06)}
+  .note .h{color:#9cd2ff;font-weight:700;margin-bottom:5px}
+  ul.plain{padding-left:18px;margin:4px 0}
+  ul.plain li{margin:4px 0;font-size:13px}
+
+  /* チェックリスト */
+  .checklist{list-style:none;margin:8px 0}
+  .checklist li{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+  .checklist li:last-child{border-bottom:none}
+  .checklist .ck{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:var(--panel2);flex-shrink:0;margin-top:2px;display:grid;place-items:center;font-size:10px}
+
+  .links{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+  .links a{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--master);background:var(--panel)}
+  .footer{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:11.5px}
+  code{color:var(--master);background:#0d1117;padding:1px 6px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark">AW</div>
+  <div>
+    <h1>ヒヤリハット vs 異常報告 — 使い分けの考え方</h1>
+    <div class="sub">阿武隈OS 業務の考え方 — 何をどこに記録するか・どちらが先か</div>
+  </div>
+  <a class="back" href="./menu.html">≡ メニュー</a>
+</div>
+
+<div class="wrap">
+
+  <div class="purpose">
+    <div class="l">この資料の目的</div>
+    <p>「ヒヤリハット（safety-incidents）」と「異常報告（defect-rca）」は<b style="color:#9cd2ff">別のテーブル・別の画面</b>です。何が起きたときにどちらを使うか、そして両方使うときの順序を整理します。</p>
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <h2>🔍 2つの記録の違い</h2>
+
+  <div class="compare">
+
+    <!-- ヒヤリハット -->
+    <div class="box box-nm">
+      <div class="bhead">⚠ ヒヤリハット・安全報告</div>
+      <table class="btable">
+        <tr><th>対象</th></tr>
+        <tr><td>対象</td><td>人・作業・行動に関する出来事</td></tr>
+        <tr><td>典型例</td><td>
+          作業中に感電しかけた<br>
+          誘導員なしで車両が後退<br>
+          手順書を読まずに作業した<br>
+          KY未実施で現場入り<br>
+          改善できそうな点を発見
+        </td></tr>
+        <tr><td>記録先</td><td><code>near_miss_reports</code></td></tr>
+        <tr><td>完結パターン</td><td>記録だけで完結することが多い<br>（再発防止策＋クローズ）</td></tr>
+        <tr><td>作業票</td><td>原則 不要<br>（設備対応が必要な場合のみ）</td></tr>
+      </table>
+      <div class="screen-tag">⚠ safety-incidents.html</div>
+    </div>
+
+    <!-- 異常報告 -->
+    <div class="box box-df">
+      <div class="bhead">🔧 異常報告・RCA</div>
+      <table class="btable">
+        <tr><th>対象</th></tr>
+        <tr><td>対象</td><td>設備・機器・システムに関する不具合</td></tr>
+        <tr><td>典型例</td><td>
+          ギアボックスから異音・振動<br>
+          冷却系アラームが繰り返し発生<br>
+          ブレードにひび割れを発見<br>
+          変圧器の絶縁抵抗が基準値以下<br>
+          SCADAの通信欠損が継続
+        </td></tr>
+        <tr><td>記録先</td><td><code>defect_findings</code></td></tr>
+        <tr><td>完結パターン</td><td>是正作業（作業票）が必ず必要<br>→ クローズまで追跡する</td></tr>
+        <tr><td>作業票</td><td>原則 必要<br>（A〜F判定 → 是正 → 報告）</td></tr>
+      </table>
+      <div class="screen-tag">🔧 defect-rca.html</div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <div class="h">💡 一言で覚える</div>
+    <b style="color:#fff">「人が危なかった」→ ヒヤリハット　　「設備が悪い」→ 異常報告</b>
+    <br>
+    <span style="color:var(--muted);font-size:12.5px">迷ったら両方記録する。記録のしすぎは問題ない。記録漏れが問題。</span>
+  </div>
+
+
+  <!-- ─────────────────────────────────────── -->
+  <h2>🧭 どちらが先？ — 状況別の判断</h2>
+
+  <div class="decision">
+    <div class="q">⁉ 何が起きたか、まず確認してください</div>
+    <div class="decision-grid">
+
+      <div class="case case-nm">
+        <div class="ctag">ヒヤリハットが先</div>
+        <div class="ctitle">人身危険・作業逸脱が主体</div>
+        <div class="cdesc">設備は壊れていないが、人が危なかった・手順を守らなかった・ひやりとした。</div>
+        <div class="cex">
+          <b>例：</b>感電しかけた（設備は正常）、安全帯未装着で高所作業、クレーン操作ミスで荷が揺れた
+          <br><br>
+          → <b style="color:#e3b341">safety-incidents に記録</b><br>
+          → 設備点検も必要なら異常報告を<b>追加で</b>起票
+        </div>
+      </div>
+
+      <div class="case case-df">
+        <div class="ctag">異常報告が先</div>
+        <div class="ctitle">設備損壊・故障が主体</div>
+        <div class="cdesc">機器・設備に明らかな不具合がある。アラームが出ている。異音・異臭・破損を確認。</div>
+        <div class="cex">
+          <b>例：</b>ブレード亀裂発見、ギアボックス異音、冷却系アラーム再発、SCADA通信欠損
+          <br><br>
+          → <b style="color:#ff9492">defect-rca に記録</b><br>
+          → 作業中の事故リスクがあればヒヤリハットも<b>追加で</b>起票
+        </div>
+      </div>
+
+      <div class="case case-both">
+        <div class="ctag">両方を同時に起票</div>
+        <div class="ctitle">設備損壊 ＋ 人身危険が重なった</div>
+        <div class="cdesc">作業中に設備破損が発覚し、かつ作業者にも危険が及んだ・及ぶ可能性がある。</div>
+        <div class="cex">
+          <b>例：</b>点検中にブレードのひびを発見し作業者が落下しかけた、変圧器異常で感電のリスクが生じた
+          <br><br>
+          → <b style="color:#d0b0ff">両方を独立して記録</b><br>
+          → それぞれが別の管理台帳になる（片方がクローズしても片方は残る）
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="warn">
+    <div class="h">⚠ よくある間違い</div>
+    <ul class="plain">
+      <li>「ヒヤリハットに書いたから異常報告は不要」→ <b>NG</b>。設備不具合は必ず <code>defect-rca</code> にも起票する</li>
+      <li>「異常報告したからヒヤリハットは省略」→ <b>NG</b>。人への危険があった事実は安全記録として独立して残す</li>
+      <li>「どちらかだけ記録すれば足りる」→ 基本的に <b>NG</b>。管理対象が違う（人の安全 ≠ 設備の是正）</li>
+    </ul>
+  </div>
+
+
+  <!-- ─────────────────────────────────────── -->
+  <h2>🔗 2つの記録がつながる場面</h2>
+
+  <p style="font-size:13px;color:var(--muted);margin-bottom:14px">ヒヤリハットと異常報告は独立していますが、<b style="color:#fff">設備対応が必要</b>と判断されたとき、または<b style="color:#fff">安全事象の原因が設備</b>のときにつながります。</p>
+
+  <!-- ヒヤリハット → 設備対応が必要 → 異常報告 -->
+  <h3>パターン①：ヒヤリハットから異常報告を起票</h3>
+  <div class="flow-row">
+    <div class="flow-box fb-nm">⚠ ヒヤリハット記録</div>
+    <span class="arr">→</span>
+    <div class="cond">設備に問題あり</div>
+    <span class="arr">→</span>
+    <div class="flow-box fb-df">🔧 異常報告を別途起票</div>
+    <span class="arr">→</span>
+    <div class="flow-box fb-wo">📝 作業票</div>
+    <span class="arr">→</span>
+    <div class="flow-box fb-ap">✅ 承認 → 是正作業</div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:4px 0 14px">例：点検中にKY未実施に気づいた（ヒヤリ）→ 同時にギアボックス異音も発見（設備） → 異常報告を起票して作業票へ</p>
+
+  <!-- 異常報告 → 作業中リスク → ヒヤリハット -->
+  <h3>パターン②：作業対応中にヒヤリハット発生</h3>
+  <div class="flow-row">
+    <div class="flow-box fb-df">🔧 異常報告 → 作業票</div>
+    <span class="arr">→</span>
+    <div class="cond">作業中に危険発生</div>
+    <span class="arr">→</span>
+    <div class="flow-box fb-nm">⚠ ヒヤリハットを追加記録</div>
+    <span class="arr">→</span>
+    <div class="flow-box fb-muted">再発防止策を両方に記録</div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:4px 0 14px">例：ナセル内作業中に工具を落下させそうになった → 是正作業の作業票はそのまま継続 → ヒヤリハットを別途起票</p>
+
+  <!-- 初動トリアージから両方 -->
+  <h3>パターン③：初動トリアージから分岐</h3>
+  <div class="flow-row">
+    <div class="flow-box fb-muted" style="border-color:rgba(248,81,73,.4);color:#ff9492">🚨 初動トリアージ</div>
+    <span class="arr">→</span>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="flow-row" style="margin:0">
+        <div class="cond">人身危険あり</div>
+        <span class="arr">→</span>
+        <div class="flow-box fb-nm">⚠ ヒヤリハット</div>
+      </div>
+      <div class="flow-row" style="margin:0">
+        <div class="cond">設備損壊あり</div>
+        <span class="arr">→</span>
+        <div class="flow-box fb-df">🔧 異常報告</div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:6px 0 0">→ triage.html が判定結果に応じて safety-incidents / defect-rca の両方にリンクします</p>
+
+
+  <!-- ─────────────────────────────────────── -->
+  <h2>📋 記録するときのチェック</h2>
+
+  <h3 style="color:#e3b341">⚠ ヒヤリハットを記録するとき</h3>
+  <ul class="checklist">
+    <li><span class="ck">□</span><div>何が起きたか（事象の説明）を具体的に書く</div></li>
+    <li><span class="ck">□</span><div>誰が・どこで・何をしていたときか</div></li>
+    <li><span class="ck">□</span><div>なぜ危なかったか（なぜ事故にならなかったか）</div></li>
+    <li><span class="ck">□</span><div>設備への影響がないか確認 → あれば異常報告も起票</div></li>
+    <li><span class="ck">□</span><div>再発防止策を記録してクローズする</div></li>
+  </ul>
+
+  <h3 style="color:#ff9492;margin-top:18px">🔧 異常報告を記録するとき</h3>
+  <ul class="checklist">
+    <li><span class="ck">□</span><div>設備名・号機・どの部位に異常があるか</div></li>
+    <li><span class="ck">□</span><div>発見日時・発見方法（点検 / アラーム / 目視）</div></li>
+    <li><span class="ck">□</span><div>安全影響・発電影響の一次判定（A〜F）</div></li>
+    <li><span class="ck">□</span><div>作業中に人への危険はなかったか → あればヒヤリハットも起票</div></li>
+    <li><span class="ck">□</span><div>作業票が必要か判断し、必要なら起票する</div></li>
+  </ul>
+
+
+  <!-- ─────────────────────────────────────── -->
+  <div class="tip" style="margin-top:28px">
+    <div class="h">✅ まとめ</div>
+    <ul class="plain">
+      <li><b>ヒヤリハット</b>＝「人・作業の安全」の記録。記録して再発防止で完結することが多い</li>
+      <li><b>異常報告</b>＝「設備の不具合」の記録。是正作業と法令報告まで追跡する</li>
+      <li>どちらが先かではなく、<b>両方に該当するなら両方記録する</b></li>
+      <li>迷ったら <b>triage.html（初動トリアージ）</b> を開くと判断を支援してくれる</li>
+    </ul>
+  </div>
+
+  <div class="links">
+    <a href="./safety-incidents.html">⚠ 安全・異常報告画面</a>
+    <a href="./defect-rca.html">🔧 故障/RCA画面</a>
+    <a href="./triage.html">🚨 初動トリアージ</a>
+    <a href="./guide-defect-judge.html">異常評価・是正判断の基本</a>
+    <a href="./workflow-overview.html">全体フロー図</a>
+    <a href="./menu.html">≡ メニュー</a>
+  </div>
+
+  <div class="footer">
+    関連テーブル: <code>near_miss_reports</code>（ヒヤリハット） / <code>defect_findings</code>（異常判断） — 独立したテーブルで相互参照は任意。
+  </div>
+
+</div>
+</body>
+</html>
