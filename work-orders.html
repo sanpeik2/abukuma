@@ -781,13 +781,12 @@ async function openManualNew(){
   box.scrollIntoView({behavior:'smooth', block:'start'});
   const inp = 'width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#c9d1d9;padding:8px 10px;font-size:13px;';
   try {
-    // ── 点検計画: 作業票未起票を抽出 ──
-    const usedSrc = await sb.get('work_orders?source_type=eq.inspection_plan&source_id=not.is.null&select=source_id');
-    const usedPlanSet = new Set((usedSrc||[]).map(r=>r.source_id).filter(Boolean));
-    const allPlans = await sb.get('v_inspection_plan_list?order=計画日.asc&limit=300');
-    const availPlans = (allPlans||[]).filter(p =>
-      p['計画id'] && !usedPlanSet.has(p['計画id']) &&
-      !['cancelled','completed'].includes(p.unified_status||'')
+    // ── 点検実績（異常あり）: 作業票未起票を抽出 ──
+    const usedResult = await sb.get('work_orders?result_id=not.is.null&select=result_id');
+    const usedResultSet = new Set((usedResult||[]).map(r=>r.result_id).filter(Boolean));
+    const allResults = await sb.get('inspection_results?has_anomaly=eq.true&select=id,turbine_id,executed_date,anomaly_description,result_status,turbines(turbine_no)&order=executed_date.desc&limit=200');
+    const availResults = (allResults||[]).filter(r =>
+      r.id && !usedResultSet.has(r.id)
     );
 
     // ── 異常報告: 作業票未起票を抽出 ──
@@ -799,6 +798,51 @@ async function openManualNew(){
       d['状態'] !== 'closed'
     );
 
+    // 検索付きリスト生成ヘルパー
+    const searchList = (items, containerId, searchId, renderFn, emptyMsg) => {
+      if(!items.length) return `<div style="color:#8b949e;font-size:12.5px;padding:6px 0;">${emptyMsg}</div>`;
+      return `
+        <input id="${searchId}" type="text" placeholder="🔍 号機・日付・内容で絞り込み…"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#c9d1d9;padding:7px 10px;font-size:12.5px;margin-bottom:8px;box-sizing:border-box;"
+          oninput="filterPickerList('${searchId}','${containerId}')">
+        <div id="${containerId}" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:2px;">
+          ${items.map(renderFn).join('')}
+        </div>`;
+    };
+
+    const resultCard = r => {
+      const wtg  = r.turbines?.turbine_no || '?';
+      const date = r.executed_date || '?';
+      const desc = (r.anomaly_description||'異常あり').split('\n')[0];
+      const sid  = r.result_status==='ng'?'🔴 NG': r.result_status==='conditional'?'🟡 要注意':'⚠ 異常';
+      return `
+      <div class="picker-item" data-id="${r.id}"
+        data-search="${wtg+' '+date+' '+desc}"
+        onclick="pickResult('${r.id}')"
+        style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid rgba(63,185,80,.25);border-radius:8px;background:#0d1117;cursor:pointer;transition:border-color .12s;"
+        onmouseover="this.style.borderColor='rgba(63,185,80,.7)'" onmouseout="this.style.borderColor='rgba(63,185,80,.25)'">
+        <div style="width:56px;text-align:center;font-size:12px;font-weight:700;color:#7ee787;flex-shrink:0;">${sb.esc(wtg)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sb.esc(desc)}</div>
+          <div style="font-size:11px;color:#8b949e;margin-top:1px;">${sb.esc(date)} &nbsp;·&nbsp; ${sid}</div>
+        </div>
+        <div style="font-size:10.5px;color:#58a6ff;flex-shrink:0;">選択 →</div>
+      </div>`;
+    };
+
+    const defCard = d => `
+      <div class="picker-item" data-id="${d['故障id']}" data-search="${(d['号機']||'')+' '+(d['異常タイトル']||'')+' '+(d['状態表示']||'')+' '+(d['安全影響']||'')}"
+        onclick="pickDefect('${d['故障id']}')"
+        style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid rgba(210,153,34,.25);border-radius:8px;background:#0d1117;cursor:pointer;transition:border-color .12s;"
+        onmouseover="this.style.borderColor='rgba(210,153,34,.7)'" onmouseout="this.style.borderColor='rgba(210,153,34,.25)'">
+        <div style="width:56px;text-align:center;font-size:12px;font-weight:700;color:#e3b341;flex-shrink:0;">${sb.esc(d['号機']||'?')}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sb.esc(d['異常タイトル']||'?')}</div>
+          <div style="font-size:11px;color:#8b949e;margin-top:1px;">${sb.esc(d['発見日時_jst']?String(d['発見日時_jst']).slice(0,10):'?')} &nbsp;·&nbsp; ${sb.esc(d['状態表示']||'?')}</div>
+        </div>
+        <div style="font-size:10.5px;color:#58a6ff;flex-shrink:0;">選択 →</div>
+      </div>`;
+
     box.innerHTML = `
 <div style="padding:16px 18px;border:1px solid rgba(88,166,255,.5);border-radius:12px;background:linear-gradient(180deg,rgba(88,166,255,.08),#161b22);">
   <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;">
@@ -808,39 +852,29 @@ async function openManualNew(){
   </div>
   <div style="display:grid;gap:12px;">
 
-    <!-- 点検計画起点 -->
+    <!-- 点検実績起点 -->
     <div style="border:1px solid rgba(63,185,80,.4);border-radius:10px;padding:13px 15px;background:rgba(63,185,80,.05);">
-      <div style="font-size:12px;font-weight:700;color:#7ee787;margin-bottom:8px;">
-        📅 点検計画起点
-        <span style="font-weight:400;color:#8b949e;margin-left:8px;">作業票未起票: ${availPlans.length}件</span>
+      <div style="font-size:12px;font-weight:700;color:#7ee787;margin-bottom:10px;">
+        🛠 点検実績起点 <span style="font-size:10.5px;background:rgba(248,81,73,.15);color:#ff9492;border:1px solid rgba(248,81,73,.4);padding:1px 6px;border-radius:6px;margin-left:4px;">異常あり</span>
+        <span style="font-weight:400;color:#8b949e;margin-left:8px;">作業票未起票: ${availResults.length}件</span>
       </div>
-      <select id="picker_plan" style="${inp}" onchange="if(this.value) pickPlan(this.value)">
-        <option value="">選択してください…</option>
-        ${availPlans.length
-          ? availPlans.map(p=>`<option value="${p['計画id']}">[${p['計画日']||'?'}] ${p['号機']||'?'} — ${p['作業種別']||'?'} (${p['状態表示']||'?'})</option>`).join('')
-          : '<option disabled>未起票の点検計画はありません</option>'}
-      </select>
+      ${searchList(availResults,'result-list','result-search', resultCard,'未起票の点検実績（異常あり）はありません')}
     </div>
 
     <!-- 異常報告起点 -->
     <div style="border:1px solid rgba(210,153,34,.4);border-radius:10px;padding:13px 15px;background:rgba(210,153,34,.05);">
-      <div style="font-size:12px;font-weight:700;color:#e3b341;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:#e3b341;margin-bottom:10px;">
         🔧 異常報告起点
         <span style="font-weight:400;color:#8b949e;margin-left:8px;">作業票未起票: ${availDefs.length}件</span>
       </div>
-      <select id="picker_defect" style="${inp}" onchange="if(this.value) pickDefect(this.value)">
-        <option value="">選択してください…</option>
-        ${availDefs.length
-          ? availDefs.map(d=>`<option value="${d['故障id']}">${d['号機']||'?'} — ${d['異常タイトル']||'?'} [${d['状態表示']||'?'}]</option>`).join('')
-          : '<option disabled>未起票の異常報告はありません</option>'}
-      </select>
+      ${searchList(availDefs,'def-list','def-search', defCard,'未起票の異常報告はありません')}
     </div>
 
     <!-- 手動 -->
     <div style="border:1px solid rgba(88,166,255,.3);border-radius:10px;padding:13px 15px;background:rgba(88,166,255,.04);">
       <div style="font-size:12px;font-weight:700;color:#9cd2ff;margin-bottom:8px;">
         ✏ その他（手動起票）
-        <span style="font-weight:400;color:#8b949e;margin-left:8px;">点検計画・異常報告に紐づかない作業票</span>
+        <span style="font-weight:400;color:#8b949e;margin-left:8px;">点検実績・異常報告に紐づかない作業票</span>
       </div>
       <button onclick="openCreate('manual',null)" style="background:#1f6feb;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;">手動で起票 →</button>
     </div>
@@ -851,8 +885,16 @@ async function openManualNew(){
   } catch(e) { box.innerHTML = warnBox('読み込みエラー: ' + sb.esc(e.message)); }
 }
 
-function pickPlan(val){   if(val) openCreate('inspection_plan', val); }
+function pickResult(val){ if(val) openCreate('inspection_result', val); }
 function pickDefect(val){ if(val) openCreate('defect', val); }
+
+function filterPickerList(searchId, listId){
+  const q = (document.getElementById(searchId)?.value || '').toLowerCase();
+  document.querySelectorAll(`#${listId} .picker-item`).forEach(el => {
+    const text = (el.dataset.search || '').toLowerCase();
+    el.style.display = (!q || text.includes(q)) ? '' : 'none';
+  });
+}
 async function turbineNo(tid){ if(!tid) return ''; try{ const t=await sb.get(`turbines?id=eq.${enc(tid)}&select=turbine_no`); return (t&&t.length)?(t[0].turbine_no||''):''; }catch(e){ return ''; } }
 
 async function checkCreateParam(){

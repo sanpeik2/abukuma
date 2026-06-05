@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿武隈OS — 保安規定 報告候補リストの使い方</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--line:#30363d;--txt:#c9d1d9;--muted:#8b949e;--master:#58a6ff;--insp:#3fb950;--defect:#f85149;--work:#d29922;--legal:#db61a2;--ai:#ff7b72;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.7}
+  a{color:var(--master);text-decoration:none}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0d1117)}
+  .topbar .mark{width:34px;height:34px;border-radius:7px;background:#d6a84f;color:#1b1300;font-weight:900;display:grid;place-items:center;font-size:13px}
+  .topbar h1{font-size:16px;color:#fff;font-weight:700}
+  .topbar .sub{font-size:11.5px;color:var(--muted)}
+  .topbar .back{margin-left:auto;font-size:13px;color:var(--master)}
+  .wrap{padding:24px 22px 60px;max-width:900px;margin:0 auto}
+  .purpose{border:1px solid var(--legal);background:rgba(219,97,162,.08);border-radius:10px;padding:15px 18px;margin-bottom:20px}
+  .purpose .l{font-size:11px;color:#f0a6cd;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+  .purpose p{font-size:15px;color:#fff}
+  h2{font-size:14px;color:#fff;margin:28px 0 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h3{font-size:13px;color:#fff;margin:16px 0 8px;font-weight:700}
+  .tip,.warn,.note,.info{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .tip{border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.06)} .tip .h{color:#7ee787;font-weight:700;margin-bottom:5px}
+  .warn{border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.06)} .warn .h{color:#ff9a92;font-weight:700;margin-bottom:5px}
+  .note{border:1px solid rgba(88,166,255,.35);background:rgba(88,166,255,.06)} .note .h{color:#9cd2ff;font-weight:700;margin-bottom:5px}
+  .info{border:1px solid rgba(219,97,162,.35);background:rgba(219,97,162,.06)} .info .h{color:#f0a6cd;font-weight:700;margin-bottom:5px}
+  ul.plain{padding-left:18px;margin:4px 0} ul.plain li{margin:4px 0;font-size:13px}
+  code{color:var(--master);background:#0d1117;padding:1px 6px;border-radius:4px;font-size:11.5px}
+
+  /* 区分テーブル */
+  .class-grid{display:grid;gap:8px;margin:12px 0}
+  .class-row{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel)}
+  .class-badge{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font-size:15px;font-weight:900;flex-shrink:0}
+  .cls-a{background:rgba(248,81,73,.25);color:#ff7b72;border:1px solid rgba(248,81,73,.5)}
+  .cls-b{background:rgba(248,81,73,.15);color:#ff9492;border:1px solid rgba(248,81,73,.35)}
+  .cls-c{background:rgba(210,153,34,.15);color:#e3b341;border:1px solid rgba(210,153,34,.4)}
+  .cls-d{background:rgba(88,166,255,.12);color:#9cd2ff;border:1px solid rgba(88,166,255,.35)}
+  .cls-e{background:rgba(63,185,80,.1);color:#7ee787;border:1px solid rgba(63,185,80,.3)}
+  .cls-f{background:rgba(139,148,158,.1);color:#8b949e;border:1px solid rgba(139,148,158,.3)}
+  .class-body .ct{font-size:13px;color:#fff;font-weight:700;margin-bottom:3px}
+  .class-body .cd{font-size:12px;color:var(--muted)}
+  .class-body .ca{font-size:11.5px;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.07)}
+  .action-yes{color:#7ee787} .action-no{color:#8b949e}
+
+  /* フロー */
+  .flow-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .fb{border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;white-space:nowrap}
+  .fb-legal{background:rgba(219,97,162,.15);border:1px solid rgba(219,97,162,.4);color:#f0a6cd}
+  .fb-wo{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);color:#d29922}
+  .fb-ok{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.4);color:#7ee787}
+  .fb-muted{background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+  .cond{font-size:11px;color:var(--muted);padding:2px 8px;border-radius:999px;border:1px dashed var(--line)}
+  .arr{color:var(--muted);font-size:16px}
+
+  /* 候補理由バッジ説明 */
+  .badge-explain{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .be-row{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-size:12.5px}
+  .be-badge{font-size:10.5px;padding:2px 9px;border-radius:10px;border:1px solid;white-space:nowrap;flex-shrink:0;margin-top:2px}
+  .be-desc{color:var(--txt)}
+  .be-desc .when{color:var(--muted);font-size:11.5px;margin-top:3px}
+
+  /* 詳細の見方 */
+  .col-explain{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin:10px 0}
+  .col-name{color:#9cd2ff;font-family:monospace;font-size:11.5px;white-space:nowrap;padding:3px 0}
+  .col-desc{color:var(--txt);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+
+  .links{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+  .links a{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--master);background:var(--panel)}
+  .footer{margin-top:28px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:11.5px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark">AW</div>
+  <div>
+    <h1>⚖ 保安規定 報告候補リストの使い方</h1>
+    <div class="sub">阿武隈OS 業務の考え方 — 区分の意味・候補理由・次のアクション</div>
+  </div>
+  <a class="back" href="./menu.html">≡ メニュー</a>
+</div>
+
+<div class="wrap">
+
+  <div class="purpose">
+    <div class="l">この画面の目的</div>
+    <p>「この異常は国（産業保安監督部）に報告が必要か？」を<b style="color:#f0a6cd">電気主任技術者が最終判断する</b>ための一次スクリーニングリストです。</p>
+  </div>
+
+  <div class="warn">
+    <div class="h">⚠ よくある誤解</div>
+    <ul class="plain">
+      <li>このリストに載っていても、<b>自動的に法令報告義務が発生するわけではない</b></li>
+      <li>「報告候補」 = 「条文を確認して主任技術者が判断すべき案件」</li>
+      <li>最終判断は必ず<b>電気主任技術者</b>が行う（システムは候補を提示するだけ）</li>
+    </ul>
+  </div>
+
+
+  <!-- ─── いつ開くか ─── -->
+  <h2>📌 いつ開くか</h2>
+  <ul class="plain">
+    <li>朝会で「重大アラームあり」「停止影響あり」の案件を確認するとき</li>
+    <li>主任技術者が「これ報告要るかな？」と思ったとき</li>
+    <li>初動トリアージで法令報告フラグが立ったとき（<a href="./triage.html">triage.html</a>からリンクあり）</li>
+    <li>defect-rca.html で法令分類（A〜F）を設定したとき</li>
+  </ul>
+
+
+  <!-- ─── 区分（A〜F）の意味 ─── -->
+  <h2>🔤 区分（法令分類 A〜F）の意味</h2>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">電気関係報告規則・保安規定にもとづく分類。異常判断画面（defect-rca）で設定します。</p>
+
+  <div class="class-grid">
+    <div class="class-row">
+      <div class="class-badge cls-a">A</div>
+      <div class="class-body">
+        <div class="ct">重大事故（法令報告必須）</div>
+        <div class="cd">感電死傷・火災・主要電気工作物の損壊による広域停電。報告義務あり。</div>
+        <div class="ca"><span class="action-yes">✅ 速報：覚知から24時間以内 / 詳報：30日以内</span></div>
+      </div>
+    </div>
+    <div class="class-row">
+      <div class="class-badge cls-b">B</div>
+      <div class="class-body">
+        <div class="ct">重要設備故障（主任判断）</div>
+        <div class="cd">発電機・変圧器・主回路など主要設備の重大な損壊。報告要否は主任判断。</div>
+        <div class="ca"><span class="action-yes">✅ 主任確認が必要</span></div>
+      </div>
+    </div>
+    <div class="class-row">
+      <div class="class-badge cls-c">C</div>
+      <div class="class-body">
+        <div class="ct">設備異常（記録・是正）</div>
+        <div class="cd">運転に影響するが法令報告対象外の設備不具合。是正作業票を起票して追跡。</div>
+        <div class="ca"><span class="action-no">— 法令報告は不要。是正作業票で対応</span></div>
+      </div>
+    </div>
+    <div class="class-row">
+      <div class="class-badge cls-d">D</div>
+      <div class="class-body">
+        <div class="ct">異常検知（監視・様子見）</div>
+        <div class="cd">アラームや測定値の異常だが設備損壊には至っていない。継続監視が必要。</div>
+        <div class="ca"><span class="action-no">— 作業票は任意。監視記録を残す</span></div>
+      </div>
+    </div>
+    <div class="class-row">
+      <div class="class-badge cls-e">E</div>
+      <div class="class-body">
+        <div class="ct">軽微な不具合</div>
+        <div class="cd">運転への影響が軽微で即時対応不要。記録のみで完結することが多い。</div>
+        <div class="ca"><span class="action-no">— 記録のみ。必要に応じて予防保全</span></div>
+      </div>
+    </div>
+    <div class="class-row">
+      <div class="class-badge cls-f">F</div>
+      <div class="class-body">
+        <div class="ct">改善提案・その他</div>
+        <div class="cd">異常ではなく改善の余地がある事象。安全上の問題はない。</div>
+        <div class="ca"><span class="action-no">— 改善検討。作業票は不要なことが多い</span></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ─── 候補理由バッジの意味 ─── -->
+  <h2>🏷 候補理由バッジの意味</h2>
+  <div class="badge-explain">
+
+    <div class="be-row">
+      <span class="be-badge" style="background:rgba(248,81,73,.15);border-color:rgba(248,81,73,.4);color:#ff9492;">要主任技術者確認</span>
+      <div class="be-desc">
+        安全影響が「高」または「重大」と判定された異常。主任技術者が直接確認してください。
+        <div class="when">→ 主任が内容を確認し、法令報告の要否を判断する</div>
+      </div>
+    </div>
+
+    <div class="be-row">
+      <span class="be-badge" style="background:rgba(248,81,73,.2);border-color:rgba(248,81,73,.5);color:#ff7b72;">🚨 報告候補</span>
+      <div class="be-desc">
+        <code>report_required_flag</code> が手動でONにされた異常。主任技術者が「要確認」とマークした案件。
+        <div class="when">→ 主任が確認し最終判断を記録する</div>
+      </div>
+    </div>
+
+    <div class="be-row">
+      <span class="be-badge" style="background:rgba(219,97,162,.15);border-color:rgba(219,97,162,.4);color:#f0a6cd;">⚖ 保安規定影響あり</span>
+      <div class="be-desc">
+        法令分類 A または B が設定されており、保安規定上の報告対象になりうる案件。
+        <div class="when">→ 電気主任技術者が条文と照合して速報・詳報の要否を決定する</div>
+      </div>
+    </div>
+
+    <div class="be-row">
+      <span class="be-badge" style="background:rgba(248,81,73,.15);border-color:rgba(248,81,73,.4);color:#ff9492;">運転影響:停止</span>
+      <div class="be-desc">
+        発電停止の影響があった異常。停止時間・逸失電力量も記録されている。
+        <div class="when">→ 停止影響の大きさで報告優先度を判断する</div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ─── 各列の見方 ─── -->
+  <h2>📋 画面の各列の見方</h2>
+  <div class="col-explain">
+    <div class="col-name">号機</div><div class="col-desc">対象風車番号</div>
+    <div class="col-name">異常</div><div class="col-desc">異常タイトル（省略表示。ホバーで全文表示）</div>
+    <div class="col-name">検知日時</div><div class="col-desc">異常を最初に検知した日時</div>
+    <div class="col-name">区分</div><div class="col-desc">法令分類（A〜F）と報告フラグ。上記「区分の意味」を参照</div>
+    <div class="col-name">候補理由</div><div class="col-desc">この案件が候補リストに上がった理由バッジ</div>
+    <div class="col-name">安全 / 運転</div><div class="col-desc">安全影響・運転影響の判定値（high=高 / stop=停止）</div>
+    <div class="col-name">F判定</div><div class="col-desc">リスク評価でF（停止）判定がついた場合に表示</div>
+    <div class="col-name">停止(分) / 損失(kWh)</div><div class="col-desc">停止記録がある場合に集計表示</div>
+    <div class="col-name">作業票</div><div class="col-desc">関連する作業票番号。クリックで作業票画面へ</div>
+    <div class="col-name">状態</div><div class="col-desc">異常判断の現在の状態（open / assessed / closed）</div>
+  </div>
+
+  <div class="note">
+    <div class="h">💡 詳細を見るには</div>
+    行をクリックすると詳細ドロワーが開きます（現時点では defect-rca.html の詳細表示に遷移）。<br>
+    詳しい内容（根本原因・暫定処置・RCA進捗）は <a href="./defect-rca.html" style="color:#58a6ff;">故障/RCA画面</a> の該当行をクリックしてください。
+  </div>
+
+
+  <!-- ─── 次に何をするか ─── -->
+  <h2>▶ 次に何をするか</h2>
+
+  <h3>パターン① A・B分類 → 速報が必要な可能性あり</h3>
+  <div class="flow-row">
+    <div class="fb fb-legal">⚖ 候補リストで確認</div>
+    <span class="arr">→</span>
+    <div class="cond">主任が条文と照合</div>
+    <span class="arr">→</span>
+    <div class="fb fb-legal">速報（24h以内）</div>
+    <span class="arr">→</span>
+    <div class="fb fb-legal">詳報（30日以内）</div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:4px 0 12px">速報・詳報の書式と提出先：産業保安監督部。初動トリアージの「法令期限カウンター」も参照。</p>
+
+  <h3>パターン② C・D分類 or 要主任確認 → 是正作業票で追跡</h3>
+  <div class="flow-row">
+    <div class="fb fb-legal">⚖ 候補リストで確認</div>
+    <span class="arr">→</span>
+    <div class="cond">法令報告不要と確認</div>
+    <span class="arr">→</span>
+    <div class="fb fb-wo">📝 作業票を起票</div>
+    <span class="arr">→</span>
+    <div class="fb fb-ok">✅ 是正作業 → クローズ</div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:4px 0 12px">作業票が既にある場合は「作業票」列のリンクで確認。なければ defect-rca.html から起票。</p>
+
+  <h3>パターン③ E・F分類 → 記録確認のみ</h3>
+  <div class="flow-row">
+    <div class="fb fb-legal">⚖ 候補リストで確認</div>
+    <span class="arr">→</span>
+    <div class="cond">軽微・改善提案</div>
+    <span class="arr">→</span>
+    <div class="fb fb-muted">記録を確認・クローズ</div>
+  </div>
+
+
+  <!-- ─── 作業票はいつ起票するか ─── -->
+  <h2>📝 この画面から作業票を起票するタイミング</h2>
+
+  <div class="info">
+    <div class="h">🤔 迷ったときの基準</div>
+    <b style="color:#fff">「この異常を是正するための作業が必要か？」</b>で判断してください。
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:12px 0">
+    <tr style="background:var(--panel2)">
+      <th style="padding:8px 12px;text-align:left;color:#fff;font-size:11px;border-bottom:1px solid var(--line);">状況</th>
+      <th style="padding:8px 12px;text-align:left;color:#fff;font-size:11px;border-bottom:1px solid var(--line);">作業票</th>
+      <th style="padding:8px 12px;text-align:left;color:#fff;font-size:11px;border-bottom:1px solid var(--line);">理由</th>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);">設備を修理・交換する必要がある</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:#7ee787;font-weight:700;">✅ 必要</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:var(--muted);">是正作業の指示書として起票</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);">既に作業票がある（一覧に番号あり）</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:#8b949e;">— 不要</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:var(--muted);">既存の作業票で管理。重複起票しない</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);">様子見・監視継続（D分類）</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:#e3b341;">△ 任意</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:var(--muted);">悪化したら起票。今は記録のみでも可</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);">法令報告だけ必要（A分類）</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:#e3b341;">△ 別途判断</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--line);color:var(--muted);">法令報告と作業票は独立。設備修理が要るなら起票</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;">改善提案（F分類）</td>
+      <td style="padding:8px 12px;color:#8b949e;">— 不要</td>
+      <td style="padding:8px 12px;color:var(--muted);">作業票は不要。安全・異常報告で記録のみ</td>
+    </tr>
+  </table>
+
+  <div class="tip" style="margin-top:20px">
+    <div class="h">✅ まとめ</div>
+    <ul class="plain">
+      <li>報告候補リスト＝<b>主任技術者が法令報告要否を判断する画面</b>（自動判定ではない）</li>
+      <li>区分A・Bは速報24時間以内。B以下は主任判断</li>
+      <li>作業票は「是正作業が必要かどうか」で判断。法令報告と作業票は独立</li>
+      <li>詳細は <a href="./defect-rca.html" style="color:#58a6ff;">故障/RCA画面</a> で確認</li>
+    </ul>
+  </div>
+
+  <div class="links">
+    <a href="./report-candidates.html">⚖ 報告候補リスト（画面）</a>
+    <a href="./defect-rca.html">🔧 故障/RCA</a>
+    <a href="./triage.html">🚨 初動トリアージ</a>
+    <a href="./safety-incidents.html">⚠ 安全・異常報告</a>
+    <a href="./work-orders.html">📝 作業票一覧</a>
+    <a href="./menu.html">≡ メニュー</a>
+  </div>
+
+  <div class="footer">
+    データ元: <code>v_report_candidates</code>（defect_findings × risk_assessments × work_orders × v_work_order_outages_summary）。最終判断は電気主任技術者。
+  </div>
+
+</div>
+</body>
+</html>
