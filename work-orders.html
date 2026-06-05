@@ -129,11 +129,11 @@
     <tr>
       <th>作業票番号</th><th>風車</th><th>種別</th><th>概要</th>
       <th>優先度</th><th>状態</th><th>承認</th><th>安全要件</th>
-      <th>対応予定日</th><th>担当</th><th>重要事項</th><th>起票日時</th>
+      <th>対応予定日</th><th>担当</th><th>重要事項</th><th>起票元</th><th>紐づき</th><th>起票日時</th>
     </tr>
   </thead>
   <tbody id="rows">
-    <tr><td colspan="12" class="empty">ログインするとデータを取得します…</td></tr>
+    <tr><td colspan="14" class="empty">ログインするとデータを取得します…</td></tr>
   </tbody>
 </table>
 
@@ -160,7 +160,7 @@ let SUMMARY_MAP = {}; // work_order_id → v_work_order_outages_summary row
 /* ===== データ取得 ===== */
 async function load(){
   const rows = document.getElementById('rows');
-  rows.innerHTML = '<tr><td colspan="12" class="empty">取得中…</td></tr>';
+  rows.innerHTML = '<tr><td colspan="14" class="empty">取得中…</td></tr>';
   try{
     const order = encodeURIComponent('起票日時_jst');
     const [woRows, sumRows] = await Promise.all([
@@ -173,7 +173,7 @@ async function load(){
     renderKpi(ALL);
     apply();
   }catch(e){
-    rows.innerHTML = `<tr><td colspan="12" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
+    rows.innerHTML = `<tr><td colspan="14" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
   }
 }
 
@@ -244,7 +244,7 @@ function _woImportant(r,s){
 
 function render(d){
   const rows = document.getElementById('rows');
-  if(!d.length){ rows.innerHTML = '<tr><td colspan="12" class="empty">該当する作業票はありません</td></tr>'; return; }
+  if(!d.length){ rows.innerHTML = '<tr><td colspan="14" class="empty">該当する作業票はありません</td></tr>'; return; }
   rows.innerHTML = d.map(r=>{
     const s = SUMMARY_MAP[r['id']] || null;
     const full = (r['異常概要']||r['関連異常タイトル']||'').trim();
@@ -261,6 +261,8 @@ function render(d){
       <td style="white-space:nowrap;">${sb.esc(r['対応予定日'])||'–'}</td>
       <td>${r['担当']?sb.esc(r['担当']):'<span style="color:#ff9a92;font-size:11px;">未割当</span>'}</td>
       <td>${_woImportant(r,s)}</td>
+      <td style="white-space:nowrap;font-size:11px;">${sb.esc(r['起票元ラベル']||r['起票元']||'–')}</td>
+      <td style="white-space:nowrap;font-size:11px;">${sb.esc(r['紐づき状態']||'–')}</td>
       <td style="white-space:nowrap;">${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
     </tr>`;
   }).join('');
@@ -447,9 +449,14 @@ function buildDetailHtml(r, s){
     </div>
     <div id="woSafetyBox" style="margin:6px 0 14px;"><div style="color:var(--muted);font-size:12px;">安全状況 読み込み中…</div></div>
     <div class="dgrid">
-      <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元']||'–')}</div></div>
+      <div><div class="l">起票元</div><div class="v">${sb.esc(r['起票元ラベル']||r['起票元']||'–')}</div></div>
       <div><div class="l">対応予定日</div><div class="v">${sb.esc(r['対応予定日']||'–')}</div></div>
     </div>
+    <div class="dgrid" style="margin-top:6px;">
+      <div><div class="l">紐づき状態</div><div class="v" style="font-size:12.5px;">${sb.esc(r['紐づき状態']||'—')}</div></div>
+      <div><div class="l">点検計画番号</div><div class="v" style="font-size:12.5px;${r['点検計画番号']?'color:#7ee787;':'color:#8b949e;'}">${r['点検計画番号']?sb.esc(r['点検計画番号']):'（未リンク）'}</div></div>
+    </div>
+    ${r['inspection_plan_id']?`<div style="margin-top:4px;font-size:11px;color:#8b949e;">点検計画ID: <code style="color:#58a6ff;">${sb.esc(String(r['inspection_plan_id']).slice(-8))}…</code></div>`:''}
     ${fld('異常概要', r['異常概要'])}
     ${fld('関連異常', r['関連異常タイトル'])}
     ${fld('根本原因', r['根本原因'])}
