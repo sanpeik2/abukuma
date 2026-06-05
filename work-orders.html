@@ -766,7 +766,86 @@ function qparam(k){ return new URLSearchParams(location.search).get(k); }
 function enc(v){ return encodeURIComponent(v); }
 function warnBox(m){ return `<div style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#1c2128;color:#f85149;">${m}</div>`; }
 function closeCreate(){ const b=document.getElementById('woCreate'); b.style.display='none'; b.innerHTML=''; history.replaceState({},'',location.pathname); }
-function openManualNew(){ history.replaceState({},'','?new=1'); openCreate('manual', null); }
+async function openManualNew(){
+  history.replaceState({},'','?new=1');
+  const box = document.getElementById('woCreate');
+  box.style.display = 'block';
+  box.innerHTML = '<div style="padding:14px;color:#8b949e;font-size:13px;">起票元を読み込み中…</div>';
+  box.scrollIntoView({behavior:'smooth', block:'start'});
+  const inp = 'width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#c9d1d9;padding:8px 10px;font-size:13px;';
+  try {
+    // ── 点検計画: 作業票未起票を抽出 ──
+    const usedSrc = await sb.get('work_orders?source_type=eq.inspection_plan&source_id=not.is.null&select=source_id');
+    const usedPlanSet = new Set((usedSrc||[]).map(r=>r.source_id).filter(Boolean));
+    const allPlans = await sb.get('v_inspection_plan_list?order=計画日.asc&limit=300');
+    const availPlans = (allPlans||[]).filter(p =>
+      p['計画id'] && !usedPlanSet.has(p['計画id']) &&
+      !['cancelled','completed'].includes(p.unified_status||'')
+    );
+
+    // ── 異常報告: 作業票未起票を抽出 ──
+    const usedDef = await sb.get('work_orders?defect_finding_id=not.is.null&select=defect_finding_id');
+    const usedDefSet = new Set((usedDef||[]).map(r=>r.defect_finding_id).filter(Boolean));
+    const allDefs = await sb.get('v_defect_rca_list?order=発見日時.desc&limit=300');
+    const availDefs = (allDefs||[]).filter(d =>
+      d['故障id'] && !usedDefSet.has(String(d['故障id'])) &&
+      d['状態'] !== 'closed'
+    );
+
+    box.innerHTML = `
+<div style="padding:16px 18px;border:1px solid rgba(88,166,255,.5);border-radius:12px;background:linear-gradient(180deg,rgba(88,166,255,.08),#161b22);">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;">
+    <span style="background:#58a6ff;color:#04101f;font-weight:800;font-size:11px;padding:3px 9px;border-radius:999px;">新規起票</span>
+    <h2 style="font-size:15px;margin:0;color:#fff;">起票元を選択してください</h2>
+    <span style="margin-left:auto;color:#8b949e;font-size:11px;">起票元に紐づけることで追跡性が保たれます</span>
+  </div>
+  <div style="display:grid;gap:12px;">
+
+    <!-- 点検計画起点 -->
+    <div style="border:1px solid rgba(63,185,80,.4);border-radius:10px;padding:13px 15px;background:rgba(63,185,80,.05);">
+      <div style="font-size:12px;font-weight:700;color:#7ee787;margin-bottom:8px;">
+        📅 点検計画起点
+        <span style="font-weight:400;color:#8b949e;margin-left:8px;">作業票未起票: ${availPlans.length}件</span>
+      </div>
+      <select id="picker_plan" style="${inp}" onchange="if(this.value) pickPlan(this.value)">
+        <option value="">選択してください…</option>
+        ${availPlans.length
+          ? availPlans.map(p=>`<option value="${p['計画id']}">[${p['計画日']||'?'}] ${p['号機']||'?'} — ${p['作業種別']||'?'} (${p['状態表示']||'?'})</option>`).join('')
+          : '<option disabled>未起票の点検計画はありません</option>'}
+      </select>
+    </div>
+
+    <!-- 異常報告起点 -->
+    <div style="border:1px solid rgba(210,153,34,.4);border-radius:10px;padding:13px 15px;background:rgba(210,153,34,.05);">
+      <div style="font-size:12px;font-weight:700;color:#e3b341;margin-bottom:8px;">
+        🔧 異常報告起点
+        <span style="font-weight:400;color:#8b949e;margin-left:8px;">作業票未起票: ${availDefs.length}件</span>
+      </div>
+      <select id="picker_defect" style="${inp}" onchange="if(this.value) pickDefect(this.value)">
+        <option value="">選択してください…</option>
+        ${availDefs.length
+          ? availDefs.map(d=>`<option value="${d['故障id']}">${d['号機']||'?'} — ${d['異常タイトル']||'?'} [${d['状態表示']||'?'}]</option>`).join('')
+          : '<option disabled>未起票の異常報告はありません</option>'}
+      </select>
+    </div>
+
+    <!-- 手動 -->
+    <div style="border:1px solid rgba(88,166,255,.3);border-radius:10px;padding:13px 15px;background:rgba(88,166,255,.04);">
+      <div style="font-size:12px;font-weight:700;color:#9cd2ff;margin-bottom:8px;">
+        ✏ その他（手動起票）
+        <span style="font-weight:400;color:#8b949e;margin-left:8px;">点検計画・異常報告に紐づかない作業票</span>
+      </div>
+      <button onclick="openCreate('manual',null)" style="background:#1f6feb;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;">手動で起票 →</button>
+    </div>
+
+  </div>
+  <button onclick="closeCreate()" style="background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:8px;padding:8px 14px;cursor:pointer;margin-top:12px;font-size:12.5px;">キャンセル</button>
+</div>`;
+  } catch(e) { box.innerHTML = warnBox('読み込みエラー: ' + sb.esc(e.message)); }
+}
+
+function pickPlan(val){   if(val) openCreate('inspection_plan', val); }
+function pickDefect(val){ if(val) openCreate('defect', val); }
 async function turbineNo(tid){ if(!tid) return ''; try{ const t=await sb.get(`turbines?id=eq.${enc(tid)}&select=turbine_no`); return (t&&t.length)?(t[0].turbine_no||''):''; }catch(e){ return ''; } }
 
 async function checkCreateParam(){
@@ -875,6 +954,7 @@ async function submitWO(){
     if(!body.defect_finding_id){ msg.style.color='#f85149'; msg.textContent='defect_finding_id がありません（異常起点必須）'; return; }
   }else if(kind==='inspection_plan'){
     body.source_id=g('f_sid').value||null;
+    if(!body.source_id){ msg.style.color='#f85149'; msg.textContent='点検計画を選択してください'; return; }
   }else if(kind==='inspection_result'){
     body.result_id=g('f_rid').value||null;
   }else if(kind==='manual'){
