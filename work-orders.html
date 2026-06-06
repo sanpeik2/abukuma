@@ -49,9 +49,9 @@
   /* ドロワー */
   #ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50}
   #ov.show{display:block}
-  #drawer{position:fixed;top:0;right:0;width:min(820px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
+  #drawer{position:fixed;top:0;right:0;width:max(50vw,400px);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
   #ov.show #drawer{transform:none}
-  .dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:10px}
+  .dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:20px 28px;display:flex;align-items:center;gap:10px}
   .dhd .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
   .dhd h2{font-size:17px;color:#fff}
   .dbody{padding:18px 20px 40px}
