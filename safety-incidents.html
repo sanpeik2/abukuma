@@ -353,19 +353,19 @@ function openD(id){
       </div>
       <div class="fld" style="margin-bottom:10px">
         <label style="font-size:11px;color:var(--muted)">応急処置</label>
-        <textarea id="b_aid" class="in" rows="2" placeholder="実施した応急処置">${esc(r['応急処置']||r.first_aid||'')}</textarea>
+        <textarea id="b_aid" class="in" rows="2" placeholder="実施した応急処置">${esc(r['応急処置']||r.immediate_action||'')}</textarea>
       </div>
       <div class="fld" style="margin-bottom:10px">
         <label style="font-size:11px;color:var(--muted)">原因（後追記可）</label>
-        <textarea id="b_cause" class="in" rows="2" placeholder="直接原因・根本原因">${esc(r['原因']||r.cause||'')}</textarea>
+        <textarea id="b_cause" class="in" rows="2" placeholder="直接原因・根本原因">${esc(r['原因']||r.root_cause||'')}</textarea>
       </div>
       <div class="fld" style="margin-bottom:10px">
         <label style="font-size:11px;color:var(--muted)">再発防止（後追記可）</label>
-        <textarea id="b_prev" class="in" rows="2" placeholder="恒久対策・手順改訂など">${esc(r['再発防止']||r.prevention||'')}</textarea>
+        <textarea id="b_prev" class="in" rows="2" placeholder="恒久対策・手順改訂など">${esc(r['再発防止']||r.preventive_action||'')}</textarea>
       </div>
       <div class="fld" style="margin-bottom:10px">
         <label style="font-size:11px;color:var(--muted)">教訓・水平展開メモ</label>
-        <textarea id="b_lesson" class="in" rows="2" placeholder="他班・他号機への展開ポイント">${esc(r['教訓']||r.lesson||'')}</textarea>
+        <textarea id="b_lesson" class="in" rows="2" placeholder="他班・他号機への展開ポイント">${esc(r['教訓']||r.lessons_learned||'')}</textarea>
       </div>
       <button class="bs" onclick="saveBasic('${esc(id)}')">💾 基本情報を保存</button>
       <span id="b_msg" style="font-size:12px;color:var(--muted);margin-left:10px"></span>
@@ -486,10 +486,10 @@ async function saveBasic(id){
     description: desc,
     location: g('b_loc').value.trim()||null,
     occurred_at: g('b_at').value ? new Date(g('b_at').value).toISOString() : null,
-    first_aid: g('b_aid').value.trim()||null,
-    cause: g('b_cause').value.trim()||null,
-    prevention: g('b_prev').value.trim()||null,
-    lesson: g('b_lesson').value.trim()||null,
+    immediate_action: g('b_aid').value.trim()||null,
+    root_cause: g('b_cause').value.trim()||null,
+    preventive_action: g('b_prev').value.trim()||null,
+    lessons_learned: g('b_lesson').value.trim()||null,
     updated_at: new Date().toISOString()
   };
   try{ await patchNM(id,patch); msg.style.color='#7ee787'; msg.textContent='✔ 保存'; await load(); openD(id); }
