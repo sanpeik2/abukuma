@@ -190,15 +190,15 @@
   /* ── Drawer ── */
   .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none}
   .drawer-overlay.open{display:block}
-  .drawer-panel{position:fixed;top:0;right:0;width:460px;max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden}
+  .drawer-panel{position:fixed;top:0;right:0;width:max(50vw,400px);max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden}
   .drawer-panel.open{transform:translateX(0)}
-  .drawer-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-shrink:0}
-  .drawer-head h3{font-size:14px;color:#fff;font-weight:700;flex:1}
+  .drawer-head{display:flex;align-items:center;gap:10px;padding:20px 28px;border-bottom:1px solid var(--line);flex-shrink:0}
+  .drawer-head h3{font-size:17px;color:#fff;font-weight:700;flex:1}
   .drawer-head button{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px}
-  .drawer-body{flex:1;overflow-y:auto;padding:18px}
+  .drawer-body{flex:1;overflow-y:auto;padding:24px}
   .drawer-body .fld{margin-bottom:14px}
-  .drawer-body .fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
-  .drawer-body .fld input,.drawer-body .fld select,.drawer-body .fld textarea{display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;box-sizing:border-box}
+  .drawer-body .fld label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:600}
+  .drawer-body .fld input,.drawer-body .fld select,.drawer-body .fld textarea{display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 12px;border-radius:6px;font-size:15px;box-sizing:border-box}
   .drawer-body .fld textarea{min-height:70px;resize:vertical}
   .drawer-body .fld input[readonly],.drawer-body .fld select[disabled],.drawer-body .fld textarea[readonly]{opacity:.6;cursor:default;background:#0d1117}
   .drawer-body .cb-row{display:flex;align-items:center;gap:8px;font-size:13px}
@@ -777,7 +777,7 @@
 
   <!-- 新規PTW起票ドロワー -->
   <div id="newPtwOverlay" onclick="closeNewPtw()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none"></div>
-  <div id="newPtwPanel" style="position:fixed;top:0;right:0;width:460px;max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden">
+  <div id="newPtwPanel" style="position:fixed;top:0;right:0;width:max(50vw,400px);max-width:100vw;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:801;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden">
     <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-shrink:0">
       <h3 style="font-size:14px;color:#fff;font-weight:700;flex:1">📄 新規PTW申請起票</h3>
       <button onclick="closeNewPtw()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
