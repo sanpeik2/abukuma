@@ -116,19 +116,20 @@ tbody tr{cursor:pointer}tbody tr:hover td{background:rgba(255,255,255,.025)}
   <!-- クイック報告 -->
   <div class="qbox open" id="qbox">
     <div class="qhd" onclick="document.getElementById('qbox').classList.toggle('open')">
-      <b>＋ クイック報告</b><span class="tag">60秒で登録</span>
+      <b>＋ クイック報告</b><span class="tag">60秒で登録</span><span style="font-size:11px;color:#8b949e;margin-left:8px;">⚙ 設備故障・アラーム・部品異常は <a href="./triage.html" style="color:#58a6ff;">異常判断</a> へ</span>
       <span class="chev">▾</span>
     </div>
     <div class="qbody">
       <div class="qgrid">
         <div class="fld"><label>種別 *</label>
           <select id="q_type" class="in">
-            <option value="near_miss">⚠ ヒヤリハット</option>
-            <option value="accident">🚑 事故・労災</option>
-            <option value="equipment_anomaly">🔧 設備異常</option>
-            <option value="environmental_event">🌿 環境事象</option>
-            <option value="work_deviation">📐 作業逸脱</option>
+            <option value="near_miss">⚠ ヒヤリハット（危うく事故になりそうだった）</option>
+            <option value="accident">🚑 実事故（負傷・感電・火災など）</option>
+            <option value="work_deviation">📐 手順逸脱・KY/PTW/LOTO不備</option>
+            <option value="unsafe_condition">⚡ 危険状態（足場・感電リスク・不安全行動等）</option>
+            <option value="environmental_event">🌿 環境事象（油漏れ・騒音・周辺影響等）</option>
             <option value="improvement_proposal">💡 改善提案</option>
+            <option value="equipment_anomaly">🔧 設備の安全上の異常状態（※故障・アラームは異常判断へ）</option>
           </select>
         </div>
         <div class="fld"><label>重要度 *</label>
@@ -203,7 +204,7 @@ const esc = sb.esc;
 const WO_ID = new URLSearchParams(location.search).get('work_order_id');
 let ALL = [], WTG = [], curF = 'all';
 
-const TYPE_OPT = [['near_miss','⚠ ヒヤリハット'],['accident','🚑 事故・労災'],['equipment_anomaly','🔧 設備異常'],['environmental_event','🌿 環境事象'],['work_deviation','📐 作業逸脱'],['improvement_proposal','💡 改善提案']];
+const TYPE_OPT = [['near_miss','⚠ ヒヤリハット'],['accident','🚑 実事故'],['work_deviation','📐 手順逸脱・LOTO不備'],['unsafe_condition','⚡ 危険状態'],['environmental_event','🌿 環境事象'],['improvement_proposal','💡 改善提案'],['equipment_anomaly','🔧 設備異常状態']];
 
 async function load(){
   document.getElementById('rows').innerHTML = '<tr><td colspan="9" class="empty">取得中…</td></tr>';
