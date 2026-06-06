@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -49,7 +49,7 @@
   /* ドロワー */
   #ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50}
   #ov.show{display:block}
-  #drawer{position:fixed;top:0;right:0;width:min(620px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
+  #drawer{position:fixed;top:0;right:0;width:min(820px,100%);height:100%;background:var(--panel);border-left:1px solid var(--line);padding:0;overflow:auto;transform:translateX(100%);transition:transform .22s;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
   #ov.show #drawer{transform:none}
   .dhd{position:sticky;top:0;background:var(--panel2);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:10px}
   .dhd .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
@@ -58,12 +58,12 @@
   .dno{font-family:monospace;font-size:12px;color:var(--master);margin-bottom:10px}
   .dpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
   .dpill{font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
-  .dsec{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
-  .dval{font-size:13px;color:var(--txt);white-space:pre-wrap}
+  .dsec{font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
+  .dval{font-size:15px;color:var(--txt);white-space:pre-wrap}
   .dval.empty{color:var(--muted)}
   .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0}
-  .dgrid .l{font-size:11px;color:var(--muted)}
-  .dgrid .v{font-size:14px;color:#fff;font-weight:600}
+  .dgrid .l{font-size:13px;color:var(--muted)}
+  .dgrid .v{font-size:16px;color:#fff;font-weight:600}
 
   /* 停止詳細テーブル（ドロワー内） */
   .otbl{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px}
@@ -130,7 +130,7 @@
     <tr>
       <th>作業票番号</th><th>風車</th><th>種別</th><th>概要</th>
       <th>優先度</th><th>状態</th><th>承認</th><th>安全要件</th>
-      <th>対応予定日</th><th>担当</th><th>重要事項</th><th>起票元</th><th>紐づき</th><th>起票日時</th>
+      <th>対応予定日</th><th>担当</th><th>重要事項</th><th>起票日時</th>
     </tr>
   </thead>
   <tbody id="rows">
@@ -262,8 +262,6 @@ function render(d){
       <td style="white-space:nowrap;">${sb.esc(r['対応予定日'])||'–'}</td>
       <td>${r['担当']?sb.esc(r['担当']):'<span style="color:#ff9a92;font-size:11px;">未割当</span>'}</td>
       <td>${_woImportant(r,s)}</td>
-      <td style="white-space:nowrap;font-size:11px;">${sb.esc(r['起票元ラベル']||r['起票元']||'–')}</td>
-      <td style="white-space:nowrap;font-size:11px;">${sb.esc(r['紐づき状態']||'–')}</td>
       <td style="white-space:nowrap;">${r['起票日時_jst']?String(r['起票日時_jst']).replace('T',' ').slice(5,16):'–'}</td>
     </tr>`;
   }).join('');
@@ -1197,4 +1195,3 @@ sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); checkOp
 </script>
 </body>
 </html>
-
