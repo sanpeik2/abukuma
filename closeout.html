@@ -156,7 +156,7 @@ function render(){
   const b=document.getElementById('body'); document.getElementById('cnt').textContent=ALL.length+'件'; syncNewBtn();
   if(!ALL.length){ b.innerHTML='<div class="empty">クローズ確認の記録はありません。</div>'; return; }
   const cg='<colgroup><col style="width:11%"><col style="width:5%"><col style="width:9%"><col style="width:8%"><col style="width:6%"><col style="width:10%"><col style="width:7%"><col style="width:6%"><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:15%"></colgroup>';
-  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th><th>重要事項</th><th>操作</th></tr></thead><tbody>${
+  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th><th>重要事項</th></tr></thead><tbody>${
     ALL.map(r=>{const imp=r['重要事項']||'';return `<tr>
       <td class="no"><a onclick="openEdit('${r.id}')">${esc(r['作業票番号'])}</a></td>
       <td style="white-space:nowrap"><b style="color:#fff">${esc(r['風車'])}</b></td>
@@ -166,13 +166,6 @@ function render(){
       <td class="badge">${esc(r['証跡'])}</td><td class="badge">${yn(r['PTW終了'])}</td><td class="badge">${yn(r['LOTO解除'])}</td>
       <td>${esc(r['確認者'])}</td><td style="white-space:nowrap">${fmt(r['クローズ日時'])}</td>
       <td style="${imp?'color:#ff9a92':''};font-size:11px">${esc(imp)||'–'}</td>
-      <td style="white-space:nowrap">
-        ${(r.review_status==='in_review'||r.review_status==='open')?`
-          <button onclick="chiefClose('${r.id}','closed')" style="font-size:11px;font-weight:700;color:${r.report_required?'#e3b341':'#3fb950'};background:${r.report_required?'rgba(210,153,34,.15)':'rgba(63,185,80,.12)'};border:1px solid ${r.report_required?'rgba(210,153,34,.4)':'rgba(63,185,80,.4)'};border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:4px">${r.report_required?'📋 承認':'✅ 確認済み'}</button>
-          <button onclick="chiefClose('${r.id}','returned')" style="font-size:11px;font-weight:700;color:#f85149;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:5px;padding:3px 8px;cursor:pointer">↩ 差戻し</button>
-        `:(r.review_status==='closed'?`<span style="color:${r.report_required?'#e3b341':'#3fb950'};font-size:11px;font-weight:700">${r.report_required?'📋 承認済み':'✅ クローズ済'}</span>`:'')
-        }
-      </td>
     </tr>`;}).join('')}</tbody></table>`;
 }
 async function openEdit(id){
@@ -234,16 +227,6 @@ async function requestClose(id){
     closeEdit(); load(); alert('✅ 確認依頼を送信しました');
   }catch(e){alert('失敗: '+e.message);}
 }
-async function chiefClose(id, status){
-  const label = status==='closed'?'クローズ確認済み':'差戻し';
-  if(!confirm(label+'にしますか？')) return;
-  try{
-    const body={review_status:status, updated_at:new Date().toISOString()};
-    await fetch(`${sb.URL}/rest/v1/closeout_reviews?id=eq.${encodeURIComponent(id)}`,
-      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
-       body:JSON.stringify(body)});
-    load();
-  }catch(e){alert('失敗: '+e.message);}
 }
 sb.requireLogin({onReady:load});
 </script>
