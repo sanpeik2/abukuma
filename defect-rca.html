@@ -413,27 +413,60 @@
 
 
   /* ===== 詳細ドロワー ===== */
-  #dov{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45)}
+  #dov{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55)}
   #dov.show{display:block}
-  #ddrawer{position:fixed;top:0;right:0;width:50vw;min-width:340px;max-width:720px;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:501;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow:hidden}
+  #ddrawer{position:fixed;top:0;right:0;width:52vw;min-width:380px;max-width:760px;height:100%;background:#161b22;border-left:2px solid #30363d;z-index:501;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif}
   #dov.show #ddrawer{transform:none}
-  .ddhd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);flex-shrink:0}
-  .ddhd h2{font-size:14px;font-weight:700;color:#e6edf3;margin:0}
-  .ddbody{flex:1;overflow-y:auto;padding:18px}
-  .ddin{margin-bottom:18px}
-  .ddin label{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-  .ddin input,.ddin select,.ddin textarea{width:100%;background:#0d1117;border:1px solid var(--line);border-radius:7px;color:#e6edf3;font-size:13px;padding:7px 10px}
-  .ddin textarea{min-height:80px;resize:vertical;font-family:inherit}
-  .dd-stepper{display:flex;align-items:center;gap:0;margin-bottom:20px}
-  .dd-step{flex:1;text-align:center;font-size:10px;padding:7px 4px;border-bottom:3px solid var(--line);color:var(--muted)}
-  .dd-step.active{border-color:var(--master);color:#e6edf3;font-weight:700}
-  .dd-step.done{border-color:#238636;color:#7ee787}
-  .ddbtn-p{background:rgba(88,166,255,.15);color:#58a6ff;border:1px solid rgba(88,166,255,.4);border-radius:7px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700}
-  .ddbtn-c{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-radius:7px;padding:8px 16px;cursor:pointer;font-size:13px}
-  .ddbtn-ok{background:rgba(63,185,80,.2);color:#7ee787;border:1px solid rgba(63,185,80,.5);border-radius:7px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700}
-  .ddbtn-ng{background:rgba(248,81,73,.15);color:#f85149;border:1px solid rgba(248,81,73,.4);border-radius:7px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700}
-  .ddbtn-del{background:transparent;color:#6e7681;border:1px solid #30363d;border-radius:7px;padding:6px 12px;cursor:pointer;font-size:12px}
-  .ddbtn-del:hover{color:#f85149;border-color:rgba(248,81,73,.4)}
+
+  /* ── ヘッダ ── */
+  .ddhd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #30363d;flex-shrink:0;background:#0d1117}
+  .ddhd h2{font-size:16px;font-weight:800;color:#e6edf3;margin:0;letter-spacing:.02em}
+  .ddhd button{background:none;border:none;color:#6e7681;font-size:20px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:5px}
+  .ddhd button:hover{background:#21262d;color:#e6edf3}
+
+  /* ── ボディ ── */
+  .ddbody{flex:1;overflow-y:auto;padding:20px 22px 40px}
+
+  /* ── セクション見出し ── */
+  .ddsec{font-size:13px;font-weight:800;color:#e6edf3;padding:8px 12px;border-left:4px solid;border-radius:0 6px 6px 0;background:rgba(255,255,255,.04);margin:18px 0 12px;letter-spacing:.03em}
+
+  /* ── フィールド ── */
+  .ddfl{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .ddfl label{font-size:11.5px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.05em}
+  .ddfl label span.req{color:#f85149;margin-left:2px}
+
+  /* ── グリッド（2列） ── */
+  .ddgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+
+  /* ── input/select/textarea (class="ddin" を直接付与) ── */
+  .ddin{
+    width:100%;
+    background:#0d1117;
+    border:1px solid #30363d;
+    border-radius:8px;
+    color:#e6edf3;
+    font-size:14px;
+    font-family:inherit;
+    padding:9px 12px;
+    transition:border-color .15s;
+    box-sizing:border-box;
+  }
+  .ddin:focus{outline:none;border-color:#388bfd;box-shadow:0 0 0 3px rgba(56,139,253,.2)}
+  .ddin:disabled{opacity:.5;cursor:not-allowed;background:#161b22}
+  textarea.ddin{min-height:88px;resize:vertical;line-height:1.55}
+
+  /* ── ボタン ── */
+  .ddbtn-p{background:rgba(56,139,253,.18);color:#58a6ff;border:1px solid rgba(56,139,253,.5);border-radius:8px;padding:9px 18px;cursor:pointer;font-size:13.5px;font-weight:700;letter-spacing:.02em;transition:background .15s}
+  .ddbtn-p:hover{background:rgba(56,139,253,.32)}
+  .ddbtn-ok{background:rgba(63,185,80,.2);color:#3fb950;border:1px solid rgba(63,185,80,.55);border-radius:8px;padding:9px 18px;cursor:pointer;font-size:13.5px;font-weight:700;transition:background .15s}
+  .ddbtn-ok:hover{background:rgba(63,185,80,.35)}
+  .ddbtn-ng{background:rgba(248,81,73,.16);color:#f85149;border:1px solid rgba(248,81,73,.5);border-radius:8px;padding:9px 18px;cursor:pointer;font-size:13.5px;font-weight:700;transition:background .15s}
+  .ddbtn-ng:hover{background:rgba(248,81,73,.3)}
+  .ddbtn-del{background:transparent;color:#6e7681;border:1px solid #30363d;border-radius:7px;padding:7px 14px;cursor:pointer;font-size:12.5px;transition:all .15s}
+  .ddbtn-del:hover{color:#f85149;border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.06)}
+
+  /* ── ステッパー（インラインstyleで描画中だが念のため） ── */
+  .dd-stepper{display:flex;align-items:flex-start;margin-bottom:22px;padding:14px 16px;background:#0d1117;border-radius:10px;border:1px solid #21262d}
 </style>
 
 
