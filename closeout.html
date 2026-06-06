@@ -28,6 +28,7 @@
   .fld{margin-bottom:11px}.fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
   .in{width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:7px 9px;border-radius:7px;font-size:13px;font-family:inherit}
   .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cb{display:flex;align-items:center;gap:7px;font-size:12.5px;margin:5px 0}
+  .bq{background:rgba(63,185,80,.18);color:#3fb950;border:1px solid rgba(63,185,80,.5);font-weight:700;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer}
   .bs{background:#1f6feb;color:#fff;font-weight:700;border:none;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer}.bc{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer}
   .sec{font-size:11px;color:#db61a2;font-weight:700;margin:14px 0 7px;border-left:3px solid #db61a2;padding-left:8px}
 </style>
@@ -155,7 +156,7 @@ function render(){
   const b=document.getElementById('body'); document.getElementById('cnt').textContent=ALL.length+'件'; syncNewBtn();
   if(!ALL.length){ b.innerHTML='<div class="empty">クローズ確認の記録はありません。</div>'; return; }
   const cg='<colgroup><col style="width:11%"><col style="width:5%"><col style="width:9%"><col style="width:8%"><col style="width:6%"><col style="width:10%"><col style="width:7%"><col style="width:6%"><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:15%"></colgroup>';
-  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th><th>重要事項</th></tr></thead><tbody>${
+  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th><th>重要事項</th><th>操作</th></tr></thead><tbody>${
     ALL.map(r=>{const imp=r['重要事項']||'';return `<tr>
       <td class="no"><a onclick="openEdit('${r.id}')">${esc(r['作業票番号'])}</a></td>
       <td style="white-space:nowrap"><b style="color:#fff">${esc(r['風車'])}</b></td>
@@ -165,6 +166,12 @@ function render(){
       <td class="badge">${esc(r['証跡'])}</td><td class="badge">${yn(r['PTW終了'])}</td><td class="badge">${yn(r['LOTO解除'])}</td>
       <td>${esc(r['確認者'])}</td><td style="white-space:nowrap">${fmt(r['クローズ日時'])}</td>
       <td style="${imp?'color:#ff9a92':''};font-size:11px">${esc(imp)||'–'}</td>
+      <td style="white-space:nowrap">
+        ${(r.review_status==='in_review'||r.review_status==='open')?`
+          <button onclick="chiefClose('${r.id}','closed')" style="font-size:11px;font-weight:700;color:#3fb950;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:4px">✅ 確認済み</button>
+          <button onclick="chiefClose('${r.id}','returned')" style="font-size:11px;font-weight:700;color:#f85149;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:5px;padding:3px 8px;cursor:pointer">↩ 差戻し</button>
+        `:(r.review_status==='closed'?'<span style="color:#3fb950;font-size:11px;font-weight:700">✅ クローズ済</span>':'')}
+      </td>
     </tr>`;}).join('')}</tbody></table>`;
 }
 async function openEdit(id){
@@ -192,7 +199,10 @@ async function openEdit(id){
     <div class="fld"><label>クローズ日時</label><input id="f_at" class="in" type="datetime-local" value="${dt(d.closed_at)}"></div></div>
     <div class="fld"><label>最終コメント</label><textarea id="f_cmt" class="in" rows="2">${esc(d.comment||'')}</textarea></div>
     <div id="f_msg" style="color:#ff9a92;font-size:12px;display:none"></div>`;
-  document.getElementById('pnlFt').innerHTML=`<button class="bs" onclick="save('${id}')">💾 保存</button><button class="bc" onclick="closeEdit()">閉じる</button>`;
+  const rv = d.review_status||'open';
+  const reqBtn2 = id && rv !== 'closed'
+    ? `<button class="bq" onclick="requestClose('${id}')">📨 確認依頼</button>` : '';
+  document.getElementById('pnlFt').innerHTML=`<button class="bs" onclick="save('${id}')">💾 保存</button>${reqBtn2}<button class="bc" onclick="closeEdit()">閉じる</button>`;
   document.getElementById('ov').classList.add('open');document.getElementById('pnl').classList.add('open');
 }
 function closeEdit(){document.getElementById('ov').classList.remove('open');document.getElementById('pnl').classList.remove('open');}
@@ -214,6 +224,26 @@ async function save(id){
     else { body.work_order_id=WO_ID; body.defect_finding_id=(WO_CTX&&WO_CTX.defect_finding_id)||null; await sb.write('POST','closeout_reviews',body); }
     closeEdit(); load();
   }catch(e){ msg.style.display='block';msg.textContent='保存失敗: '+(e.message||e); }
+}
+async function requestClose(id){
+  try{
+    await fetch(`${sb.URL}/rest/v1/closeout_reviews?id=eq.${encodeURIComponent(id)}`,
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+       body:JSON.stringify({review_status:'in_review',updated_at:new Date().toISOString()})});
+    closeEdit(); load(); alert('✅ 確認依頼を送信しました');
+  }catch(e){alert('失敗: '+e.message);}
+}
+async function chiefClose(id, status){
+  const label = status==='closed'?'クローズ確認済み':'差戻し';
+  if(!confirm(label+'にしますか？')) return;
+  try{
+    const body={review_status:status, updated_at:new Date().toISOString()};
+    if(status==='closed') body.closed_at=new Date().toISOString();
+    await fetch(`${sb.URL}/rest/v1/closeout_reviews?id=eq.${encodeURIComponent(id)}`,
+      {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
+       body:JSON.stringify(body)});
+    load();
+  }catch(e){alert('失敗: '+e.message);}
 }
 sb.requireLogin({onReady:load});
 </script>
