@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -10,7 +10,7 @@
     --master:#58a6ff; --insp:#3fb950; --defect:#f85149; --work:#d29922; --stop:#ff5630;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px;line-height:1.6;max-width:1400px;margin:0 auto}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;padding:28px 48px;line-height:1.6;width:100%;box-sizing:border-box}
   h1{font-size:23px;margin-bottom:4px}
   .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
   .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
@@ -18,16 +18,16 @@
   button.r{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12.5px}
   button.r:hover{border-color:var(--master)}
   .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-  .kpi{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
+  .kpi{flex:1;min-width:180px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
   .kpi .v{font-size:26px;font-weight:700;color:#fff}
   .kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px}
   .kpi.alert .v{color:var(--stop)}
-  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px}
-  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
   th{background:var(--panel2);color:#fff;font-size:11px;white-space:nowrap}
   tr:last-child td{border-bottom:none}
   td.no{color:#fff;font-weight:600;white-space:nowrap}
-  td.desc{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  td.desc{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .empty{text-align:center;color:var(--muted);padding:36px;font-size:13px}
   footer{margin-top:28px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);padding-top:14px}
   code{color:var(--master);background:#0d1117;padding:1px 5px;border-radius:4px;font-size:11px}
@@ -37,7 +37,7 @@
 
   /* 停止バッジ */
   .badge-stop{display:inline-block;background:rgba(248,81,73,.18);color:#f85149;border:1px solid rgba(248,81,73,.4);border-radius:999px;font-size:10.5px;font-weight:700;padding:1px 8px;white-space:nowrap}
-  .badge-none{color:var(--muted);font-size:12px}
+  .badge-none{color:var(--muted);font-size:13px}
 
   /* 主任確認バッジ */
   .badge-chief{display:inline-block;border-radius:999px;font-size:10.5px;font-weight:700;padding:1px 8px;white-space:nowrap}
@@ -1197,3 +1197,4 @@ sb.requireLogin({ onReady: async ()=>{ await load(); checkCreateParam(); checkOp
 </script>
 </body>
 </html>
+
