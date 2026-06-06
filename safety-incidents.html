@@ -50,8 +50,8 @@ textarea.in{resize:vertical;min-height:60px}
 
 /* テーブル */
 table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px;table-layout:fixed}
-th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-th{background:var(--panel2);font-size:11px;color:#fff;white-space:nowrap;font-weight:700}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:var(--panel2);font-size:13px;color:#fff;white-space:nowrap;font-weight:700;letter-spacing:.02em}
 tr:last-child td{border-bottom:none}
 tbody tr{cursor:pointer}tbody tr:hover td{background:rgba(255,255,255,.025)}
 .t-type{width:110px;white-space:nowrap}
@@ -183,7 +183,7 @@ tbody tr{cursor:pointer}tbody tr:hover td{background:rgba(255,255,255,.025)}
       <th class="t-desc">概要</th>
       <th class="t-asg">担当者</th>
       <th class="t-due">対応期限</th>
-      <th class="t-dt">発生日時</th>
+      <th class="t-dt">発生日時</th><th style="width:120px;white-space:nowrap;">次のアクション</th>
     </tr></thead>
     <tbody id="rows"><tr><td colspan="9" class="empty">読み込み中…</td></tr></tbody>
   </table>
@@ -237,6 +237,12 @@ function renderKpi(){
 
 function setF(f, btn){ curF=f; document.querySelectorAll('.fbar button[data-f]').forEach(b=>b.classList.remove('act')); btn.classList.add('act'); render(); }
 
+function nextActionBtn(r){
+  if(r.status==='closed') return '<span style="color:#7ee787;font-size:12px;font-weight:700">✅ 完了</span>';
+  if(r.status==='in_progress') return `<button onclick="openD('${esc(r.id)}');openClose('${esc(r.id)}')" style="font-size:11.5px;font-weight:700;color:#3fb950;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap">✅ クローズ申請</button>`;
+  return `<button onclick="setStatus('${esc(r.id)}','in_progress')" style="font-size:11.5px;font-weight:700;color:#e3b341;background:rgba(227,160,8,.12);border:1px solid rgba(227,160,8,.4);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap">🔧 対応開始</button>`;
+}
+
 function render(){
   const q = document.getElementById('q').value.trim().toLowerCase();
   let d = ALL;
@@ -260,6 +266,7 @@ function render(){
       <td class="t-asg" title="${esc(r['担当者']||'')}">${esc(r['担当者'])||'–'}</td>
       <td class="t-due" style="${over?'color:#f85149;font-weight:700':''}">${esc(r['対応期限'])||'–'}</td>
       <td class="t-dt">${esc(dt)}</td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">${nextActionBtn(r)}</td>
     </tr>`;
   }).join('');
 }
@@ -311,6 +318,23 @@ function openD(id){
       ${woId?'<span class="dpill" style="color:#9cd2ff">作業票連携</span>':'<span class="dpill" style="color:var(--muted)">独立報告</span>'}
     </div>
     ${critWarn}
+    <div style="display:flex;align-items:center;gap:0;margin:12px 0 16px;background:var(--panel2);border-radius:9px;padding:10px 14px;overflow-x:auto">
+      ${['未対応','評価・割当','対応中','クローズ済'].map((s,i)=>{
+        const vals=['open','open','in_progress','closed'];
+        const active = (r.status==='open'&&i<=1)||(r.status==='in_progress'&&i<=2)||(r.status==='closed');
+        const cur = (r.status==='open'&&i===1)||(r.status==='in_progress'&&i===2)||(r.status==='closed'&&i===3);
+        return `<div style="display:flex;align-items:center;gap:0;flex-shrink:0">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;
+              background:${cur?'#e3b341':active?'#3fb950':'#30363d'};
+              color:${cur?'#1b1300':active?'#06210f':'#6e7681'};
+              border:2px solid ${cur?'#e3b341':active?'#3fb950':'#30363d'}">${i+1}</div>
+            <div style="font-size:10px;color:${cur?'#e3b341':active?'#3fb950':'#6e7681'};white-space:nowrap;font-weight:${cur?700:400}">${s}</div>
+          </div>
+          ${i<3?`<div style="flex:1 0 20px;height:2px;background:${active&&i<(r.status==='closed'?3:r.status==='in_progress'?2:1)?'#3fb950':'#30363d'};margin:0 4px;margin-bottom:14px"></div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
     <div class="dgrid" style="margin-top:8px">
       <div><div class="dsec" style="margin-top:0">発生日時</div><div class="dval">${esc(String(r['発生日時_jst']||'').replace('T',' ').slice(0,16))||'–'}</div></div>
       <div><div class="dsec" style="margin-top:0">発生場所</div><div class="dval">${esc(r['発生場所'])||'–'}</div></div>
