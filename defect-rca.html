@@ -1541,15 +1541,14 @@ const createBtn = !isLocked
 
 
 
-          return main + (opened ? detailRow(r, cols) : "");
+          return main;
 
 
 
 
 
         }).join('') + '</tbody></table>';
-      // 展開中の行の RCA セクションを遅延ロード
-      Object.keys(state.open).forEach(function(did){ if(state.open[did]) refreshRcaSection(did); });
+      // (ドロワー移行済み — 行内展開ロード廃止)
 
 
 
@@ -1579,13 +1578,7 @@ const createBtn = !isLocked
 
 
 
-          state.open[id] = !state.open[id];
-
-
-
-
-
-          render();
+          openDrawer(id);
 
 
 
@@ -2158,6 +2151,315 @@ const createBtn = !isLocked
         loadAll();
       }catch(e){ alert('差戻し失敗: '+e.message); }
     }
+
+    /* ================================================================
+       詳細ドロワー — openDrawer / closeDrawer / save / submit / approve
+    ================================================================ */
+    let _ddRow = null; // キャッシュ済み v_defect_rca_list row
+    let _ddRca = null; // キャッシュ済み rca_reports row
+
+    function closeDrawer(){
+      document.getElementById('dov').classList.remove('show');
+      _ddRow = null; _ddRca = null;
+    }
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer(); });
+
+    async function openDrawer(id){
+      // state.rows から表示用データ取得
+      const r = state.rows.find(x => String(x['故障id']) === String(id));
+      if(!r) return;
+      _ddRow = r;
+
+      document.getElementById('ddTitle').textContent = (r['号機']?r['号機']+' — ':'') + (r['異常タイトル']||'RCA詳細');
+      document.getElementById('ddbody').innerHTML = '<div style="color:var(--muted);padding:30px;text-align:center">読み込み中…</div>';
+      document.getElementById('dov').classList.add('show');
+
+      try{
+        // defect_findings を直接取得（編集用）
+        const [dfs, rcas] = await Promise.all([
+          sb.get(`defect_findings?id=eq.${encodeURIComponent(id)}&select=*`),
+          sb.get(`rca_reports?defect_finding_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=1`)
+        ]);
+        const df = (dfs && dfs[0]) || {};
+        const rca = (rcas && rcas[0]) || {};
+        _ddRca = rca;
+        renderDrawerBody(id, df, rca);
+      }catch(e){
+        document.getElementById('ddbody').innerHTML = `<div style="color:#ff9a92;padding:20px">取得エラー: ${esc(e.message)}</div>`;
+      }
+    }
+
+    function renderDrawerBody(id, df, rca){
+      const appSt = df.approval_status || 'draft';
+      const locked = appSt === 'approved' || appSt === 'pending';
+      const canDel = appSt === 'draft' || appSt === 'returned';
+
+      // ステッパー
+      const steps = ['draft','pending','approved'];
+      const stepLabel = {'draft':'下書き','pending':'申請中','approved':'承認済'};
+      const stepColor = {'draft':'#8b949e','pending':'#e3b341','approved':'#3fb950'};
+      const stepIdx = steps.indexOf(appSt);
+      const stepper = steps.map((s,i) => {
+        const cur = appSt === s || (appSt==='returned' && s==='draft');
+        const done = i < stepIdx;
+        return `<div style="display:flex;align-items:center;gap:0;flex-shrink:0">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;
+              background:${cur?stepColor[s]:done?'#3fb950':'#30363d'};
+              color:${cur||done?'#0d1117':'#6e7681'};
+              border:2px solid ${cur?stepColor[s]:done?'#3fb950':'#30363d'}">${i+1}</div>
+            <div style="font-size:10px;color:${cur?stepColor[s]:done?'#3fb950':'#6e7681'};white-space:nowrap;font-weight:${cur?700:400}">
+              ${appSt==='returned'&&s==='draft'?'↩差戻し':stepLabel[s]}</div>
+          </div>
+          ${i<steps.length-1?`<div style="flex:1 0 24px;height:2px;background:${done?'#3fb950':'#30363d'};margin:0 6px;margin-bottom:14px"></div>`:''}
+        </div>`;
+      }).join('');
+
+      const lockedNote = locked ? `<div style="font-size:11.5px;color:#e3b341;background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.3);border-radius:7px;padding:8px 12px;margin-bottom:14px;">⚠ ${appSt==='pending'?'申請中 — 承認または差戻しまで編集できません':'承認済み — 差戻し後に編集可能です'}</div>` : '';
+
+      const sv = v => v==null||v===''?'':esc(v);
+
+      document.getElementById('ddbody').innerHTML = `
+        <div class="dd-stepper">${stepper}</div>
+        ${lockedNote}
+
+        <!-- 異常情報 -->
+        <div class="ddsec" style="border-left-color:#58a6ff;">📋 異常情報（編集可）</div>
+        <div style="background:rgba(88,166,255,.04);border:1px solid rgba(88,166,255,.2);border-radius:10px;padding:14px 16px;margin-bottom:4px">
+          <div style="margin-bottom:10px">
+            <div class="ddfl"><label>異常タイトル *</label>
+              <input id="dd_title" class="ddin" value="${sv(df.finding_title)}" ${locked?'disabled':''} placeholder="例: WTG-03 油圧系統圧力低下">
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div class="ddfl"><label>異常詳細</label>
+              <textarea id="dd_detail" class="ddin" rows="3" ${locked?'disabled':''}>${sv(df.finding_detail)}</textarea>
+            </div>
+          </div>
+          <div class="ddgrid" style="margin-bottom:10px">
+            <div class="ddfl"><label>安全影響</label>
+              <select id="dd_safety" class="ddin" ${locked?'disabled':''}>
+                <option value="">—</option>
+                <option value="low" ${df.safety_impact==='low'?'selected':''}>低</option>
+                <option value="medium" ${df.safety_impact==='medium'?'selected':''}>中</option>
+                <option value="high" ${df.safety_impact==='high'?'selected':''}>高</option>
+              </select>
+            </div>
+            <div class="ddfl"><label>一次判定</label>
+              <select id="dd_judge" class="ddin" ${locked?'disabled':''}>
+                <option value="">—</option>
+                <option value="minor_repair" ${df.initial_judgement==='minor_repair'?'selected':''}>軽微補修</option>
+                <option value="part_replacement" ${df.initial_judgement==='part_replacement'?'selected':''}>部品交換</option>
+                <option value="rca" ${df.initial_judgement==='rca'?'selected':''}>RCA</option>
+                <option value="record_only" ${df.initial_judgement==='record_only'?'selected':''}>記録のみ</option>
+                <option value="tbd" ${df.initial_judgement==='tbd'?'selected':''}>保留</option>
+              </select>
+            </div>
+            <div class="ddfl"><label>原因明確度</label>
+              <select id="dd_clarity" class="ddin" ${locked?'disabled':''}>
+                <option value="">—</option>
+                <option value="clear" ${df.cause_clarity==='clear'?'selected':''}>明確</option>
+                <option value="assumed" ${df.cause_clarity==='assumed'?'selected':''}>推定</option>
+                <option value="unknown" ${df.cause_clarity==='unknown'?'selected':''}>不明</option>
+              </select>
+            </div>
+            <div class="ddfl"><label>再発性</label>
+              <select id="dd_recur" class="ddin" ${locked?'disabled':''}>
+                <option value="">—</option>
+                <option value="first" ${df.recurrence_type==='first'?'selected':''}>初発</option>
+                <option value="recurrent" ${df.recurrence_type==='recurrent'?'selected':''}>再発</option>
+                <option value="frequent" ${df.recurrence_type==='frequent'?'selected':''}>頻発</option>
+              </select>
+            </div>
+            <div class="ddfl"><label>担当者</label>
+              <select id="dd_asg" class="ddin">
+                <option value="">—</option>
+              </select>
+            </div>
+            <div class="ddfl"><label>対応期限</label>
+              <input id="dd_due" type="date" class="ddin" value="${sv(df.due_date)}" ${locked?'disabled':''}>
+            </div>
+          </div>
+          ${!locked?`<button class="ddbtn-p" onclick="saveDrawerFinding('${esc(id)}')">💾 異常情報を保存</button>`:''}
+          <span id="dd_findmsg" style="font-size:12px;color:var(--muted);margin-left:10px"></span>
+        </div>
+
+        <!-- RCA内容 -->
+        <div class="ddsec" style="border-left-color:#f0c674;">🔬 RCA内容（下書き保存）</div>
+        <div style="background:rgba(210,153,34,.04);border:1px solid rgba(210,153,34,.2);border-radius:10px;padding:14px 16px;margin-bottom:4px">
+          <div style="margin-bottom:10px">
+            <div class="ddfl"><label>RCA手法</label>
+              <select id="dd_method" class="ddin">
+                <option value="">— 未設定</option>
+                <option value="5why" ${rca.rca_method==='5why'?'selected':''}>なぜなぜ5回</option>
+                <option value="fta" ${rca.rca_method==='fta'?'selected':''}>FTA（故障の木）</option>
+                <option value="fishbone" ${rca.rca_method==='fishbone'?'selected':''}>特性要因図</option>
+                <option value="other" ${rca.rca_method==='other'?'selected':''}>その他</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div class="ddfl"><label>根本原因</label>
+              <textarea id="dd_cause" class="ddin" rows="3" placeholder="直接原因・根本原因を記述">${sv(rca.root_cause)}</textarea>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div class="ddfl"><label>暫定処置</label>
+              <textarea id="dd_tmpfix" class="ddin" rows="2" placeholder="応急措置・一時対処">${sv(rca.temporary_fix)}</textarea>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div class="ddfl"><label>恒久処置</label>
+              <textarea id="dd_permfix" class="ddin" rows="2" placeholder="恒久対策・再発防止策">${sv(rca.permanent_fix)}</textarea>
+            </div>
+          </div>
+          <button class="ddbtn-p" style="background:rgba(210,153,34,.8)" onclick="saveDrawerRca('${esc(id)}','${esc(rca.id||'')}')">💾 RCA内容を保存</button>
+          <span id="dd_rcamsg" style="font-size:12px;color:var(--muted);margin-left:10px"></span>
+        </div>
+
+        <!-- 申請・承認 -->
+        <div class="ddsec" style="border-left-color:#3fb950;">✅ 申請 / 主任承認</div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+          ${appSt==='draft'||appSt==='returned'?`<button class="ddbtn-ok" onclick="submitApproval('${esc(id)}')">📨 ${appSt==='returned'?'再申請':'主任へ申請'}</button>`:''}
+          ${appSt==='pending'?`
+            <span style="font-size:13px;color:#e3b341;font-weight:700">⏳ 申請中 — 主任の操作を待っています</span>
+          `:''}
+          ${appSt==='approved'?`<span style="font-size:13px;color:#3fb950;font-weight:700">✅ 承認済み</span>`:''}
+        </div>
+        <div style="background:rgba(219,97,162,.06);border:1px solid rgba(219,97,162,.3);border-radius:10px;padding:12px 16px;margin-bottom:4px">
+          <div style="font-size:11px;color:#db61a2;font-weight:700;margin-bottom:10px">⚖ 電気主任技術者 操作（ロール制御なし・MVP）</div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap">
+            ${appSt==='pending'?`
+              <button class="ddbtn-ok" onclick="approveDefect('${esc(id)}')">✅ 承認</button>
+              <button class="ddbtn-ng" onclick="returnDefect('${esc(id)}')">↩ 差戻し</button>
+            `:appSt==='approved'?`
+              <button class="ddbtn-ng" onclick="returnDefect('${esc(id)}')">↩ 差戻し（再調査）</button>
+            `:`<span style="font-size:12px;color:var(--muted)">申請後に操作できます</span>`}
+          </div>
+        </div>
+
+        <!-- 削除 -->
+        <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--line)">
+          ${canDel?`<button class="ddbtn-del" onclick="deleteDefect('${esc(id)}')">🗑 この異常判断を削除</button>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">draft / 差戻し状態のみ削除可</span>`:
+          `<span style="font-size:11.5px;color:var(--muted)">🔒 申請中・承認済みは削除できません</span>`}
+        </div>
+      `;
+      // 担当者セレクト
+      fillDrawerUsers('dd_asg', df.assigned_to);
+    }
+
+    async function fillDrawerUsers(selId, cur){
+      try{
+        const us = await sb.get('om_users?select=id,name&order=name');
+        const sel = document.getElementById(selId);
+        if(sel) sel.innerHTML = '<option value="">—</option>' +
+          (us||[]).map(u=>`<option value="${esc(u.id)}" ${cur===u.id?'selected':''}>${esc(u.name)}</option>`).join('');
+      }catch(e){}
+    }
+
+    async function saveDrawerFinding(id){
+      const g = i => document.getElementById(i);
+      const msg = g('dd_findmsg');
+      const title = g('dd_title')?.value?.trim();
+      if(!title){ if(msg){msg.style.color='#f85149';msg.textContent='タイトルは必須です';} return; }
+      if(msg){msg.style.color='#8b949e';msg.textContent='保存中…';}
+      const patch = {
+        finding_title: title,
+        finding_detail: g('dd_detail')?.value?.trim()||null,
+        safety_impact: g('dd_safety')?.value||null,
+        initial_judgement: g('dd_judge')?.value||null,
+        cause_clarity: g('dd_clarity')?.value||null,
+        recurrence_type: g('dd_recur')?.value||null,
+        assigned_to: g('dd_asg')?.value||null,
+        due_date: g('dd_due')?.value||null,
+        updated_at: new Date().toISOString()
+      };
+      try{
+        const res = await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
+        if(!res.ok) throw new Error('HTTP '+res.status+': '+(await res.text()));
+        if(msg){msg.style.color='#7ee787';msg.textContent='✔ 保存しました';}
+        await loadAll(); openDrawer(id);
+      }catch(e){ if(msg){msg.style.color='#f85149';msg.textContent='失敗: '+e.message;} }
+    }
+
+    async function saveDrawerRca(defectId, rcaId){
+      const g = i => document.getElementById(i);
+      const msg = g('dd_rcamsg');
+      if(msg){msg.style.color='#8b949e';msg.textContent='保存中…';}
+      const payload = {
+        defect_finding_id: defectId,
+        rca_method: g('dd_method')?.value||null,
+        root_cause: g('dd_cause')?.value?.trim()||null,
+        temporary_fix: g('dd_tmpfix')?.value?.trim()||null,
+        permanent_fix: g('dd_permfix')?.value?.trim()||null,
+        updated_at: new Date().toISOString()
+      };
+      try{
+        if(rcaId){
+          const res = await fetch(`${sb.URL}/rest/v1/rca_reports?id=eq.${encodeURIComponent(rcaId)}`,
+            {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(payload)});
+          if(!res.ok) throw new Error('HTTP '+res.status+': '+(await res.text()));
+        }else{
+          payload.created_at = new Date().toISOString();
+          await sb.write('POST','rca_reports',payload);
+        }
+        if(msg){msg.style.color='#7ee787';msg.textContent='✔ 保存しました';}
+        await loadAll(); openDrawer(defectId);
+      }catch(e){ if(msg){msg.style.color='#f85149';msg.textContent='失敗: '+e.message;} }
+    }
+
+    async function submitApproval(id){
+      if(!confirm('この異常判断を主任技術者へ申請しますか？')) return;
+      try{
+        const res = await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'pending',updated_at:new Date().toISOString()})});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        await loadAll(); openDrawer(id);
+      }catch(e){ alert('申請失敗: '+e.message); }
+    }
+
+    async function approveDefect(id){
+      if(!confirm('この異常判断を承認しますか？')) return;
+      try{
+        const res = await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'approved',updated_at:new Date().toISOString()})});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        await loadAll(); openDrawer(id);
+      }catch(e){ alert('承認失敗: '+e.message); }
+    }
+
+    async function returnDefect(id){
+      const reason = prompt('差戻し理由（記録として保存されます）:','');
+      if(reason === null) return;
+      try{
+        const res = await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify({approval_status:'returned',updated_at:new Date().toISOString()})});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        await loadAll(); openDrawer(id);
+      }catch(e){ alert('差戻し失敗: '+e.message); }
+    }
+
+    async function deleteDefect(id){
+      const r = state.rows.find(x => String(x['故障id'])===String(id));
+      const appSt = (r&&r['approval_status'])||'draft';
+      if(appSt==='pending'||appSt==='approved'){
+        alert('申請中・承認済みの異常判断は削除できません。差戻し後に削除してください。'); return;
+      }
+      if(!confirm('この異常判断と紐づくRCAデータをすべて削除しますか？\n（取り消しできません）')) return;
+      try{
+        // rca_reports を先に削除（FK制約がある場合）
+        await fetch(`${sb.URL}/rest/v1/rca_reports?defect_finding_id=eq.${encodeURIComponent(id)}`,
+          {method:'DELETE',headers:sb.headers({'Prefer':'return=minimal'})});
+        const res = await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
+          {method:'DELETE',headers:sb.headers({'Prefer':'return=minimal'})});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        closeDrawer();
+        await loadAll();
+      }catch(e){ alert('削除失敗: '+e.message); }
+    }
+
     sb.requireLogin({ onReady: loadAll });
 
 
@@ -2170,6 +2472,18 @@ const createBtn = !isLocked
 
 
 
+
+
+  <!-- 詳細ドロワー -->
+  <div id="dov" onclick="if(event.target.id==='dov')closeDrawer()">
+    <div id="ddrawer">
+      <div class="ddhd">
+        <h2 id="ddTitle">RCA 詳細</h2>
+        <button class="x" onclick="closeDrawer()">×</button>
+      </div>
+      <div class="ddbody" id="ddbody"></div>
+    </div>
+  </div>
 
   <!-- 新規異常判断起票ドロワー -->
   <div class="drawer-overlay" id="newRcaOverlay" onclick="closeNewRca()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none"></div>
