@@ -168,9 +168,10 @@ function render(){
       <td style="${imp?'color:#ff9a92':''};font-size:11px">${esc(imp)||'–'}</td>
       <td style="white-space:nowrap">
         ${(r.review_status==='in_review'||r.review_status==='open')?`
-          <button onclick="chiefClose('${r.id}','closed')" style="font-size:11px;font-weight:700;color:#3fb950;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:4px">✅ 確認済み</button>
+          <button onclick="chiefClose('${r.id}','closed')" style="font-size:11px;font-weight:700;color:${r.report_required?'#e3b341':'#3fb950'};background:${r.report_required?'rgba(210,153,34,.15)':'rgba(63,185,80,.12)'};border:1px solid ${r.report_required?'rgba(210,153,34,.4)':'rgba(63,185,80,.4)'};border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:4px">${r.report_required?'📋 承認':'✅ 確認済み'}</button>
           <button onclick="chiefClose('${r.id}','returned')" style="font-size:11px;font-weight:700;color:#f85149;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:5px;padding:3px 8px;cursor:pointer">↩ 差戻し</button>
-        `:(r.review_status==='closed'?'<span style="color:#3fb950;font-size:11px;font-weight:700">✅ クローズ済</span>':'')}
+        `:(r.review_status==='closed'?`<span style="color:${r.report_required?'#e3b341':'#3fb950'};font-size:11px;font-weight:700">${r.report_required?'📋 承認済み':'✅ クローズ済'}</span>`:'')
+        }
       </td>
     </tr>`;}).join('')}</tbody></table>`;
 }
@@ -238,7 +239,6 @@ async function chiefClose(id, status){
   if(!confirm(label+'にしますか？')) return;
   try{
     const body={review_status:status, updated_at:new Date().toISOString()};
-    if(status==='closed') body.closed_at=new Date().toISOString();
     await fetch(`${sb.URL}/rest/v1/closeout_reviews?id=eq.${encodeURIComponent(id)}`,
       {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
        body:JSON.stringify(body)});

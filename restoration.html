@@ -180,7 +180,6 @@ async function chiefConfirm(id, status){
   if(!confirm(label+'にしますか？')) return;
   try{
     const body={chief_review_status:status, updated_at:new Date().toISOString()};
-    if(status==='confirmed') body.checked_at=new Date().toISOString();
     await fetch(`${sb.URL}/rest/v1/restoration_checks?id=eq.${encodeURIComponent(id)}`,
       {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),
        body:JSON.stringify(body)});
