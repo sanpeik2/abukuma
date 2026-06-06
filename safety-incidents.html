@@ -372,18 +372,33 @@ function openD(id){
       <span id="b_msg" style="font-size:12px;color:var(--muted);margin-left:10px"></span>
     </div>
 
-    <div class="dsec">一次評価 ・ 担当割当</div>
-    <div class="dgrid">
-      <div class="fld"><label style="font-size:11px;color:var(--muted)">重要度</label>
-        <select id="e_sev" class="in">${['low|⚪ 低','medium|🟡 中','high|🟠 高','critical|🔴 重大'].map(o=>{const[v,t]=o.split('|');return `<option value="${v}" ${r.severity===v?'selected':''}>${t}</option>`}).join('')}</select></div>
-      <div class="fld"><label style="font-size:11px;color:var(--muted)">担当者</label>
-        <select id="e_asg" class="in"><option value="">—</option>${WTG.length?'':''}<!--users filled below--></select></div>
-      <div class="fld"><label style="font-size:11px;color:var(--muted)">対応期限</label>
-        <input id="e_due" type="date" class="in" value="${esc(r['対応期限']||'')}"></div>
-      <div class="fld"><label style="font-size:11px;color:var(--muted)">対象風車</label>
-        <select id="e_wtg" class="in"><option value="">—</option>${WTG.map(t=>`<option value="${esc(t.id)}" ${r.turbine_id===t.id?'selected':''}>${esc(t.turbine_no)}</option>`).join('')}</select></div>
+    <div class="dsec" style="margin-top:16px;border-left-color:#22c55e;">🛡 安全管理（安全管理上の重大さ）</div>
+    <div style="background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:14px 16px;margin-bottom:4px">
+      <div class="dgrid">
+        <div class="fld"><label style="font-size:11px;color:var(--muted)">安全管理上の重大さ (safety_severity)</label>
+          <select id="e_ssev" class="in">
+            <option value="">— 未評価</option>
+            <option value="low">⚪ 低（記録のみ）</option>
+            <option value="medium">🟡 中（現場対応）</option>
+            <option value="high">🟠 高（所長報告）</option>
+            <option value="critical">🔴 重大（即時報告・調査必須）</option>
+          </select>
+        </div>
+        <div class="fld"><label style="font-size:11px;color:var(--muted)">現場重要度 (severity)</label>
+          <select id="e_sev" class="in">${['low|⚪ 低','medium|🟡 中','high|🟠 高','critical|🔴 重大'].map(o=>{const[v,t]=o.split('|');return `<option value="${v}" ${r.severity===v?'selected':''}>${t}</option>`}).join('')}</select>
+        </div>
+        <div class="fld"><label style="font-size:11px;color:var(--muted)">担当者</label>
+          <select id="e_asg" class="in"><option value="">—</option><!--users filled below--></select>
+        </div>
+        <div class="fld"><label style="font-size:11px;color:var(--muted)">対応期限</label>
+          <input id="e_due" type="date" class="in" value="${esc(r['対応期限']||'')}">
+        </div>
+        <div class="fld"><label style="font-size:11px;color:var(--muted)">対象風車</label>
+          <select id="e_wtg" class="in"><option value="">—</option>${WTG.map(t=>`<option value="${esc(t.id)}" ${r.turbine_id===t.id?'selected':''}>${esc(t.turbine_no)}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div style="margin-top:10px"><button class="bs" onclick="saveEval('${esc(id)}')">💾 安全管理情報を保存</button> <span id="e_msg" style="font-size:12px;color:var(--muted)"></span></div>
     </div>
-    <div style="margin-top:10px"><button class="bs" onclick="saveEval('${esc(id)}')">💾 評価を保存</button> <span id="e_msg" style="font-size:12px;color:var(--muted)"></span></div>
 
     <div class="dsec">状態</div>
     <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
@@ -398,24 +413,26 @@ function openD(id){
     </div>
 
 
-    <div class="dsec" style="margin-top:22px;border-left-color:#f85149;">⚖ 保安規定 — 報告判断（電気主任技術者）</div>
+    <div class="dsec" style="margin-top:22px;border-left-color:#f85149;">⚖ 保安規定・法令判断（電気主任技術者）</div>
     <div style="background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.3);border-radius:10px;padding:14px 16px;margin-bottom:4px">
+      <p style="font-size:11px;color:#8b949e;margin-bottom:12px;">安全管理上の重大さとは独立した軸：「法令上の報告義務があるか」を判断します。</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="fld">
-          <label style="font-size:11px;color:var(--muted)">報告候補フラグ</label>
-          <select id="e_regflag" class="in">
-            <option value="false">— 対象外</option>
-            <option value="true">🚨 報告候補に追加</option>
+          <label style="font-size:11px;color:#f87171;font-weight:700">法令報告対象か (legal_report_required)</label>
+          <select id="e_legal_req" class="in">
+            <option value="false">— 対象外（法令報告不要）</option>
+            <option value="true">🚨 法令報告対象（報告候補に追加）</option>
           </select>
         </div>
         <div class="fld">
-          <label style="font-size:11px;color:var(--muted)">報告区分</label>
-          <select id="e_regcat" class="in">
+          <label style="font-size:11px;color:#f87171;font-weight:700">法令報告区分 (legal_report_category)</label>
+          <select id="e_legalcat" class="in">
             <option value="">— 未設定</option>
-            <option value="設備事故">設備事故</option>
+            <option value="設備事故">設備事故（電気事業法）</option>
             <option value="感電事故">感電事故</option>
             <option value="供給支障">供給支障</option>
-            <option value="環境事象">環境事象</option>
+            <option value="環境事象">環境事象（環境法令）</option>
+            <option value="労働災害">労働災害（労災）</option>
             <option value="その他">その他</option>
           </select>
         </div>
@@ -441,7 +458,7 @@ function openD(id){
           <textarea id="e_legalnote" class="in" rows="2" placeholder="例: 電気事業法施行規則第106条 — 設備事故に該当"></textarea>
         </div>
       </div>
-      <div style="margin-top:10px"><button class="bs" style="background:rgba(248,81,73,.8)" onclick="saveReg('${esc(id)}')">⚖ 保安規定判断を保存</button> <span id="reg_msg" style="font-size:12px;color:var(--muted)"></span></div>
+      <div style="margin-top:10px"><button class="bs" style="background:rgba(248,81,73,.8)" onclick="saveReg('${esc(id)}')">⚖ 法令判断を保存</button> <span id="reg_msg" style="font-size:12px;color:var(--muted)"></span></div>
     </div>
 
     <div class="dsec">関連（既存テーブルへリンク）</div>
@@ -455,14 +472,16 @@ function openD(id){
   // 担当者セレクトを埋める
   fillUsers('e_asg', r.assigned_to);
   // 保安規定フィールド初期値
-  const rf = document.getElementById('e_regflag');
-  const rc = document.getElementById('e_regcat');
+  const rf = document.getElementById('e_legal_req');
+  const rc = document.getElementById('e_legalcat');
   const ls = document.getElementById('e_legalst');
   const lb = document.getElementById('e_legalby');
   const ln = document.getElementById('e_legalnote');
   const rd = document.getElementById('e_regdeadline');
-  if(rf) rf.value = r.reg_flag ? 'true' : 'false';
-  if(rc) rc.value = r.reg_category || '';
+  const ssev = document.getElementById('e_ssev');
+  if(ssev) ssev.value = r.safety_severity || '';
+  if(rf) rf.value = r.legal_report_required ? 'true' : (r.reg_flag ? 'true' : 'false');
+  if(rc) rc.value = r.legal_report_category || r.reg_category || '';
   if(ls) ls.value = r.legal_review_status || 'not_required';
   if(lb) lb.value = r.legal_reviewed_by_name || '';
   if(ln) ln.textContent = r.legal_review_note || '';
@@ -499,7 +518,7 @@ async function saveBasic(id){
 
 async function saveEval(id){
   const g=i=>document.getElementById(i), msg=g('e_msg');
-  const patch={ severity:g('e_sev').value, assigned_to:g('e_asg').value||null, due_date:g('e_due').value||null, turbine_id:g('e_wtg').value||null, updated_at:new Date().toISOString() };
+  const patch={ severity:g('e_sev').value, safety_severity:g('e_ssev').value||null, assigned_to:g('e_asg').value||null, due_date:g('e_due').value||null, turbine_id:g('e_wtg').value||null, updated_at:new Date().toISOString() };
   msg.style.color='#8b949e'; msg.textContent='保存中…';
   try{ await patchNM(id,patch); msg.style.color='#7ee787'; msg.textContent='✔ 保存'; await load(); openD(id); }
   catch(e){ msg.style.color='#f85149'; msg.textContent='失敗: '+e.message; }
@@ -525,9 +544,12 @@ async function doClose(id){
 
 async function saveReg(id){
   const g=i=>document.getElementById(i), msg=g('reg_msg');
+  const legalReq = g('e_legal_req').value==='true';
   const patch={
-    reg_flag: g('e_regflag').value==='true',
-    reg_category: g('e_regcat').value||null,
+    legal_report_required: legalReq,
+    legal_report_category: g('e_legalcat').value||null,
+    reg_flag: legalReq, // 後方互換
+    reg_category: g('e_legalcat').value||null,
     legal_review_status: g('e_legalst').value,
     legal_reviewed_by_name: g('e_legalby').value.trim()||null,
     legal_review_note: g('e_legalnote').value.trim()||null,
