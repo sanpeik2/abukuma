@@ -118,7 +118,12 @@ function render(){
       <td style="white-space:nowrap">${fmt(r['完了日時'])}</td>
       <td class="desc" title="${esc(r['実施内容'])}">${esc((r['実施内容']||'').split('\n')[0])||'–'}</td>
       <td class="desc" title="${esc(inc)}" style="${inc?'color:#ff9a92':''}">${esc(inc.split('\n')[0])||'–'}</td>
-      <td class="desc" title="${esc(r['次アクション'])}">${esc(r['次アクション'])||'–'}</td>
+      <td style="white-space:nowrap">${(()=>{
+        const ns=r['next_step'];const wid=r['work_order_id'];
+        if(!ns||!wid) return esc(r['次アクション'])||'–';
+        if(ns==='restoration') return `<a href="restoration.html?work_order_id=${wid}" style="display:inline-block;padding:4px 10px;background:#1a3a2a;border:1px solid #2ea043;border-radius:6px;color:#3fb950;font-size:12px;text-decoration:none;font-weight:700">🔧 復旧確認</a>`;
+        return `<a href="closeout.html?work_order_id=${wid}" style="display:inline-block;padding:4px 10px;background:#1a2a3a;border:1px solid #388bfd;border-radius:6px;color:#79c0ff;font-size:12px;text-decoration:none;font-weight:700">✅ クローズ</a>`;
+      })()}</td>
     </tr>`;}).join('')
   }</tbody></table>`;
 }
