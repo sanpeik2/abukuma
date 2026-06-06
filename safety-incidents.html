@@ -370,6 +370,53 @@ function openD(id){
       <div style="margin-top:10px"><button class="bok" onclick="doClose('${esc(id)}')">クローズを確定</button> <button class="bc" onclick="document.getElementById('closeForm').style.display='none'">キャンセル</button> <span id="c_msg" style="font-size:12px;color:var(--muted)"></span></div>
     </div>
 
+
+    <div class="dsec" style="margin-top:22px;border-left-color:#f85149;">⚖ 保安規定 — 報告判断（電気主任技術者）</div>
+    <div style="background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.3);border-radius:10px;padding:14px 16px;margin-bottom:4px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fld">
+          <label style="font-size:11px;color:var(--muted)">報告候補フラグ</label>
+          <select id="e_regflag" class="in">
+            <option value="false">— 対象外</option>
+            <option value="true">🚨 報告候補に追加</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label style="font-size:11px;color:var(--muted)">報告区分</label>
+          <select id="e_regcat" class="in">
+            <option value="">— 未設定</option>
+            <option value="設備事故">設備事故</option>
+            <option value="感電事故">感電事故</option>
+            <option value="供給支障">供給支障</option>
+            <option value="環境事象">環境事象</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label style="font-size:11px;color:var(--muted)">審査ステータス</label>
+          <select id="e_legalst" class="in">
+            <option value="not_required">確認不要</option>
+            <option value="pending">主任確認待ち</option>
+            <option value="confirmed">報告要（確定）</option>
+            <option value="rejected">報告不要（確定）</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label style="font-size:11px;color:var(--muted)">報告期限</label>
+          <input id="e_regdeadline" type="date" class="in">
+        </div>
+        <div class="fld" style="grid-column:1/-1">
+          <label style="font-size:11px;color:var(--muted)">判断者（電気主任技術者）</label>
+          <input id="e_legalby" class="in" placeholder="氏名">
+        </div>
+        <div class="fld" style="grid-column:1/-1">
+          <label style="font-size:11px;color:var(--muted)">判断根拠・条文メモ</label>
+          <textarea id="e_legalnote" class="in" rows="2" placeholder="例: 電気事業法施行規則第106条 — 設備事故に該当"></textarea>
+        </div>
+      </div>
+      <div style="margin-top:10px"><button class="bs" style="background:rgba(248,81,73,.8)" onclick="saveReg('${esc(id)}')">⚖ 保安規定判断を保存</button> <span id="reg_msg" style="font-size:12px;color:var(--muted)"></span></div>
+    </div>
+
     <div class="dsec">関連（既存テーブルへリンク）</div>
     <div class="linkrow">
       ${woId?`<a href="./work-orders.html?open=${esc(woId)}" style="background:rgba(210,153,34,.1);color:#d29922;border:1px solid rgba(210,153,34,.4)">📝 作業票（${esc(r['作業票番号']||'')}）</a>`:'<span style="font-size:12px;color:var(--muted)">作業票に紐づいていません</span>'}
@@ -380,6 +427,19 @@ function openD(id){
   `;
   // 担当者セレクトを埋める
   fillUsers('e_asg', r.assigned_to);
+  // 保安規定フィールド初期値
+  const rf = document.getElementById('e_regflag');
+  const rc = document.getElementById('e_regcat');
+  const ls = document.getElementById('e_legalst');
+  const lb = document.getElementById('e_legalby');
+  const ln = document.getElementById('e_legalnote');
+  const rd = document.getElementById('e_regdeadline');
+  if(rf) rf.value = r.reg_flag ? 'true' : 'false';
+  if(rc) rc.value = r.reg_category || '';
+  if(ls) ls.value = r.legal_review_status || 'not_required';
+  if(lb) lb.value = r.legal_reviewed_by_name || '';
+  if(ln) ln.textContent = r.legal_review_note || '';
+  if(rd) rd.value = r.report_deadline || '';
   document.getElementById('ov').classList.add('show');
 }
 
@@ -415,6 +475,23 @@ async function doClose(id){
     await patchNM(id,{ status:'closed', close_reason:reason, closed_by_name:by, closed_at:new Date().toISOString(), updated_at:new Date().toISOString() });
     await load(); openD(id);
   }catch(e){ msg.style.color='#f85149'; msg.textContent='失敗: '+e.message; }
+}
+
+async function saveReg(id){
+  const g=i=>document.getElementById(i), msg=g('reg_msg');
+  const patch={
+    reg_flag: g('e_regflag').value==='true',
+    reg_category: g('e_regcat').value||null,
+    legal_review_status: g('e_legalst').value,
+    legal_reviewed_by_name: g('e_legalby').value.trim()||null,
+    legal_review_note: g('e_legalnote').value.trim()||null,
+    report_deadline: g('e_regdeadline').value||null,
+    legal_reviewed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  msg.style.color='#8b949e'; msg.textContent='保存中…';
+  try{ await patchNM(id,patch); msg.style.color='#7ee787'; msg.textContent='✔ 保存'; await load(); openD(id); }
+  catch(e){ msg.style.color='#f85149'; msg.textContent='失敗: '+e.message; }
 }
 
 async function patchNM(id, body){

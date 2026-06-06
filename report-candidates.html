@@ -354,7 +354,7 @@
 
 
 
-        <th>号機</th><th>異常</th><th>検知日時</th><th>区分</th>
+        <th>起点</th><th>号機</th><th>異常</th><th>検知日時</th><th>区分</th>
 
 
 
@@ -466,7 +466,7 @@
 
 
 
-      rows.innerHTML = '<tr><td colspan="16" class="empty">取得中…</td></tr>';
+      rows.innerHTML = '<tr><td colspan="17" class="empty">取得中…</td></tr>';
 
 
 
@@ -491,7 +491,7 @@
 
 
 
-        rows.innerHTML = `<tr><td colspan="16" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
+        rows.innerHTML = `<tr><td colspan="17" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
 
 
 
@@ -547,7 +547,7 @@
 
 
 
-      if(!d.length){ rows.innerHTML = '<tr><td colspan="16" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
+      if(!d.length){ rows.innerHTML = '<tr><td colspan="17" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
 
 
 
@@ -612,7 +612,19 @@
           ? `<button class="btn-judge" onclick="event.stopPropagation();window.location='./defect-rca.html?defect_id=${dfId}'">📋 判定する →</button>`
           : '–';
 
-        return `<tr class="${urgClass}" onclick="window.location='./defect-rca.html?defect_id=${dfId}'" title="クリックして異常判断画面で詳細を確認・編集">
+        const isNearMiss = r.source === 'near_miss';
+        const sourceBadge = isNearMiss
+          ? '<span class="tag" style="background:rgba(248,81,73,.15);color:#ff9a92;border-color:rgba(248,81,73,.4);font-size:10px;">🚨 事象起点</span>'
+          : '<span class="tag" style="background:rgba(63,185,80,.1);color:#7ee787;border-color:rgba(63,185,80,.35);font-size:10px;">⚙ 設備起点</span>';
+        const rowHref = isNearMiss
+          ? `./safety-incidents.html`
+          : `./defect-rca.html?defect_id=${dfId}`;
+        const actionBtnFinal = isNearMiss
+          ? `<button class="btn-judge" onclick="event.stopPropagation();window.location='./safety-incidents.html'">⚖ 主任判断 →</button>`
+          : actionBtn;
+
+        return `<tr class="${urgClass}" onclick="window.location='${rowHref}'" title="クリックして詳細を確認・編集">
+          <td style="white-space:nowrap">${sourceBadge}</td>
           <td class="wtg">${sb.esc(r.turbine_no)}</td>
           <td class="td-title" title="${sb.esc(r.finding_title||'')}">${sb.esc(r.finding_title||'–')}</td>
           <td class="td-dt">${sb.fmtDateTime(r.detected_at)}</td>
@@ -628,7 +640,7 @@
           <td>${(()=>{const c=CHIEF_CFG[r.chief_engineer_review_status]||CHIEF_CFG.not_required;return'<span class="'+c.cls+'">'+c.text+'</span>';})()}</td>
           <td class="td-wo" title="${sb.esc(r.work_order_no||'')}">${r.work_order_no?`<a href="./work-orders.html" onclick="event.stopPropagation()" style="color:#58a6ff;font-family:monospace;font-size:11px;">${sb.esc(r.work_order_no)}</a>`:'<span style="color:#e3b341;font-size:11px;">未起票</span>'}</td>
           <td style="white-space:nowrap;font-size:11px">${statusLabel}</td>
-          <td style="white-space:nowrap">${actionBtn}</td>
+          <td style="white-space:nowrap">${actionBtnFinal}</td>
         </tr>`;
 
 
