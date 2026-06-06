@@ -142,7 +142,15 @@
   th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
   th{background:var(--panel2);color:#fff;font-size:11px;white-space:nowrap}
   tr:last-child td{border-bottom:none}
-  tbody tr:hover td{background:rgba(255,255,255,.03)}
+  tbody tr:hover td{background:rgba(255,255,255,.05)}
+  tbody tr{cursor:pointer;transition:background .1s}
+  /* 未対応ハイライト */
+  tr.urg-red td:first-child{border-left:3px solid #f85149}
+  tr.urg-orange td:first-child{border-left:3px solid #d29922}
+  tr.urg-yellow td:first-child{border-left:3px solid #e3b341}
+  /* 判定ボタン */
+  .btn-judge{background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.5);color:#9cd2ff;border-radius:6px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .12s}
+  .btn-judge:hover{background:rgba(88,166,255,.3)}
   td.wtg{color:#fff;font-weight:700;white-space:nowrap;width:68px}
   td.td-title{max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help;width:22%}
   td.td-dt{white-space:nowrap;width:88px;color:var(--muted);font-size:11px}
@@ -356,7 +364,7 @@
 
 
 
-        <th>停止(分)</th><th>損失(kWh)</th><th>逸失売電額(円)</th><th>停止報告</th><th>主任確認</th><th>作業票</th><th>状態</th>
+        <th>停止(分)</th><th>損失(kWh)</th><th>逸失売電額(円)</th><th>停止報告</th><th>主任確認</th><th>作業票</th><th>状態</th><th>アクション</th>
 
 
 
@@ -376,7 +384,7 @@
 
 
 
-      <tr><td colspan="15" class="empty">ログインするとデータを取得します…</td></tr>
+      <tr><td colspan="16" class="empty">ログインするとデータを取得します…</td></tr>
 
 
 
@@ -458,7 +466,7 @@
 
 
 
-      rows.innerHTML = '<tr><td colspan="15" class="empty">取得中…</td></tr>';
+      rows.innerHTML = '<tr><td colspan="16" class="empty">取得中…</td></tr>';
 
 
 
@@ -483,7 +491,7 @@
 
 
 
-        rows.innerHTML = `<tr><td colspan="15" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
+        rows.innerHTML = `<tr><td colspan="16" class="empty">取得エラー: ${sb.esc(e.message)}（権限／RLSを確認）</td></tr>`;
 
 
 
@@ -539,7 +547,7 @@
 
 
 
-      if(!d.length){ rows.innerHTML = '<tr><td colspan="15" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
+      if(!d.length){ rows.innerHTML = '<tr><td colspan="16" class="empty">✅ 現在、報告候補に該当する異常はありません</td></tr>'; return; }
 
 
 
@@ -582,16 +590,30 @@
 
 
 
-        return `<tr>
+        // ── 行のハイライト判定 ──
+        const isOpen      = r.status === 'open';                          // 未評価
+        const noWo        = !r.work_order_no;                             // 作業票なし
+        const chiefPending = !r.chief_engineer_review_status
+                           || r.chief_engineer_review_status === 'not_required'; // 主任未確認
+        const urgClass = isOpen ? 'urg-red'
+                       : noWo  ? 'urg-orange'
+                       : chiefPending && r.report_required_flag ? 'urg-yellow'
+                       : '';
 
+        // ── 未処理バッジ ──
+        const statusLabel = isOpen
+          ? '<span class="tag must" style="font-size:10px">⚠ 未評価</span>'
+          : noWo
+          ? '<span class="tag" style="font-size:10px;background:rgba(210,153,34,.15);border-color:rgba(210,153,34,.4);color:#e3b341;">作業票なし</span>'
+          : sb.esc(r.status)||'–';
 
+        const dfId = sb.esc(r.defect_finding_id||'');
+        const actionBtn = dfId
+          ? `<button class="btn-judge" onclick="event.stopPropagation();window.location='./defect-rca.html?defect_id=${dfId}'">📋 判定する →</button>`
+          : '–';
 
-
+        return `<tr class="${urgClass}" onclick="window.location='./defect-rca.html?defect_id=${dfId}'" title="クリックして異常判断画面で詳細を確認・編集">
           <td class="wtg">${sb.esc(r.turbine_no)}</td>
-
-
-
-
           <td class="td-title" title="${sb.esc(r.finding_title||'')}">${sb.esc(r.finding_title||'–')}</td>
           <td class="td-dt">${sb.fmtDateTime(r.detected_at)}</td>
           <td class="td-cls"><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start">${legalBadge}${reportFlag}${cls}</div></td>
@@ -604,12 +626,9 @@
           <td class="td-num">${r.total_lost_revenue_jpy>0?'¥'+Math.round(r.total_lost_revenue_jpy).toLocaleString('ja-JP'):'–'}</td>
           <td style="text-align:center">${r.outage_report_candidate?'<span class="tag must">🔴</span>':'–'}</td>
           <td>${(()=>{const c=CHIEF_CFG[r.chief_engineer_review_status]||CHIEF_CFG.not_required;return'<span class="'+c.cls+'">'+c.text+'</span>';})()}</td>
-          <td class="td-wo" title="${sb.esc(r.work_order_no||'')}">${sb.esc(r.work_order_no)||'–'}</td>
-          <td style="white-space:nowrap;font-size:11px">${sb.esc(r.status)||'–'}</td>
-
-
-
-
+          <td class="td-wo" title="${sb.esc(r.work_order_no||'')}">${r.work_order_no?`<a href="./work-orders.html" onclick="event.stopPropagation()" style="color:#58a6ff;font-family:monospace;font-size:11px;">${sb.esc(r.work_order_no)}</a>`:'<span style="color:#e3b341;font-size:11px;">未起票</span>'}</td>
+          <td style="white-space:nowrap;font-size:11px">${statusLabel}</td>
+          <td style="white-space:nowrap">${actionBtn}</td>
         </tr>`;
 
 
