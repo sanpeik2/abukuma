@@ -387,9 +387,9 @@ function openD(id){
 
     <div class="dsec">状態</div>
     <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
-      ${r.status==='open'?`<button class="bprog" onclick="setStatus('${esc(id)}','in_progress')">🔧 対応中にする</button>`:''}
-      ${r.status!=='closed'?`<button class="bok" onclick="openClose('${esc(id)}')">✅ クローズする</button>`:''}
+      ${r.status!=='closed'?`<button class="bok" onclick="openClose('${esc(id)}')">✅ クローズ申請</button>`:''}
       ${r.status==='closed'?`<span style="font-size:12.5px;color:#7ee787">✅ クローズ済 — ${esc(r['確認者']||'')} / ${esc(String(r['クローズ日時_jst']||'').replace('T',' ').slice(0,16))}</span>`:''}
+      <button onclick="deleteNM('${esc(id)}')" style="margin-left:auto;font-size:11.5px;color:#f85149;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.35);border-radius:6px;padding:5px 11px;cursor:pointer;">🗑 削除</button>
     </div>
     <div id="closeForm" style="display:none;margin-top:12px;padding:12px 14px;border:1px solid rgba(63,185,80,.4);border-radius:9px;background:rgba(63,185,80,.05)">
       <div class="fld"><label style="font-size:11px;color:var(--muted)">クローズ理由 *（監査ログに残ります）</label><textarea id="c_reason" class="in" placeholder="例: 是正処置完了・効果確認済み / 軽微につき記録のみ"></textarea></div>
@@ -538,6 +538,19 @@ async function saveReg(id){
   msg.style.color='#8b949e'; msg.textContent='保存中…';
   try{ await patchNM(id,patch); msg.style.color='#7ee787'; msg.textContent='✔ 保存'; await load(); openD(id); }
   catch(e){ msg.style.color='#f85149'; msg.textContent='失敗: '+e.message; }
+}
+
+async function deleteNM(id){
+  if(!confirm('この報告を削除しますか？\n（監査ログに削除記録が残ります）')) return;
+  try{
+    const res = await fetch(
+      `${sb.URL}/rest/v1/near_miss_reports?id=eq.${encodeURIComponent(id)}`,
+      {method:'DELETE', headers:sb.headers({'Prefer':'return=minimal'})}
+    );
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    document.getElementById('ov').classList.remove('show');
+    await load();
+  }catch(e){ alert('削除失敗: '+e.message); }
 }
 
 async function patchNM(id, body){
