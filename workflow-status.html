@@ -186,7 +186,8 @@ const STAGES = [
   {key:'承認待ち',     no:5, color:'#bc8cff',  link:'./approvals.html'},
   {key:'作業中',       no:6, color:'#ff7b72',  link:'./work-execution.html'},
   {key:'復旧確認待ち', no:7, color:'#3fb950',  link:'./restoration.html'},
-  {key:'クローズ',     no:8, color:'#7ee787',  link:'./closeout.html'}
+  {key:'クローズ待ち', no:8, color:'#db61a2',  link:'./closeout.html'},
+  {key:'クローズ',     no:9, color:'#7ee787',  link:'./closeout.html'}
 ];
 
 let ALL = [], PIPE_MAP = {}, WO_MAP = {}, WTG_MAP = {};
@@ -269,7 +270,7 @@ function renderMap(){
     return `${i>0?'<div class="connector" style="color:#30363d;margin-top:4px">›</div>':''}
     <div class="station${n>0?' has-cases':''}${isActive?' active':''}" onclick="stageClick('${esc(s.key)}')" style="color:${s.color}">
       <div class="station-inner">
-        <div class="station-dot" style="${n>0?`color:${s.color};border-color:${s.color};background:${s.color}22`:''}">${i+1}</div>
+        <div class="station-dot" style="${n>0?`color:${s.color};border-color:${s.color};background:${s.color}22`:''}">${s.no}</div>
         <div class="station-label">${esc(s.key)}</div>
         <div class="station-count" style="color:${n>0?s.color:'var(--muted)'}">${n}</div>
         <div class="station-bar-wrap"><div class="station-bar" style="width:${pct}%;background:${s.color}"></div></div>
