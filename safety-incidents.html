@@ -335,15 +335,41 @@ function openD(id){
         </div>`;
       }).join('')}
     </div>
-    <div class="dgrid" style="margin-top:8px">
-      <div><div class="dsec" style="margin-top:0">発生日時</div><div class="dval">${esc(String(r['発生日時_jst']||'').replace('T',' ').slice(0,16))||'–'}</div></div>
-      <div><div class="dsec" style="margin-top:0">発生場所</div><div class="dval">${esc(r['発生場所'])||'–'}</div></div>
+    <div class="dsec" style="margin-top:8px;border-left-color:#58a6ff;">📝 基本情報（編集可）</div>
+    <div style="background:rgba(88,166,255,.04);border:1px solid rgba(88,166,255,.2);border-radius:10px;padding:14px 16px;margin-bottom:4px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+        <div class="fld">
+          <label style="font-size:11px;color:var(--muted)">発生日時</label>
+          <input id="b_at" type="datetime-local" class="in" value="${(()=>{const v=r.occurred_at||r['発生日時_jst']||'';return v?new Date(v).toISOString().slice(0,16):''})()}">
+        </div>
+        <div class="fld">
+          <label style="font-size:11px;color:var(--muted)">発生場所</label>
+          <input id="b_loc" class="in" value="${esc(r['発生場所']||r.location||'')}" placeholder="例: T01ナセル内">
+        </div>
+      </div>
+      <div class="fld" style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--muted)">何が起きたか *</label>
+        <textarea id="b_desc" class="in" rows="3" placeholder="状況を簡潔に">${esc(r['概要']||r.description||'')}</textarea>
+      </div>
+      <div class="fld" style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--muted)">応急処置</label>
+        <textarea id="b_aid" class="in" rows="2" placeholder="実施した応急処置">${esc(r['応急処置']||r.first_aid||'')}</textarea>
+      </div>
+      <div class="fld" style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--muted)">原因（後追記可）</label>
+        <textarea id="b_cause" class="in" rows="2" placeholder="直接原因・根本原因">${esc(r['原因']||r.cause||'')}</textarea>
+      </div>
+      <div class="fld" style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--muted)">再発防止（後追記可）</label>
+        <textarea id="b_prev" class="in" rows="2" placeholder="恒久対策・手順改訂など">${esc(r['再発防止']||r.prevention||'')}</textarea>
+      </div>
+      <div class="fld" style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--muted)">教訓・水平展開メモ</label>
+        <textarea id="b_lesson" class="in" rows="2" placeholder="他班・他号機への展開ポイント">${esc(r['教訓']||r.lesson||'')}</textarea>
+      </div>
+      <button class="bs" onclick="saveBasic('${esc(id)}')">💾 基本情報を保存</button>
+      <span id="b_msg" style="font-size:12px;color:var(--muted);margin-left:10px"></span>
     </div>
-    ${fld('何が起きたか', r['概要'])}
-    ${fld('応急処置', r['応急処置'])}
-    ${fld('原因（任意・後追記可）', r['原因'])}
-    ${fld('再発防止（任意）', r['再発防止'])}
-    ${fld('教訓・水平展開メモ', r['教訓'])}
 
     <div class="dsec">一次評価 ・ 担当割当</div>
     <div class="dgrid">
@@ -449,6 +475,25 @@ async function fillUsers(selId, cur){
     const sel = document.getElementById(selId);
     if(sel) sel.innerHTML = '<option value="">—</option>' + (us||[]).map(u=>`<option value="${esc(u.id)}" ${cur===u.id?'selected':''}>${esc(u.name)}</option>`).join('');
   }catch(e){}
+}
+
+async function saveBasic(id){
+  const g=i=>document.getElementById(i), msg=g('b_msg');
+  const desc=g('b_desc').value.trim();
+  if(!desc){ msg.style.color='#f85149'; msg.textContent='「何が起きたか」は必須です'; return; }
+  msg.style.color='#8b949e'; msg.textContent='保存中…';
+  const patch={
+    description: desc,
+    location: g('b_loc').value.trim()||null,
+    occurred_at: g('b_at').value ? new Date(g('b_at').value).toISOString() : null,
+    first_aid: g('b_aid').value.trim()||null,
+    cause: g('b_cause').value.trim()||null,
+    prevention: g('b_prev').value.trim()||null,
+    lesson: g('b_lesson').value.trim()||null,
+    updated_at: new Date().toISOString()
+  };
+  try{ await patchNM(id,patch); msg.style.color='#7ee787'; msg.textContent='✔ 保存'; await load(); openD(id); }
+  catch(e){ msg.style.color='#f85149'; msg.textContent='失敗: '+e.message; }
 }
 
 async function saveEval(id){
