@@ -82,12 +82,17 @@ const STATUS_BADGE={
 };
 function statusBadge(val){
   const s=STATUS_BADGE[val]||{bg:'rgba(139,148,158,.15)',border:'rgba(139,148,158,.4)',color:'#8b949e',label:val||'-'};
-  const cl=val==='closed';
-  const p=cl?'6px 14px':'3px 8px';
-  const fs=cl?'13px':'11px';
-  const fw=cl?'900':'700';
-  const sh=cl?'box-shadow:0 0 10px rgba(63,185,80,.45),0 0 0 3px rgba(63,185,80,.18);text-shadow:0 0 8px rgba(86,211,100,.6)':'';
-  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:'+p+';border-radius:999px;background:'+s.bg+';border:1px solid '+s.border+';color:'+s.color+';font-size:'+fs+';font-weight:'+fw+';white-space:nowrap;'+sh+'">'+s.label+'</span>';
+  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:'+s.bg+';border:1px solid '+s.border+';color:'+s.color+';font-size:11.5px;font-weight:800;white-space:nowrap;line-height:1.25;">'+s.label+'</span>';
+}
+const CHIEF_BADGE={
+  pending:     {bg:'rgba(227,179,65,.15)',border:'rgba(227,179,65,.45)',color:'#e3b341',label:'🟡 主任待ち'},
+  confirmed:   {bg:'rgba(63,185,80,.18)', border:'rgba(63,185,80,.55)', color:'#56d364',label:'✅ 主任確認済'},
+  rejected:    {bg:'rgba(248,81,73,.15)', border:'rgba(248,81,73,.45)', color:'#ff7b72',label:'🔴 差戻し'},
+  not_required:{bg:'rgba(139,148,158,.12)',border:'rgba(139,148,158,.35)',color:'#8b949e',label:'— 不要'}
+};
+function chiefBadge(val){
+  const s=CHIEF_BADGE[val]||{bg:'rgba(139,148,158,.12)',border:'rgba(139,148,158,.35)',color:'#8b949e',label:'—'};
+  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:'+s.bg+';border:1px solid '+s.border+';color:'+s.color+';font-size:11.5px;font-weight:800;white-space:nowrap;line-height:1.25;">'+s.label+'</span>';
 }
 const REPT=[['','—'],['保安規定報告','保安規定報告'],['事故報告','事故報告'],['社内報告','社内報告'],['顧客報告','顧客報告']];
 async function load(){
@@ -120,6 +125,14 @@ async function load(){
         wos.forEach(w => { woMap[w.id] = { no: w.work_order_no || '–', tno: tMap[w.turbine_id] || '–' }; });
       } catch(e2) { /* work_order結合失敗は無視して続行 */ }
     }
+    const restMap = {};
+    const restIds = [...new Set(rows.map(r => r.restoration_check_id).filter(Boolean))];
+    if(restIds.length) {
+      try {
+        const rs = await sb.get(`restoration_checks?id=in.(${restIds.join(',')})&select=id,chief_review_status`) || [];
+        rs.forEach(r => { restMap[r.id] = r.chief_review_status || 'not_required'; });
+      } catch(e3) { /* 主任確認状態の取得失敗は無視して続行 */ }
+    }
 
     // Step3: 表示用マッピング
     ALL = rows.map(r => {
@@ -130,6 +143,7 @@ async function load(){
         '風車':       wo.tno,
         'クローズ状態': r.review_status   || '–',
         '復旧状態':   r.restoration_status || '–',
+        '主任確認':   r.restoration_check_id ? (restMap[r.restoration_check_id] || 'not_required') : '',
         '報告要否':   r.report_required,
         '報告種別':   r.report_type,
         '報告期限':   r.report_deadline,
@@ -170,12 +184,13 @@ function syncNewBtn(){
 function render(){
   const b=document.getElementById('body'); document.getElementById('cnt').textContent=ALL.length+'件'; syncNewBtn();
   if(!ALL.length){ b.innerHTML='<div class="empty">クローズ確認の記録はありません。</div>'; return; }
-  const cg='<colgroup><col style="width:11%"><col style="width:5%"><col style="width:9%"><col style="width:8%"><col style="width:6%"><col style="width:10%"><col style="width:7%"><col style="width:6%"><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:15%"></colgroup>';
-  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th><th>重要事項</th></tr></thead><tbody>${
+  const cg='<colgroup><col style="width:10%"><col style="width:5%"><col style="width:9%"><col style="width:8%"><col style="width:9%"><col style="width:6%"><col style="width:9%"><col style="width:7%"><col style="width:6%"><col style="width:6%"><col style="width:8%"><col style="width:8%"><col style="width:9%"></colgroup>';
+  b.innerHTML=`<table>${cg}<thead><tr><th>作業票番号</th><th>風車</th><th>クローズ状態</th><th>復旧状態</th><th>主任確認</th><th>報告要否</th><th>報告種別/期限</th><th>証跡</th><th>PTW終了</th><th>LOTO解除</th><th>確認者</th><th>クローズ日時</th><th>重要事項</th></tr></thead><tbody>${
     ALL.map(r=>{const imp=r['重要事項']||'';const isCl=(r.review_status||r['クローズ状態'])==='closed';return `<tr style="${isCl?'background:rgba(63,185,80,.05);':''}">
       <td class="no"><a onclick="openEdit('${r.id}')">${esc(r['作業票番号'])}</a></td>
       <td style="white-space:nowrap"><b style="color:#fff">${esc(r['風車'])}</b></td>
       <td>${statusBadge(r['クローズ状態'])}</td><td class="badge">${esc(r['復旧状態'])}</td>
+      <td>${chiefBadge(r['主任確認'])}</td>
       <td class="badge">${r['報告要否']?'<span style="color:#ff9a92">要</span>':'<span style="color:var(--muted)">不要</span>'}</td>
       <td>${esc(r['報告種別']||'–')}${r['報告期限']?'<br><span style="color:#e3b341;font-size:11px">期限 '+esc(r['報告期限'])+'</span>':''}</td>
       <td class="badge">${esc(r['証跡'])}</td><td class="badge">${yn(r['PTW終了'])}</td><td class="badge">${yn(r['LOTO解除'])}</td>
