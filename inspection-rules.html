@@ -258,6 +258,7 @@
 const esc = sb.esc;
 let RULES    = [];
 let TURBINES = [];
+let CHECKLIST_TEMPLATES = [];
 let activeRule = null;
 let _existMap  = {};   // turbine_id → {id, plan_no, approval_status} 現在の日付で既存
 
@@ -288,16 +289,76 @@ function stBadge(st){
 /* ──────────── 初期ロード ──────────── */
 async function loadAll(){
   try{
-    const [rules,turbines]=await Promise.all([
+    const [rules,turbines,templates]=await Promise.all([
       sb.get('inspection_rules?order=cycle_value.desc&is_active=eq.true'),
-      sb.get('turbines?select=id,turbine_no&order=turbine_no')
+      sb.get('turbines?select=id,turbine_no&order=turbine_no'),
+      sb.get('inspection_checklist_templates?is_active=eq.true&order=sort_order.asc').catch(()=>[])
     ]);
     RULES=rules||[]; TURBINES=turbines||[];
+    CHECKLIST_TEMPLATES=templates||[];
     renderRuleCards();
     renderSaTurbineSelect();
   }catch(e){
     document.getElementById('ruleCards').innerHTML=`<div class="err">読み込みエラー: ${esc(e.message)}</div>`;
   }
+}
+
+function inferChecklistCodes(rule){
+  const hay = [
+    rule?.inspection_name, rule?.rule_code, rule?.description,
+    rule?.target_equipment, rule?.cycle_type
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if(/異常|アラーム|alarm|警報|故障|確認/.test(hay)) return ['anomaly_check'];
+  if(/巡視|目視|外観|visual|patrol|ブレード|油漏|異音|腐食/.test(hay)) return ['visual_patrol'];
+  return [
+    'periodic_measurement',
+    'periodic_visual',
+    'periodic_electrical',
+    'periodic_safety_env',
+    'periodic_final_judgment'
+  ];
+}
+
+function templatesForRule(rule){
+  const codes = inferChecklistCodes(rule);
+  return codes
+    .map(code => CHECKLIST_TEMPLATES.find(t => t.template_code === code))
+    .filter(Boolean);
+}
+
+function applyChecklistDefaults(body, templates){
+  const next = {...body};
+  const first = templates[0];
+  if(first?.id) next.checklist_template_id = first.id;
+  if(templates.some(t => t.ptw_required_default)) next.ptw_required = true;
+  if(templates.some(t => t.ky_required_default)) next.ky_required = true;
+  if(templates.some(t => t.loto_required_default)) next.loto_required = true;
+  return next;
+}
+
+async function attachPlanChecklists(planId, templates){
+  if(!planId || !templates.length) return 0;
+  const rows = templates.map((t,i)=>({
+    inspection_plan_id: planId,
+    template_id: t.id,
+    sort_order: i + 1,
+    note: 'inspection-rules auto'
+  }));
+  await sb.write('POST','inspection_plan_checklists',rows);
+  return rows.length;
+}
+
+async function createInspectionPlanWithChecklist(body, rule){
+  const templates = templatesForRule(rule);
+  const created = await sb.write('POST','inspection_plans',applyChecklistDefaults(body, templates));
+  const plan = Array.isArray(created) ? created[0] : created;
+  try{
+    await attachPlanChecklists(plan?.id, templates);
+  }catch(e){
+    console.warn('チェックリスト紐づけ失敗:', plan?.id, e.message);
+  }
+  return { plan, templates };
 }
 
 /* ──────────── ルールカード ──────────── */
@@ -486,20 +547,21 @@ async function registerChecked(){
     updated_at:             new Date().toISOString()
   };
 
-  let ok=0,ng=0;
+  let ok=0,ng=0,linked=0;
   for(let i=0;i<checked.length;i++){
     fill.style.width=Math.round((i+1)/checked.length*100)+'%';
-    lbl.textContent=`登録中… ${i+1}/${checked.length}（成功:${ok} 失敗:${ng}）`;
+    lbl.textContent=`登録中… ${i+1}/${checked.length}（成功:${ok} 失敗:${ng} マスター:${linked}）`;
     try{
-      await sb.write('POST','inspection_plans',{...base,turbine_id:checked[i].value});
+      const res = await createInspectionPlanWithChecklist({...base,turbine_id:checked[i].value}, activeRule);
+      if(res.templates.length) linked++;
       ok++;
     }catch(e){ng++;console.warn('登録失敗:',checked[i].dataset.no,e.message);}
   }
 
   fill.style.width='100%';
-  lbl.textContent=`完了: 成功${ok}件 / 失敗${ng}件`;
+  lbl.textContent=`完了: 成功${ok}件 / 点検項目マスター紐づけ${linked}件 / 失敗${ng}件`;
   msg.style.color=ng>0?'#e3b341':'#7ee787';
-  msg.textContent=`✔ ${ok}件を登録しました${ng>0?' ('+ng+'件失敗)':''}`;
+  msg.textContent=`✔ ${ok}件を登録しました。点検項目マスター紐づけ: ${linked}件${ng>0?' ('+ng+'件失敗)':''}`;
   btn.disabled=false;
 
   // グリッドと既存リストを更新
@@ -601,7 +663,7 @@ async function saveSingle(){
 
   msg.style.color='#8b949e'; msg.textContent='保存中…';
   try{
-    await sb.write('POST','inspection_plans',{
+    const res = await createInspectionPlanWithChecklist({
       rule_id:activeRule.id,
       turbine_id:tid,
       work_type:activeRule.inspection_name,
@@ -615,8 +677,11 @@ async function saveSingle(){
       loto_required:document.getElementById('sa_loto').checked,
       source_type:'periodic',status:'planned',approval_status:'draft',
       created_at:new Date().toISOString(),updated_at:new Date().toISOString()
-    });
-    msg.style.color='#7ee787'; msg.textContent='✔ 登録しました';
+    }, activeRule);
+    msg.style.color='#7ee787';
+    msg.textContent=res.templates.length
+      ? `✔ 登録しました（点検項目マスター: ${res.templates.map(t=>t.template_name).join('、')}）`
+      : '✔ 登録しました';
     document.getElementById('singleForm').style.display='none';
     await onDateChange();
     await loadExisting();

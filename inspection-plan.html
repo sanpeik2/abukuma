@@ -502,7 +502,7 @@
 
 
 
-        ['計画番号','申請日','計画日','号機','点検区分','作業種別','チェックリスト','計画承認','安全準備','時間','責任者','人数','次アクション'].map(h=>`<th>${h}</th>`).join('') +
+        ['計画番号','申請日','計画日','号機','点検区分','作業種別','計画承認','安全準備','時間','責任者','人数','次アクション'].map(h=>`<th>${h}</th>`).join('') +
 
 
 
@@ -538,7 +538,6 @@
             <td><span class="wtg">${esc(r["号機"]||"")}</span></td>
             <td><span class="pill ${pillClass[ku]||'p-other'}">${esc(ku)}</span></td>
             <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;font-size:12px;">${esc(r["作業種別"]||"")}</td>
-            <td style="font-size:11px;color:#9cd2ff;">${r["チェックリスト名"] ? (esc(r["チェックリスト名"]) + ((r["点検票数"]||0)>1 ? ` <span style="color:#7ee787;font-weight:700;">📋${r["点検票数"]}種</span>` : '')) : '<span style="color:var(--muted);">—</span>'}</td>
             <td style="white-space:nowrap;">${planApprovalBadge(r["approval_status"]||"draft")}${r["approval_status"]==="approved"?execMiniTag(r["unified_status"]||"ready"):""}${(r["approval_status"]==="draft"||r["approval_status"]==="returned")?`<button onclick="event.stopPropagation();submitApproval('${esc(r["計画id"]||"")}')" style="margin-left:6px;font-size:11px;font-weight:700;color:#7ee787;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.5);border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;">${r["approval_status"]==="returned"?"📨 再申請":"📨 承認申請"}</button>`:""}</td>
             <td style="white-space:nowrap;">${safetyBadge(r)}</td>
 
