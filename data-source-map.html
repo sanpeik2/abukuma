@@ -226,7 +226,7 @@
     <p>46基 / 150MW / GE / 福島 | 全UI要素 × データソース6系統 × AI生成パイプライン 完全設計書</p>
   </div>
   <div class="page-meta">
-    作成: 2026-05-23　最終更新: 2026-05-26<br>
+    作成: 2026-05-23　最終更新: 2026-06-07<br>
     収録: UI×データソース対応表 / Supabase設計 / アーキテクチャ図 / AI生成パイプライン
   </div>
 </div>
@@ -2656,6 +2656,95 @@
           ≥12m/s → 要確認<br>
           ≥95(コード) → 雷注意<br><br>
           <span style="color:#5adba8">完全決定論・AIなし</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── O&Mワークフロー系データソース ── -->
+  <div style="border:1px solid rgba(86,163,217,0.35);background:#0f1b27;padding:16px 18px;margin:16px 0 12px">
+    <h2 style="color:#7ec8f0;font-size:16px;font-weight:700;margin:0 0 6px">▶ O&Mワークフロー系データソース — 作業票・復旧確認・クローズ・法令判断</h2>
+    <p style="color:var(--muted);font-size:11px;line-height:1.8;margin:0 0 12px">
+      Morning Cockpit のKPIとは別に、異常発見後の進捗管理は下記のビューとテーブルで判断する。
+      ここでは「どの画面が、どのデータを根拠に、次の行動を表示しているか」を整理する。
+    </p>
+
+    <div style="overflow:auto;border:1px solid #2b3b4a">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:980px">
+        <thead>
+          <tr style="background:#18283a;color:#dce7ee">
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #2b3b4a">区分</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #2b3b4a">ビュー / テーブル</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #2b3b4a">主な利用画面</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #2b3b4a">判断に使う主な項目</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #2b3b4a">役割</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#111e2b">
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#7ec8f0;font-weight:700">案件管制</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>v_case_pipeline</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">workflow-status.html</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#9fb0bd"><code>current_stage</code><br><code>next_action</code><br><code>is_stuck</code><br><code>is_report_candidate</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">異常発見からクローズまでの現在地を表示する管制塔。復旧確認が必要な案件は「復旧確認待ち」、完了後は「クローズ待ち」に進める。</td>
+          </tr>
+          <tr style="background:#0e1720">
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#5adba8;font-weight:700">作業実施</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>v_work_execution_list</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">work-execution.html</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#9fb0bd"><code>loto_required</code><br><code>downtime_minutes</code><br><code>outage_occurred</code><br><code>next_step</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">作業完了後に「復旧確認へ進むか」「クローズへ進むか」を判定する。LOTOあり、計画停止あり、または実績停止ありの場合は復旧確認対象。</td>
+          </tr>
+          <tr style="background:#111e2b">
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#f2d070;font-weight:700">停止実績</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>work_order_outages</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">work-execution.html<br>report-candidates.html</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#9fb0bd"><code>outage_occurred</code><br><code>downtime_minutes</code><br><code>reg_flag</code><br><code>reg_category</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">計画ではなく実際に発生した停止・出力制限の記録。報告候補や復旧確認要否の根拠になるため、作業票本体の予定値とは分けて扱う。</td>
+          </tr>
+          <tr style="background:#0e1720">
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#c4b0ff;font-weight:700">復旧確認</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>v_restoration_check_list</code><br><code>restoration_checks</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">restoration.html<br>approvals.html</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#9fb0bd"><code>restoration_status</code><br><code>chief_review_status</code><br><code>confirmed_at</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">担当者の復旧済み記録と、電気主任技術者の確認状態を分けて保持する。LOTO・停止を伴う案件は主任確認まで終わってからクローズ待ちへ進める。</td>
+          </tr>
+          <tr style="background:#111e2b">
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#b8cad4;font-weight:700">クローズ</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>v_closeout_review_list</code><br><code>closeout_reviews</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">closeout.html</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#9fb0bd"><code>closeout_status</code><br><code>legal_report_required</code><br><code>evidence_status</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">作業・復旧・証跡・法令判断を確認して案件を閉じる。主任確認が済んでいるかを見える化し、未確認のまま閉じないための最終チェック画面。</td>
+          </tr>
+          <tr style="background:#0e1720">
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#f08080;font-weight:700">法令候補</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>v_report_candidates</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">report-candidates.html</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#9fb0bd"><code>reg_flag</code><br><code>reg_category</code><br><code>safety_impact</code><br><code>operation_impact</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">設備起点の異常・停止から、主任が確認すべき法令報告候補を集約する。詳細判断は defect-rca.html 側に寄せ、ここは確認ハブとして扱う。</td>
+          </tr>
+          <tr style="background:#111e2b">
+            <td style="padding:8px 10px;color:#e8c46a;font-weight:700">安全事象</td>
+            <td style="padding:8px 10px"><code>near_miss_reports</code><br><code>v_safety_incidents</code></td>
+            <td style="padding:8px 10px;color:var(--muted)">safety-incidents.html</td>
+            <td style="padding:8px 10px;color:#9fb0bd"><code>event_type</code><br><code>safety_severity</code><br><code>reg_flag</code><br><code>reg_category</code></td>
+            <td style="padding:8px 10px;color:var(--muted)">感電しそうになった、LOTO手順を踏まなかった等、設備故障ではない安全事象の入口。風車の設備異常は原則 defect_findings から起票する。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div style="background:#0b1420;border:1px solid rgba(49,196,132,0.25);padding:12px">
+        <div style="font-size:11px;font-weight:700;color:#5adba8;margin-bottom:6px">設備起点の流れ</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.9">
+          点検・監視・アラーム → <code>defect_findings</code> → 作業票 → 停止実績 → 復旧確認 → クローズ → 必要に応じて報告候補
+        </div>
+      </div>
+      <div style="background:#0b1420;border:1px solid rgba(232,196,106,0.25);padding:12px">
+        <div style="font-size:11px;font-weight:700;color:#f2d070;margin-bottom:6px">事象起点の流れ</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.9">
+          ヒヤリハット・事故・手順逸脱 → <code>near_miss_reports</code> → 主任判断 → 必要に応じて報告候補。設備故障と混ぜない。
         </div>
       </div>
     </div>
