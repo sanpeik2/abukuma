@@ -243,6 +243,15 @@
 
 
   .summary .chip.ng b{color:#ff9a92} .summary .chip.ok b{color:#7ee787} .summary .chip.todo b{color:#f0c674}
+  .cltools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:rgba(88,166,255,.04)}
+  .cltools .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-right:2px}
+  .cltools button{background:#0d1117;border:1px solid var(--line);color:var(--muted);padding:5px 10px;border-radius:999px;font-size:11.5px;cursor:pointer}
+  .cltools button.on{color:#fff;border-color:var(--master);background:rgba(88,166,255,.14);font-weight:700}
+  .cltools button.act{border-radius:7px;color:#7ee787;border-color:rgba(63,185,80,.45);background:rgba(63,185,80,.08);font-weight:700}
+  .cltools .note{font-size:11px;color:var(--muted);margin-left:auto}
+  .tplhead{margin:12px 0 6px;padding:6px 10px;border-left:3px solid #7ee787;background:rgba(126,231,135,.06);font-size:12.5px;font-weight:700;color:#7ee787;border-radius:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tplhead button{margin-left:auto;background:rgba(63,185,80,.10);color:#7ee787;border:1px solid rgba(63,185,80,.45);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
+  .empty-filter{grid-column:1/-1;color:var(--muted);border:1px dashed var(--line);border-radius:9px;padding:18px;text-align:center;font-size:12.5px}
 
 
 
@@ -812,6 +821,15 @@
 
 
         <div class="summary" id="summary"></div>
+        <div class="cltools" id="clTools" style="display:none;">
+          <span class="lbl">表示</span>
+          <button type="button" data-filter="all" class="on">すべて</button>
+          <button type="button" data-filter="todo">未入力</button>
+          <button type="button" data-filter="ng">NG</button>
+          <button type="button" data-filter="photo">写真必須</button>
+          <button type="button" class="act" id="bulkVisualOkBtn">表示中の目視を一括OK</button>
+          <span class="note" id="progressNote"></span>
+        </div>
 
 
 
@@ -1301,6 +1319,7 @@
     const state = {
       turbines:[], userId:null, weather:"", sev:"", set:"", items:{},
       submitting:false, adhocMode:false,
+      itemFilter:"all",
       dbTemplates:[],   // inspection_checklist_templates
       dbItems:[],       // 現在選択中テンプレートの items（UI形式に変換済み）
       templateId:null,  // 現在選択中テンプレートのUUID
@@ -1318,7 +1337,7 @@
     /* DB アイテムを UI 形式に変換 */
     function dbItemToUiItem(d){
       const isVisual = (d.input_type==='visual'||d.input_type==='boolean'||d.input_type==='text');
-      const base = { k:d.id, dbId:d.id, tid:d.template_id||null, so:d.sort_order||0 };
+      const base = { k:d.id, dbId:d.id, tid:d.template_id||null, so:d.sort_order||0, photo:!!d.photo_required, ngAction:d.ng_action||'' };
       if(isVisual) return Object.assign(base, { n:d.item_name, visual:true, crit:d.criteria_text||'確認' });
       return Object.assign(base, { n:d.item_name, unit:d.unit||'', min:Number(d.criteria_min)||0, max:Number(d.criteria_max)||9999 });
     }
@@ -1392,6 +1411,20 @@
 
     }
 
+    function itemVisibleByFilter(it){
+      const f = state.itemFilter || "all";
+      const j = judge(it);
+      if(f==="all") return true;
+      if(f==="todo") return j==="";
+      if(f==="ng") return j==="ng";
+      if(f==="photo") return !!it.photo;
+      return true;
+    }
+
+    function visibleItems(){
+      return curItems().filter(itemVisibleByFilter);
+    }
+
 
 
 
@@ -1420,12 +1453,18 @@
 
 
 
-      const wrap = $("items"); const its = curItems();
+      const wrap = $("items"); const allIts = curItems(); const its = visibleItems();
 
 
 
 
-      if(!its.length){ wrap.innerHTML=""; return; }
+      if(!allIts.length){ wrap.innerHTML=""; return; }
+      if(!its.length){
+        wrap.innerHTML='<div class="empty-filter">この条件に該当する点検項目はありません。</div>';
+        bindChecklistTools();
+        validate();
+        return;
+      }
 
 
       const multiTpl = (state.planTemplates && state.planTemplates.length>1);
@@ -1434,7 +1473,7 @@
         let _hdr = '';
         if(multiTpl && it.tid !== _lastTid){
           _lastTid = it.tid;
-          _hdr = `<div style="margin:12px 0 6px;padding:6px 10px;border-left:3px solid #7ee787;background:rgba(126,231,135,.06);font-size:12.5px;font-weight:700;color:#7ee787;border-radius:4px;">📋 ${esc(it.tname||'点検票')}</div>`;
+          _hdr = `<div class="tplhead">📋 ${esc(it.tname||'点検票')}<button type="button" data-bulk-ok-tid="${esc(it.tid||'')}">この章の目視を一括OK</button></div>`;
         }
         return _hdr + (function(){
 
@@ -1506,6 +1545,11 @@
 
 
 
+        const extra = [
+          it.photo ? '<span style="font-size:10.5px;color:#f0c674;border:1px solid rgba(210,153,34,.45);border-radius:999px;padding:1px 6px;">写真必須</span>' : '',
+          it.ngAction ? '<div style="margin-top:7px;font-size:11.5px;color:#f0c674;">NG時: '+esc(it.ngAction)+'</div>' : ''
+        ].join('');
+
         return `<div class="item ${j}" data-item="${it.k}">
 
 
@@ -1516,7 +1560,7 @@
 
 
 
-          <div class="crit">${esc(crit)}</div>
+          <div class="crit">${esc(crit)} ${extra}</div>
 
 
 
@@ -1549,6 +1593,7 @@
 
 
       bindItemEvents();
+      bindChecklistTools();
 
 
 
@@ -1648,7 +1693,8 @@
 
 
 
-          refreshItem(curItems().find(x=>x.k===k)); validate();
+          if(state.itemFilter==="all") { refreshItem(curItems().find(x=>x.k===k)); validate(); }
+          else renderChecklist();
 
 
 
@@ -1748,6 +1794,38 @@
 
 
 
+    }
+
+    function bulkVisualOk(tid){
+      visibleItems()
+        .filter(it => it.visual && (!tid || String(it.tid||'')===String(tid)))
+        .forEach(it => { const s=st(it.k); s.na=false; s.vis='ok'; });
+      renderChecklist();
+    }
+
+    function bindChecklistTools(){
+      const tools = $("clTools");
+      if(!tools) return;
+      tools.style.display = curItems().length ? "flex" : "none";
+      tools.querySelectorAll("[data-filter]").forEach(btn=>{
+        btn.classList.toggle("on", btn.dataset.filter === (state.itemFilter||"all"));
+        btn.onclick = () => {
+          state.itemFilter = btn.dataset.filter;
+          renderChecklist();
+        };
+      });
+      const bulk = $("bulkVisualOkBtn");
+      if(bulk) bulk.onclick = () => bulkVisualOk(null);
+      $("items").querySelectorAll("[data-bulk-ok-tid]").forEach(btn=>{
+        btn.onclick = () => bulkVisualOk(btn.dataset.bulkOkTid);
+      });
+      const c = counts();
+      const note = $("progressNote");
+      if(note){
+        const done = c.ok + c.ng + c.na;
+        const pct = c.total ? Math.round(done / c.total * 100) : 0;
+        note.textContent = `入力進捗 ${done}/${c.total}（${pct}%）`;
+      }
     }
 
 
@@ -1996,6 +2074,13 @@
 
 
          <span class="chip todo">未入力 <b>${c.todo}</b></span>`;
+
+      const note = $("progressNote");
+      if(note){
+        const done = c.ok + c.ng + c.na;
+        const pct = c.total ? Math.round(done / c.total * 100) : 0;
+        note.textContent = `入力進捗 ${done}/${c.total}（${pct}%）`;
+      }
 
 
 
