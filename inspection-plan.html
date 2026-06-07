@@ -689,14 +689,16 @@
     /* ===== 安全準備バッジ ===== */
     function safetyBadge(r){
       const parts = [];
+      const pid = esc(r["計画id"] || "");
+      const qpid = encodeURIComponent(r["計画id"] || "");
       if(r['ptw_required']){
         if(r['ptw番号'])
-          parts.push(`<button onclick="event.stopPropagation();openPtwCard('${esc(r['ptw番号'])}',event)" style="font-size:10px;color:#7ee787;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);border-radius:3px;padding:1px 6px;cursor:pointer;font-family:monospace;">PTW ✅</button>`);
+          parts.push(`<a href="./permits.html?permit_no=${encodeURIComponent(r['ptw番号'])}" onclick="event.stopPropagation()" title="作成済みPTWを開く" style="font-size:10px;color:#7ee787;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);border-radius:3px;padding:1px 6px;cursor:pointer;font-family:monospace;text-decoration:none;font-weight:700;">PTW ✅</a>`);
         else
-          parts.push('<span style="font-size:10px;color:#ff9a92;border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 5px;white-space:nowrap;">PTW ⚠未</span>');
+          parts.push(`<a href="./permits.html?plan_id=${qpid}" onclick="event.stopPropagation()" title="PTWを新規起票" style="font-size:10px;color:#ff9a92;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.45);border-radius:3px;padding:1px 6px;white-space:nowrap;cursor:pointer;font-weight:700;text-decoration:none;">PTW ⚠未</a>`);
       }
-      if(r['ky_required'])   parts.push('<span style="font-size:10px;color:#e3b341;border:1px solid rgba(210,153,34,.35);border-radius:3px;padding:1px 5px;">KY</span>');
-      if(r['loto_required']) parts.push('<span style="font-size:10px;color:#ff9a92;border:1px solid rgba(248,81,73,.35);border-radius:3px;padding:1px 5px;">LOTO</span>');
+      if(r['ky_required'])   parts.push(`<a href="./ky-loto.html?plan_id=${qpid}" onclick="event.stopPropagation()" title="KYを登録" style="font-size:10px;color:#e3b341;background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.4);border-radius:3px;padding:1px 6px;text-decoration:none;font-weight:700;">KY 登録</a>`);
+      if(r['loto_required']) parts.push(`<a href="./ky-loto.html?plan_id=${qpid}" onclick="event.stopPropagation()" title="LOTOを登録" style="font-size:10px;color:#ff9a92;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:3px;padding:1px 6px;text-decoration:none;font-weight:700;">LOTO 登録</a>`);
       return parts.length ? parts.join('&nbsp;') : '<span style="font-size:10px;color:var(--muted);">—</span>';
     }
 
