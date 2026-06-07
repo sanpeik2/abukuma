@@ -54,6 +54,14 @@
 
   .lead b{color:#fff}
 
+  .doc-index{background:linear-gradient(180deg,#11161d,var(--panel));border:1px solid var(--line);border-radius:12px;padding:15px 16px;margin:0 0 28px}
+  .doc-index h2{font-size:14px;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .doc-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .doc-group{border:1px solid var(--line);border-radius:10px;background:#0d1117;padding:11px 12px}
+  .doc-group .gt{font-size:12px;color:#fff;font-weight:700;margin-bottom:7px}
+  .doc-group a{display:block;color:#9cd2ff;text-decoration:none;font-size:12px;padding:3px 0}
+  .doc-group a:hover{color:#fff}
+
 
 
 
@@ -152,6 +160,42 @@
 
 
   </div>
+
+  <section class="doc-index">
+    <h2>📚 ドキュメント早見表 <span class="badge doc" style="margin:0">DOC</span></h2>
+    <div class="doc-groups">
+      <div class="doc-group">
+        <div class="gt">全体像・導線</div>
+        <a href="./workflow-overview.html">業務フロー全体図</a>
+        <a href="./guide-work-flow.html">異常→作業→安全ゲート</a>
+        <a href="./workflow-status.html">ワークフロー管制</a>
+      </div>
+      <div class="doc-group">
+        <div class="gt">点検</div>
+        <a href="./guide-inspection-plan.html">点検計画の基本</a>
+        <a href="./guide-inspection-do.html">点検実行の基本</a>
+        <a href="./inspection-rules.html">点検ルールマスタ</a>
+      </div>
+      <div class="doc-group">
+        <div class="gt">異常・作業・承認</div>
+        <a href="./guide-defect-judge.html">異常評価・是正判断</a>
+        <a href="./guide-rca.html">故障対応・RCA</a>
+        <a href="./guide-work-order.html">作業票の基本</a>
+        <a href="./guide-permit-loto.html">PTW/LOTOの基本</a>
+        <a href="./guide-approval.html">主任承認の基本</a>
+      </div>
+      <div class="doc-group">
+        <div class="gt">法令・安全・設計</div>
+        <a href="./guide-near-miss-vs-defect.html">ヒヤリハット vs 異常報告</a>
+        <a href="./accident-report-flow.html">事故報告フロー</a>
+        <a href="./guide-report-candidates.html">報告候補リストの使い方</a>
+        <a href="./er-diagram.html">ER図</a>
+        <a href="./data-source-map.html">データソースマップ</a>
+        <a href="./ai-data-boundary.html">AIデータ境界</a>
+        <a href="./box-upload-flow.html">証拠写真アップロード設計</a>
+      </div>
+    </div>
+  </section>
 
 
 
