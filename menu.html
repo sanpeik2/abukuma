@@ -54,13 +54,16 @@
 
   .lead b{color:#fff}
 
-  .doc-index{background:linear-gradient(180deg,#11161d,var(--panel));border:1px solid var(--line);border-radius:12px;padding:15px 16px;margin:0 0 28px}
-  .doc-index h2{font-size:14px;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-  .doc-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-  .doc-group{border:1px solid var(--line);border-radius:10px;background:#0d1117;padding:11px 12px}
-  .doc-group .gt{font-size:12px;color:#fff;font-weight:700;margin-bottom:7px}
-  .doc-group a{display:block;color:#9cd2ff;text-decoration:none;font-size:12px;padding:3px 0}
-  .doc-group a:hover{color:#fff}
+  .doc-index{background:linear-gradient(180deg,#11161d,var(--panel));border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 30px}
+  .doc-index h2{font-size:16px;color:#fff;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .doc-index .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .doc-flow{display:flex;align-items:stretch;gap:8px;overflow-x:auto;padding-bottom:3px}
+  .doc-step{min-width:176px;flex:1;background:#0d1117;border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  .doc-step .st{display:flex;align-items:center;gap:7px;font-size:13px;color:#fff;font-weight:800;margin-bottom:8px}
+  .doc-step .n{display:inline-grid;place-items:center;width:23px;height:23px;border-radius:50%;background:rgba(88,166,255,.14);border:1px solid rgba(88,166,255,.55);color:#9cd2ff;font-size:11px}
+  .doc-step a{display:block;color:#9cd2ff;text-decoration:none;font-size:12px;line-height:1.35;padding:4px 0}
+  .doc-step a:hover{color:#fff}
+  .doc-rail{display:flex;align-items:center;color:#30363d;font-size:24px;font-weight:800;min-width:18px;justify-content:center}
 
 
 
@@ -163,32 +166,45 @@
 
   <section class="doc-index">
     <h2>📚 ドキュメント早見表 <span class="badge doc" style="margin:0">DOC</span></h2>
-    <div class="doc-groups">
-      <div class="doc-group">
-        <div class="gt">全体像・導線</div>
+    <div class="hint">読む順番：まず全体像を見て、点検・異常・作業安全・法令判断へ進み、最後に設計資料で裏側を確認します。</div>
+    <div class="doc-flow">
+      <div class="doc-step">
+        <div class="st"><span class="n">1</span>全体像</div>
         <a href="./workflow-overview.html">業務フロー全体図</a>
         <a href="./guide-work-flow.html">異常→作業→安全ゲート</a>
         <a href="./workflow-status.html">ワークフロー管制</a>
       </div>
-      <div class="doc-group">
-        <div class="gt">点検</div>
+      <div class="doc-rail">›</div>
+      <div class="doc-step">
+        <div class="st"><span class="n">2</span>点検</div>
         <a href="./guide-inspection-plan.html">点検計画の基本</a>
         <a href="./guide-inspection-do.html">点検実行の基本</a>
         <a href="./inspection-rules.html">点検ルールマスタ</a>
       </div>
-      <div class="doc-group">
-        <div class="gt">異常・作業・承認</div>
+      <div class="doc-rail">›</div>
+      <div class="doc-step">
+        <div class="st"><span class="n">3</span>異常・RCA</div>
         <a href="./guide-defect-judge.html">異常評価・是正判断</a>
         <a href="./guide-rca.html">故障対応・RCA</a>
+        <a href="./decision-flow.html">考え方フロー図</a>
+      </div>
+      <div class="doc-rail">›</div>
+      <div class="doc-step">
+        <div class="st"><span class="n">4</span>作業安全</div>
         <a href="./guide-work-order.html">作業票の基本</a>
         <a href="./guide-permit-loto.html">PTW/LOTOの基本</a>
         <a href="./guide-approval.html">主任承認の基本</a>
       </div>
-      <div class="doc-group">
-        <div class="gt">法令・安全・設計</div>
+      <div class="doc-rail">›</div>
+      <div class="doc-step">
+        <div class="st"><span class="n">5</span>法令・安全</div>
         <a href="./guide-near-miss-vs-defect.html">ヒヤリハット vs 異常報告</a>
         <a href="./accident-report-flow.html">事故報告フロー</a>
         <a href="./guide-report-candidates.html">報告候補リストの使い方</a>
+      </div>
+      <div class="doc-rail">›</div>
+      <div class="doc-step">
+        <div class="st"><span class="n">6</span>設計資料</div>
         <a href="./er-diagram.html">ER図</a>
         <a href="./data-source-map.html">データソースマップ</a>
         <a href="./ai-data-boundary.html">AIデータ境界</a>
