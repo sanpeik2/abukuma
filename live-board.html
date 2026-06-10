@@ -879,6 +879,23 @@
 
     function fmtTime(t){ return t ? t.slice(0,5) : ""; }
 
+    function normalizeInspectionPlan(row){
+      const status = row["状態"] || row.status || "planned";
+      return {
+        id: row["計画id"] || row.id,
+        date: row["計画日"] || row.planned_date || row.date,
+        wtg_id: row["号機"] || row.wtg_id || row.turbine_no,
+        work_type: row["作業種別"] || row.work_type || "",
+        status: status === "completed" ? "done" : status,
+        time_start: row["開始"] || row.time_start,
+        time_end: row["終了"] || row.time_end,
+        required_qualification: row["必要資格"] || row.required_qualification,
+        ptw_number: row["ptw番号"] || row.ptw_number,
+        worker_count: row["作業人数"] || row.worker_count,
+        power_impact_mwh: row["発電影響MWh"] || row.power_impact_mwh
+      };
+    }
+
 
 
 
@@ -2357,7 +2374,7 @@
 
 
 
-          sb.get("inspection_plan?select=*&order=date.asc,time_start.asc"),
+          sb.get("v_inspection_plan_list?select=*&order=計画日.asc,開始.asc"),
 
 
 
@@ -2372,7 +2389,7 @@
 
 
 
-        state.wtg = wtg; state.alarms = alarms; state.insp = insp; state.inspResults = inspRes;
+        state.wtg = wtg; state.alarms = alarms; state.insp = insp.map(normalizeInspectionPlan); state.inspResults = inspRes;
 
 
 
