@@ -1789,6 +1789,16 @@ const createBtn = !isLocked
       ['water_ingress','Water Ingress','浸水・雨水侵入'],
       ['other','Other','その他']
     ];
+    const FIRST_CHECK_ITEMS = [
+      ['alarm_content','Alarm contents checked','アラーム内容確認'],
+      ['site_abnormality','Site abnormality checked','現地異常有無'],
+      ['reproducibility','Reproducibility checked','再現性確認'],
+      ['safety_impact','Safety impact checked','安全影響確認'],
+      ['stop_required','Stop required judged','停止要否判断'],
+      ['work_order_required','Work order required judged','作業票要否']
+    ];
+    const FIRST_CHECK_BLOCK_START = '[Initial check checklist / 一次確認チェック]';
+    const FIRST_CHECK_BLOCK_END = '[/Initial check checklist]';
     const taxonomyOptions = (items, cur) => '<option value="">— 選択 —</option>' +
       items.map(([code,en,ja])=>`<option value="${code}" ${cur===code?'selected':''}>${en} / ${ja}</option>`).join('');
     const taxonomyPick = (items, code) => items.find(x=>x[0]===code) || null;
@@ -1808,6 +1818,25 @@ const createBtn = !isLocked
       tx.component_code ? `Component: ${tx.component_code} / ${tx.component_name_en} / ${tx.component_name_ja}` : '',
       tx.anomaly_code ? `Anomaly: ${tx.anomaly_code} / ${tx.anomaly_name_en} / ${tx.anomaly_name_ja}` : ''
     ].filter(Boolean).join('\n');
+    const firstCheckHtml = (prefix, notes='', locked=false) => FIRST_CHECK_ITEMS.map(([code,en,ja]) => {
+      const checked = new RegExp(`- ${code}: checked`).test(notes || '');
+      return `<label style="display:flex;gap:7px;align-items:flex-start;background:rgba(13,17,23,.55);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:11.5px;color:var(--txt);line-height:1.35">
+        <input id="${prefix}_check_${code}" type="checkbox" ${checked?'checked':''} ${locked?'disabled':''} style="margin-top:2px">
+        <span>${en}<br><span style="color:var(--muted)">${ja}</span></span>
+      </label>`;
+    }).join('');
+    const firstCheckSummary = (prefix) => FIRST_CHECK_ITEMS
+      .filter(([code]) => document.getElementById(`${prefix}_check_${code}`)?.checked)
+      .map(([code,en,ja]) => `- ${code}: checked / ${en} / ${ja}`)
+      .join('\n');
+    const removeFirstCheckBlock = (text='') => String(text || '')
+      .replace(new RegExp(`\\n?${FIRST_CHECK_BLOCK_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${FIRST_CHECK_BLOCK_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`, 'g'), '\n')
+      .trim();
+    const withFirstCheckSummary = (prefix, notes='') => {
+      const base = removeFirstCheckBlock(notes);
+      const summary = firstCheckSummary(prefix);
+      return [base, summary ? `${FIRST_CHECK_BLOCK_START}\n${summary}\n${FIRST_CHECK_BLOCK_END}` : ''].filter(Boolean).join('\n\n') || null;
+    };
     const OPTIONAL_DEFECT_COLUMNS = [
       'component_code','component_name_en','component_name_ja',
       'anomaly_code','anomaly_name_en','anomaly_name_ja',
@@ -1901,7 +1930,7 @@ const createBtn = !isLocked
           first_check_person:   gv('nr_check_person'),
           first_check_at:       gv('nr_check_at')   ? new Date(gv('nr_check_at')).toISOString()   : null,
           first_check_method:   gv('nr_check_method'),
-          first_check_notes:    gv('nr_check_notes'),
+          first_check_notes:    withFirstCheckSummary('nr', gv('nr_check_notes')),
           // 法令分類
           legal_judgement_class:gv('nr_legal_class'),
           report_required_flag: document.getElementById('nr_report_flag')?.checked || false,
@@ -2413,6 +2442,15 @@ const createBtn = !isLocked
               <textarea id="dd_detail" class="ddin" rows="3" ${locked?'disabled':''}>${sv(df.finding_detail)}</textarea>
             </div>
           </div>
+          <div style="margin-bottom:10px;padding:10px 12px;background:rgba(210,153,34,.05);border:1px solid rgba(210,153,34,.25);border-radius:8px;">
+            <div style="font-size:11px;color:#e3b341;font-weight:800;margin-bottom:8px;border-left:3px solid #e3b341;padding-left:7px;">一次確認チェック / Initial check</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:9px;">
+              ${firstCheckHtml('dd', df.first_check_notes || '', locked)}
+            </div>
+            <div class="ddfl"><label>確認内容・暫定判断</label>
+              <textarea id="dd_check_notes" class="ddin" rows="2" ${locked?'disabled':''} placeholder="例: SCADAでギア温度85℃確認。現地確認を指示。">${sv(removeFirstCheckBlock(df.first_check_notes || ''))}</textarea>
+            </div>
+          </div>
           <div class="ddgrid" style="margin-bottom:10px">
             <div class="ddfl"><label>安全影響</label>
               <select id="dd_safety" class="ddin" ${locked?'disabled':''}>
@@ -2556,6 +2594,7 @@ const createBtn = !isLocked
         finding_title: title,
         finding_detail: g('dd_detail')?.value?.trim()||null,
         ...taxonomyFields('dd'),
+        first_check_notes: withFirstCheckSummary('dd', g('dd_check_notes')?.value?.trim()||''),
         safety_impact: g('dd_safety')?.value||null,
         initial_judgement: g('dd_judge')?.value||null,
         cause_clarity: g('dd_clarity')?.value||null,
@@ -2773,6 +2812,17 @@ const createBtn = !isLocked
             <option value="photo">写真・画像確認</option>
             <option value="phone">電話確認</option>
           </select>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600">一次確認チェック / Initial check</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+            <label style="display:flex;gap:7px;align-items:flex-start;background:rgba(13,17,23,.55);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:11.5px;color:var(--txt);line-height:1.35"><input id="nr_check_alarm_content" type="checkbox" style="margin-top:2px"><span>Alarm contents checked<br><span style="color:var(--muted)">アラーム内容確認</span></span></label>
+            <label style="display:flex;gap:7px;align-items:flex-start;background:rgba(13,17,23,.55);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:11.5px;color:var(--txt);line-height:1.35"><input id="nr_check_site_abnormality" type="checkbox" style="margin-top:2px"><span>Site abnormality checked<br><span style="color:var(--muted)">現地異常有無</span></span></label>
+            <label style="display:flex;gap:7px;align-items:flex-start;background:rgba(13,17,23,.55);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:11.5px;color:var(--txt);line-height:1.35"><input id="nr_check_reproducibility" type="checkbox" style="margin-top:2px"><span>Reproducibility checked<br><span style="color:var(--muted)">再現性確認</span></span></label>
+            <label style="display:flex;gap:7px;align-items:flex-start;background:rgba(13,17,23,.55);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:11.5px;color:var(--txt);line-height:1.35"><input id="nr_check_safety_impact" type="checkbox" style="margin-top:2px"><span>Safety impact checked<br><span style="color:var(--muted)">安全影響確認</span></span></label>
+            <label style="display:flex;gap:7px;align-items:flex-start;background:rgba(13,17,23,.55);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:11.5px;color:var(--txt);line-height:1.35"><input id="nr_check_stop_required" type="checkbox" style="margin-top:2px"><span>Stop required judged<br><span style="color:var(--muted)">停止要否判断</span></span></label>
+            <label style="display:flex;gap:7px;align-items:flex-start;background:rgba(13,17,23,.55);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:11.5px;color:var(--txt);line-height:1.35"><input id="nr_check_work_order_required" type="checkbox" style="margin-top:2px"><span>Work order required judged<br><span style="color:var(--muted)">作業票要否</span></span></label>
+          </div>
         </div>
         <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">確認内容・暫定判断</label>
           <textarea id="nr_check_notes" rows="2" placeholder="例: SCADA でギア温度85℃確認。過去最高値。即時現地確認を指示。" style="display:block;width:100%;background:#0d1117;border:1px solid var(--line);color:var(--txt);padding:6px 9px;border-radius:6px;font-size:12.5px;resize:vertical"></textarea>
