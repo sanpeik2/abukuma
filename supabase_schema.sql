@@ -127,6 +127,12 @@ CREATE TABLE IF NOT EXISTS defect_findings (
   first_check_at      timestamptz,
   first_check_method  text,
   first_check_notes   text,
+  component_code      text,
+  component_name_en   text,
+  component_name_ja   text,
+  anomaly_code        text,
+  anomaly_name_en     text,
+  anomaly_name_ja     text,
   legal_judgement_class text,
   report_required_flag boolean DEFAULT false,
   severity            text
@@ -842,6 +848,28 @@ ORDER BY
   CASE n.status WHEN 'open' THEN 1 WHEN 'in_progress' THEN 2 ELSE 3 END,
   (n.severity IN ('high','critical')) DESC,
   n.occurred_at DESC;
+
+-- defect_findings structured taxonomy for AI-ready information assets
+ALTER TABLE defect_findings
+  ADD COLUMN IF NOT EXISTS component_code text,
+  ADD COLUMN IF NOT EXISTS component_name_en text,
+  ADD COLUMN IF NOT EXISTS component_name_ja text,
+  ADD COLUMN IF NOT EXISTS anomaly_code text,
+  ADD COLUMN IF NOT EXISTS anomaly_name_en text,
+  ADD COLUMN IF NOT EXISTS anomaly_name_ja text;
+
+COMMENT ON COLUMN defect_findings.component_code IS
+  'Structured component code for defect taxonomy, e.g. gearbox, rotor_blade, hydraulic_system.';
+COMMENT ON COLUMN defect_findings.component_name_en IS
+  'English component display name snapshot at the time of defect registration.';
+COMMENT ON COLUMN defect_findings.component_name_ja IS
+  'Japanese component display name snapshot at the time of defect registration.';
+COMMENT ON COLUMN defect_findings.anomaly_code IS
+  'Structured anomaly type code, e.g. abnormal_noise, oil_leak, over_temperature.';
+COMMENT ON COLUMN defect_findings.anomaly_name_en IS
+  'English anomaly display name snapshot at the time of defect registration.';
+COMMENT ON COLUMN defect_findings.anomaly_name_ja IS
+  'Japanese anomaly display name snapshot at the time of defect registration.';
 
 -- =============================================================================
 -- RLS ポリシー（authenticated ユーザーは全操作可。anon はブロック）

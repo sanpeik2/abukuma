@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GE3.2-103 風車3Dモデル</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#081019;
+  --panel:#101a24;
+  --panel2:#162432;
+  --line:#2a3b4b;
+  --txt:#eef6fb;
+  --muted:#9fb0bd;
+  --blue:#58a6ff;
+  --cyan:#67e8f9;
+  --green:#3fb950;
+  --gold:#d29922;
+  --red:#f85149;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 22% 4%,rgba(88,166,255,.18),transparent 28%),
+    radial-gradient(circle at 72% 8%,rgba(103,232,249,.10),transparent 22%),
+    linear-gradient(180deg,#0f1b27 0%,#081019 54%,#05090d 100%);
+  color:var(--txt);
+  font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+  letter-spacing:0;
+}
+a,button{font:inherit}
+.stage{position:relative;width:100vw;height:100vh;overflow:hidden}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.topbar{
+  position:absolute;top:18px;left:18px;right:18px;z-index:3;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+  pointer-events:none;
+}
+.title{pointer-events:auto;max-width:760px}
+.crumb{display:inline-flex;align-items:center;gap:8px;color:#9cd2ff;background:rgba(88,166,255,.11);border:1px solid rgba(88,166,255,.30);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;text-decoration:none;margin-bottom:10px}
+h1{margin:0;color:#fff;font-size:clamp(26px,3.2vw,48px);line-height:1.08;font-weight:900}
+.lead{margin:10px 0 0;color:var(--muted);font-size:13px;line-height:1.7;max-width:720px}
+.lead b{color:#fff}
+.toolbar{pointer-events:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:460px}
+.btn{
+  min-height:38px;border:1px solid rgba(139,148,158,.36);border-radius:8px;
+  color:var(--txt);background:rgba(8,16,25,.74);padding:8px 11px;cursor:pointer;
+}
+.btn:hover,.btn.active{border-color:var(--blue);background:rgba(88,166,255,.16);color:#fff}
+.spec{
+  position:absolute;right:18px;top:148px;width:min(390px,calc(100vw - 36px));z-index:3;
+  background:rgba(8,16,25,.79);border:1px solid rgba(88,166,255,.24);border-radius:10px;
+  backdrop-filter:blur(10px);box-shadow:0 18px 60px rgba(0,0,0,.32);padding:15px;
+}
+.spec h2{margin:0 0 8px;font-size:17px;color:#fff}
+.spec p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.65}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
+.chip{border:1px solid var(--line);background:rgba(22,36,50,.74);color:#d9ecff;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
+.metric{border:1px solid var(--line);border-radius:8px;background:rgba(22,36,50,.76);padding:8px}
+.metric span{display:block;color:var(--muted);font-size:10.5px;margin-bottom:2px}
+.metric b{display:block;color:#fff;font-size:16px}
+.detail{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.power-panel{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.power-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.power-title{color:#fff;font-size:13px;font-weight:900}
+.power-badge{border:1px solid rgba(103,232,249,.36);background:rgba(103,232,249,.10);color:#b8fbff;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:800;white-space:nowrap}
+.meter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meter{border:1px solid var(--line);background:rgba(22,36,50,.76);border-radius:8px;padding:8px}
+.meter-label{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10.5px;margin-bottom:6px}
+.meter-label b{color:#fff;font-size:14px}
+.bar{height:9px;border-radius:999px;background:#07111b;overflow:hidden;border:1px solid rgba(139,148,158,.22)}
+.bar-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#58a6ff,#67e8f9,#3fb950);box-shadow:0 0 16px rgba(103,232,249,.34)}
+.power-note{margin-top:9px;color:var(--muted);font-size:11.5px;line-height:1.55}
+.wind-control{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;margin-top:10px}
+.wind-control label,.wind-control output{font-size:11.5px;color:#d9ecff;font-weight:800;white-space:nowrap}
+.wind-control input{width:100%;accent-color:#67e8f9}
+.legend{
+  position:absolute;left:18px;bottom:18px;z-index:3;display:flex;gap:8px;flex-wrap:wrap;
+  max-width:min(840px,calc(100vw - 36px));pointer-events:none;
+}
+.pill{display:inline-flex;align-items:center;gap:7px;background:rgba(8,16,25,.72);border:1px solid rgba(139,148,158,.32);border-radius:999px;color:var(--muted);font-size:11.5px;padding:6px 10px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.scale-card{
+  position:absolute;left:18px;top:214px;width:min(330px,calc(100vw - 36px));z-index:3;
+  background:rgba(8,16,25,.58);border-left:3px solid var(--cyan);padding:12px 14px;
+  color:var(--muted);font-size:12px;line-height:1.65;
+}
+.scale-card b{color:#fff}
+.hint{position:absolute;right:18px;bottom:18px;z-index:3;color:#aab8c5;font-size:11.5px;background:rgba(8,16,25,.68);border:1px solid rgba(139,148,158,.30);border-radius:999px;padding:7px 11px}
+.fallback{display:none;position:absolute;inset:0;z-index:5;place-items:center;padding:24px;background:#081019;text-align:center}
+.fallback div{max-width:620px}
+.fallback p{color:var(--muted);line-height:1.7}
+@media (max-width:900px){
+  body{overflow:auto}
+  .stage{min-height:940px;height:100vh}
+  .topbar{display:block}
+  .toolbar{margin-top:12px;justify-content:flex-start}
+  .spec{top:auto;left:12px;right:12px;bottom:72px;width:auto}
+  .scale-card,.legend{display:none}
+  .hint{left:12px;right:auto;bottom:18px}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="scene"></canvas>
+  <div id="fallback" class="fallback">
+    <div>
+      <h1>3D表示を読み込めませんでした</h1>
+      <p>このページはThree.jsでGE3.2-103の3Dモデルを表示します。ネットワーク接続またはブラウザのスクリプト設定を確認してください。</p>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="title">
+      <a class="crumb" href="./menu.html">← O&M Process Hub</a>
+      <h1>GE3.2-103<br>風車3Dモデル</h1>
+      <p class="lead">General Electric International, Inc.製 <b>GE3.2-103</b>。3枚翼アップウィンド方式プロペラ型水平軸風車を、部品クリック説明つきで確認できます。</p>
+    </div>
+    <div class="toolbar" aria-label="表示切替">
+      <button class="btn active" data-view="full">全体</button>
+      <button class="btn" data-view="rotor">ロータ</button>
+      <button class="btn" data-view="nacelle">ナセル</button>
+      <button class="btn" data-view="foundation">基礎</button>
+      <button id="spinBtn" class="btn">回転停止</button>
+    </div>
+  </header>
+
+  <aside class="scale-card">
+    <b>寸法モデル</b><br>
+    ロータ径: 103m<br>
+    ブレード半径: 51.5m<br>
+    最高部高さ: 148.67m / 135.35m<br>
+    定格出力: 3,200kW<br>
+    阿武隈風力想定: 46基
+  </aside>
+
+  <section class="spec" aria-live="polite">
+    <h2 id="partTitle">GE3.2-103 風車</h2>
+    <p id="partBody">部品をクリックすると、ナセル・ブレード・ハブ・タワー・基礎の説明に切り替わります。ドラッグで回転、ホイールでズームできます。</p>
+    <div class="chips" id="partChips">
+      <span class="chip">3枚翼</span><span class="chip">アップウィンド</span><span class="chip">水平軸</span>
+    </div>
+    <div class="metrics">
+      <div class="metric"><span>定格出力</span><b>3,200kW</b></div>
+      <div class="metric"><span>ロータ径</span><b>103m</b></div>
+      <div class="metric"><span>基数</span><b>46基</b></div>
+      <div class="metric"><span>基礎</span><b>直接/杭</b></div>
+    </div>
+    <div class="power-panel">
+      <div class="power-head">
+        <div class="power-title">風速・発電メーター</div>
+        <div class="power-badge">概念モデル: 風速の3乗</div>
+      </div>
+      <div class="meter-grid">
+        <div class="meter">
+          <div class="meter-label"><span>風速</span><b id="windValue">8.0m/s</b></div>
+          <div class="bar"><div class="bar-fill" id="windBar"></div></div>
+        </div>
+        <div class="meter">
+          <div class="meter-label"><span>発電量</span><b id="powerValue">0kW</b></div>
+          <div class="bar"><div class="bar-fill" id="powerBar"></div></div>
+        </div>
+      </div>
+      <div class="wind-control">
+        <label for="windSlider">風速</label>
+        <input id="windSlider" type="range" min="0" max="25" value="8" step="0.1">
+        <output id="windOutput">8.0</output>
+      </div>
+      <p class="power-note" id="powerNote">カットイン3m/s、定格12m/s、カットアウト25m/sの簡易モデル。定格までは風速の3乗で増え、3,200kWで頭打ちします。</p>
+    </div>
+    <p class="detail" id="partDetail">上部の白い機械室がナセル、中央の丸い部分がハブ、3本の翼がブレード、下の柱がタワー、地盤に接する部分が基礎です。</p>
+  </section>
+
+  <div class="legend">
+    <span class="pill"><span class="dot" style="background:#eef6fb"></span>ナセル / ハブ</span>
+    <span class="pill"><span class="dot" style="background:#67e8f9"></span>ブレード</span>
+    <span class="pill"><span class="dot" style="background:#58a6ff"></span>タワー</span>
+    <span class="pill"><span class="dot" style="background:#d29922"></span>基礎</span>
+  </div>
+  <div class="hint">ドラッグ: 回転 / ホイール: ズーム / 部品クリック: 説明</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const parts = {
+  turbine: {
+    title:"GE3.2-103 風車",
+    body:"GE 3.2MWクラス、ロータ径103mの3枚翼アップウィンド方式プロペラ型水平軸風車です。",
+    chips:["3枚翼","アップウィンド","水平軸"],
+    detail:"阿武隈風力では46基規模。O&Mでは、各風車ごとに点検・停止・部品交換・復旧証跡を紐づけて管理します。"
+  },
+  blade: {
+    title:"ブレード",
+    body:"風を受けて回転力に変える翼です。GE3.2-103ではロータ径103mなので、ブレード半径は約51.5mです。",
+    chips:["ロータ径103m","3枚翼","空力部品"],
+    detail:"点検では落雷痕、エロージョン、亀裂、汚れ、先端部損傷を確認します。停止損失に直結する重要部品です。"
+  },
+  hub: {
+    title:"ハブ",
+    body:"3枚のブレードを受ける中心部です。ブレード荷重を主軸・ナセル側へ伝えます。",
+    chips:["ロータ中心","荷重伝達","ピッチ機構"],
+    detail:"ピッチ系統や締結部の状態は、出力制御と安全停止に影響します。異音・振動・油漏れの確認対象です。"
+  },
+  nacelle: {
+    title:"ナセル",
+    body:"発電機、主軸、増速機または駆動系、制御装置などを収める機械室です。",
+    chips:["機械室","発電機","制御装置"],
+    detail:"O&Mでは温度、振動、油圧、潤滑、冷却、異音、アラーム履歴を確認します。故障時の停止時間が長くなりやすい部位です。"
+  },
+  tower: {
+    title:"タワー",
+    body:"ナセルとロータを支える支持構造物です。最高部高さ148.67mまたは135.35mの風車全体高さを構成します。",
+    chips:["支持構造","高所作業","ボルト管理"],
+    detail:"点検ではフランジボルト、溶接部、腐食、塗装、内部昇降設備、ケーブル支持を確認します。高所作業の安全管理が重要です。"
+  },
+  foundation: {
+    title:"基礎",
+    body:"風車からの荷重を地盤へ伝える構造です。直接基礎と杭基礎の方式があります。",
+    chips:["直接基礎","杭基礎","地盤"],
+    detail:"沈下、ひび割れ、排水、周辺法面、アンカーボルト周りを確認します。山岳地ではアクセス道路・排水もセットで見ます。"
+  },
+};
+
+const canvas = document.querySelector("#scene");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x081019, .0045);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1200);
+camera.position.set(132, 92, 166);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = .06;
+controls.autoRotate = true;
+controls.autoRotateSpeed = .55;
+controls.target.set(0, 68, 0);
+controls.minDistance = 90;
+controls.maxDistance = 300;
+
+scene.add(new THREE.AmbientLight(0xd6edff, 2.0));
+const sun = new THREE.DirectionalLight(0xffffff, 2.0);
+sun.position.set(80, 180, 120);
+scene.add(sun);
+const rim = new THREE.PointLight(0x67e8f9, 2.8, 360);
+rim.position.set(-120, 100, 130);
+scene.add(rim);
+const bladeLight = new THREE.PointLight(0x67e8f9, 3.4, 180);
+bladeLight.position.set(-24, 112, 32);
+scene.add(bladeLight);
+
+const root = new THREE.Group();
+root.position.set(-10, -8, 0);
+scene.add(root);
+
+const clickable = [];
+let selectedPart = "turbine";
+
+function mark(mesh, part, baseColor){
+  mesh.userData.part = part;
+  mesh.userData.baseColor = baseColor;
+  clickable.push(mesh);
+  return mesh;
+}
+
+function mat(color, opts={}){
+  return new THREE.MeshStandardMaterial({
+    color,
+    emissive: color,
+    emissiveIntensity: opts.emissive ?? .05,
+    roughness: opts.roughness ?? .45,
+    metalness: opts.metalness ?? .12,
+    transparent: opts.transparent ?? false,
+    opacity: opts.opacity ?? 1
+  });
+}
+
+function label(text, color="#eef6fb", width=420, height=82){
+  const c = document.createElement("canvas");
+  c.width = width; c.height = height;
+  const ctx = c.getContext("2d");
+  ctx.font = "800 25px 'Meiryo','Segoe UI',sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.shadowColor = "rgba(0,0,0,.8)"; ctx.shadowBlur = 10;
+  ctx.fillStyle = color; ctx.fillText(text, width/2, height/2);
+  const texture = new THREE.CanvasTexture(c);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map:texture, transparent:true, depthWrite:false }));
+  sprite.scale.set(width/12, height/12, 1);
+  return sprite;
+}
+
+const ground = new THREE.Mesh(
+  new THREE.CylinderGeometry(118, 150, 4, 96),
+  mat(0x183d26, { emissive:.035, roughness:.8 })
+);
+ground.position.y = -2;
+root.add(ground);
+
+const foundation = mark(new THREE.Mesh(
+  new THREE.CylinderGeometry(18, 24, 8, 64),
+  mat(0xd29922, { emissive:.09, roughness:.6 })
+), "foundation", 0xd29922);
+foundation.position.y = 4;
+root.add(foundation);
+
+const towerHeight = 97.2;
+const tower = mark(new THREE.Mesh(
+  new THREE.CylinderGeometry(3.2, 7.2, towerHeight, 48),
+  mat(0xb8dcf0, { emissive:.12, roughness:.34, metalness:.22 })
+), "tower", 0x58a6ff);
+tower.position.y = 8 + towerHeight / 2;
+root.add(tower);
+
+const nacelleY = 8 + towerHeight + 2;
+const nacelle = mark(new THREE.Mesh(
+  new THREE.BoxGeometry(26, 10, 12),
+  mat(0xffffff, { emissive:.14, roughness:.28, metalness:.18 })
+), "nacelle", 0xeef6fb);
+nacelle.position.set(6, nacelleY, 0);
+root.add(nacelle);
+
+const nacelleNose = mark(new THREE.Mesh(
+  new THREE.CylinderGeometry(6, 4.3, 10, 36),
+  mat(0xffffff, { emissive:.14, roughness:.28, metalness:.18 })
+), "nacelle", 0xeef6fb);
+nacelleNose.rotation.z = Math.PI / 2;
+nacelleNose.position.set(-8, nacelleY, 0);
+root.add(nacelleNose);
+
+const hub = mark(new THREE.Mesh(
+  new THREE.SphereGeometry(5.9, 48, 24),
+  mat(0xffffff, { emissive:.22, roughness:.24, metalness:.16 })
+), "hub", 0xf8fbff);
+hub.position.set(-16, nacelleY, 0);
+root.add(hub);
+
+const bladeGroup = new THREE.Group();
+bladeGroup.position.copy(hub.position);
+root.add(bladeGroup);
+
+function makeBladeGeometry(){
+  const span = 51.5;
+  const sections = 24;
+  const profile = [
+    [-.46, 0],
+    [-.30, .58],
+    [.05, .82],
+    [.45, .30],
+    [.52, 0],
+    [.45, -.24],
+    [.03, -.55],
+    [-.30, -.38]
+  ];
+  const vertices = [];
+  const indices = [];
+  for(let i=0;i<=sections;i++){
+    const t = i / sections;
+    const y = 4.2 + t * span;
+    const chord = 8.4 * Math.pow(1 - t, 1.18) + .92;
+    const thick = 1.95 * Math.pow(1 - t, 1.7) + .12;
+    const sweep = -5.4 * Math.pow(t, 1.35);
+    const preBend = Math.sin(t * Math.PI) * 2.2;
+    const twist = THREE.MathUtils.degToRad(17 - t * 28);
+    profile.forEach(([px,pz])=>{
+      let x = px * chord;
+      let z = pz * thick + preBend;
+      const rx = x * Math.cos(twist) - z * Math.sin(twist);
+      const rz = x * Math.sin(twist) + z * Math.cos(twist);
+      vertices.push(rx + sweep, y, rz);
+    });
+  }
+  const ring = profile.length;
+  for(let i=0;i<sections;i++){
+    for(let j=0;j<ring;j++){
+      const a = i * ring + j;
+      const b = i * ring + (j + 1) % ring;
+      const c = (i + 1) * ring + (j + 1) % ring;
+      const d = (i + 1) * ring + j;
+      indices.push(a,b,d,b,c,d);
+    }
+  }
+  const rootCenter = vertices.length / 3;
+  vertices.push(0,4.2,0);
+  for(let j=0;j<ring;j++) indices.push(rootCenter, j, (j + 1) % ring);
+  const tipCenter = vertices.length / 3;
+  vertices.push(-5.4,55.7,0);
+  const tipStart = sections * ring;
+  for(let j=0;j<ring;j++) indices.push(tipCenter, tipStart + (j + 1) % ring, tipStart + j);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function makeBlade(angle){
+  const g = new THREE.Group();
+  g.rotation.x = angle;
+  const blade = mark(new THREE.Mesh(
+    makeBladeGeometry(),
+    mat(0xcffcff, { emissive:.24, roughness:.28, metalness:.07 })
+  ), "blade", 0x67e8f9);
+  g.add(blade);
+  const leadingGlow = mark(new THREE.Mesh(
+    new THREE.CylinderGeometry(.32, .12, 44, 14),
+    new THREE.MeshBasicMaterial({ color:0x67e8f9, transparent:true, opacity:.34, depthWrite:false })
+  ), "blade", 0x67e8f9);
+  leadingGlow.position.set(-2.2,30,1.15);
+  leadingGlow.rotation.z = .12;
+  g.add(leadingGlow);
+  const rootSocket = mark(new THREE.Mesh(
+    new THREE.CylinderGeometry(3.05, 2.45, 7.2, 32),
+    mat(0xe8ffff, { emissive:.20, roughness:.30, metalness:.12 })
+  ), "blade", 0x67e8f9);
+  rootSocket.rotation.z = Math.PI / 2;
+  rootSocket.position.y = 5.1;
+  g.add(rootSocket);
+  return g;
+}
+bladeGroup.add(makeBlade(0));
+bladeGroup.add(makeBlade((Math.PI * 2) / 3));
+bladeGroup.add(makeBlade((Math.PI * 4) / 3));
+
+const windGroup = new THREE.Group();
+windGroup.position.copy(hub.position);
+root.add(windGroup);
+const windRings = [];
+for(let i=0;i<5;i++){
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(18 + i * 9.5, .16, 8, 96),
+    new THREE.MeshBasicMaterial({ color:0x67e8f9, transparent:true, opacity:.20 - i * .024, depthWrite:false })
+  );
+  ring.rotation.y = Math.PI / 2;
+  ring.position.x = -1.5 - i * 1.25;
+  windGroup.add(ring);
+  windRings.push(ring);
+}
+const wakeMat = new THREE.LineBasicMaterial({ color:0x67e8f9, transparent:true, opacity:.34 });
+for(let i=0;i<7;i++){
+  const y = -46 + i * 15;
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-24, nacelleY + y * .45, -34),
+    new THREE.Vector3(-36, nacelleY + y * .40, -15),
+    new THREE.Vector3(-28, nacelleY + y * .42, 8),
+    new THREE.Vector3(-42, nacelleY + y * .38, 34)
+  ]);
+  root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(38)), wakeMat));
+}
+
+const dimensionMat = new THREE.LineBasicMaterial({ color:0x9cd2ff, transparent:true, opacity:.72 });
+function line(points){
+  const geom = new THREE.BufferGeometry().setFromPoints(points);
+  const l = new THREE.Line(geom, dimensionMat);
+  root.add(l);
+  return l;
+}
+line([new THREE.Vector3(-74,nacelleY,0), new THREE.Vector3(38,nacelleY,0)]);
+const rotorLabel = label("ロータ径 103m", "#9cd2ff", 380, 74);
+rotorLabel.position.set(-18, nacelleY + 61, 0);
+root.add(rotorLabel);
+const heightLabel = label("最高部高さ 148.67m / 135.35m", "#d9ecff", 520, 74);
+heightLabel.position.set(50, 132, -10);
+root.add(heightLabel);
+line([new THREE.Vector3(42,0,-8), new THREE.Vector3(42,148,-8)]);
+
+const titleEl = document.querySelector("#partTitle");
+const bodyEl = document.querySelector("#partBody");
+const chipsEl = document.querySelector("#partChips");
+const detailEl = document.querySelector("#partDetail");
+const windSlider = document.querySelector("#windSlider");
+const windValueEl = document.querySelector("#windValue");
+const windOutputEl = document.querySelector("#windOutput");
+const powerValueEl = document.querySelector("#powerValue");
+const windBarEl = document.querySelector("#windBar");
+const powerBarEl = document.querySelector("#powerBar");
+const powerNoteEl = document.querySelector("#powerNote");
+const RATED_POWER_KW = 3200;
+const CUT_IN_MS = 3;
+const RATED_MS = 12;
+const CUT_OUT_MS = 25;
+let windSpeed = Number(windSlider.value);
+let generatedPower = 0;
+let rotorSpeed = .85;
+
+function calculatePower(speed){
+  if(speed < CUT_IN_MS) return { power:0, state:"cut-in未満: 発電なし" };
+  if(speed >= CUT_OUT_MS) return { power:0, state:"カットアウト: 強風のため安全停止" };
+  if(speed >= RATED_MS) return { power:RATED_POWER_KW, state:"定格域: 3,200kWで頭打ち" };
+  const ratio = (speed - CUT_IN_MS) / (RATED_MS - CUT_IN_MS);
+  return { power:RATED_POWER_KW * Math.pow(ratio, 3), state:"立上り域: 風速の3乗で増加" };
+}
+
+function updatePowerMeters(){
+  const result = calculatePower(windSpeed);
+  generatedPower = result.power;
+  const windPct = Math.min(100, (windSpeed / CUT_OUT_MS) * 100);
+  const powerPct = Math.min(100, (generatedPower / RATED_POWER_KW) * 100);
+  const windText = `${windSpeed.toFixed(1)}m/s`;
+  windValueEl.textContent = windText;
+  windOutputEl.textContent = windSpeed.toFixed(1);
+  powerValueEl.textContent = `${Math.round(generatedPower).toLocaleString()}kW`;
+  windBarEl.style.width = `${windPct}%`;
+  powerBarEl.style.width = `${powerPct}%`;
+  powerNoteEl.textContent = `${result.state}。概念式: P = 3,200kW × ((風速 - 3) / (12 - 3))^3`;
+  rotorSpeed = windSpeed < CUT_IN_MS || windSpeed >= CUT_OUT_MS ? .08 : .32 + (generatedPower / RATED_POWER_KW) * 2.05 + (windSpeed / CUT_OUT_MS) * .34;
+  windRings.forEach((ring, i)=>{
+    const base = windSpeed < CUT_IN_MS || windSpeed >= CUT_OUT_MS ? .035 : .08 + (windSpeed / CUT_OUT_MS) * .22;
+    ring.material.opacity = Math.max(.025, base - i * .025);
+  });
+}
+windSlider.addEventListener("input",()=>{
+  windSpeed = Number(windSlider.value);
+  updatePowerMeters();
+});
+updatePowerMeters();
+function select(part){
+  selectedPart = part;
+  const data = parts[part] || parts.turbine;
+  titleEl.textContent = data.title;
+  bodyEl.textContent = data.body;
+  chipsEl.innerHTML = data.chips.map(c=>`<span class="chip">${c}</span>`).join("");
+  detailEl.textContent = data.detail;
+  clickable.forEach(mesh=>{
+    const active = mesh.userData.part === part;
+    mesh.material.emissiveIntensity = active ? .42 : (mesh.userData.part === "blade" ? .16 : .06);
+    mesh.scale.setScalar(active ? 1.04 : 1);
+  });
+}
+select("turbine");
+
+function setView(view){
+  document.querySelectorAll("[data-view]").forEach(btn=>btn.classList.toggle("active", btn.dataset.view === view));
+  const targets = {
+    full:{ pos:[150,96,190], target:[0,68,0], part:"turbine" },
+    rotor:{ pos:[42,120,118], target:[-16,105,0], part:"blade" },
+    nacelle:{ pos:[58,116,78], target:[-2,107,0], part:"nacelle" },
+    foundation:{ pos:[92,46,94], target:[0,10,0], part:"foundation" }
+  };
+  const v = targets[view] || targets.full;
+  camera.position.set(...v.pos);
+  controls.target.set(...v.target);
+  select(v.part);
+}
+document.querySelectorAll("[data-view]").forEach(btn=>btn.addEventListener("click",()=>setView(btn.dataset.view)));
+document.querySelector("#spinBtn").addEventListener("click",(event)=>{
+  controls.autoRotate = !controls.autoRotate;
+  event.currentTarget.textContent = controls.autoRotate ? "回転停止" : "回転再開";
+});
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+renderer.domElement.addEventListener("pointerdown",(event)=>{
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObjects(clickable, false)[0];
+  if(hit){
+    select(hit.object.userData.part);
+    return;
+  }
+  const mouse = new THREE.Vector2(event.clientX, event.clientY);
+  let nearest = null;
+  let nearestDistance = Infinity;
+  clickable.forEach(mesh=>{
+    const pos = mesh.getWorldPosition(new THREE.Vector3()).project(camera);
+    const sx = (pos.x * .5 + .5) * rect.width + rect.left;
+    const sy = (-pos.y * .5 + .5) * rect.height + rect.top;
+    const distance = mouse.distanceTo(new THREE.Vector2(sx, sy));
+    if(distance < nearestDistance){
+      nearestDistance = distance;
+      nearest = mesh;
+    }
+  });
+  if(nearest && nearestDistance < 112) select(nearest.userData.part);
+});
+
+function resize(){
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize);
+resize();
+
+const clock = new THREE.Clock();
+function animate(){
+  const t = clock.getElapsedTime();
+  bladeGroup.rotation.x = t * rotorSpeed;
+  windGroup.rotation.x = -t * (.12 + windSpeed * .025);
+  if(selectedPart === "blade") bladeGroup.scale.setScalar(1.015 + Math.sin(t * 4) * .012);
+  controls.update();
+  renderer.render(scene,camera);
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+<script>
+window.addEventListener("error",()=>{
+  if(!window.__threeFallbackTimer){
+    window.__threeFallbackTimer = setTimeout(()=>{
+      const fallback = document.querySelector("#fallback");
+      if(fallback) fallback.style.display = "grid";
+    }, 800);
+  }
+});
+</script>
+</body>
+</html>

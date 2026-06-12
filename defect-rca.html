@@ -1755,7 +1755,100 @@ const createBtn = !isLocked
 
     
     /* ── 新規異常判断起票 ── */
+    const DEFECT_COMPONENTS = [
+      ['rotor_blade','Rotor Blade','ブレード'],
+      ['hub_pitch','Hub / Pitch System','ハブ・ピッチ機構'],
+      ['nacelle_drivetrain','Nacelle / Drivetrain','ナセル・駆動系'],
+      ['gearbox','Gearbox','増速機'],
+      ['generator','Generator','発電機'],
+      ['converter_electrical','Converter / Electrical Cabinet','コンバータ・電気盤'],
+      ['yaw_system','Yaw System','ヨー機構'],
+      ['hydraulic_system','Hydraulic System','油圧系統'],
+      ['cooling_system','Cooling System','冷却系統'],
+      ['tower','Tower','タワー'],
+      ['foundation','Foundation','基礎'],
+      ['sensor_scada','Sensor / SCADA','センサー・SCADA'],
+      ['access_road_drainage','Access Road / Drainage','アクセス道路・排水'],
+      ['other','Other','その他']
+    ];
+    const DEFECT_ANOMALIES = [
+      ['abnormal_noise','Abnormal Noise','異音'],
+      ['abnormal_vibration','Abnormal Vibration','異常振動'],
+      ['over_temperature','Over Temperature','温度上昇'],
+      ['oil_leak','Oil Leak','油漏れ'],
+      ['pressure_drop','Pressure Drop','圧力低下'],
+      ['alarm_trip','Alarm / Trip','アラーム・トリップ'],
+      ['output_drop','Output Drop','出力低下'],
+      ['crack_damage','Crack / Damage','亀裂・損傷'],
+      ['corrosion','Corrosion','腐食'],
+      ['loose_bolt','Loose Bolt','ボルト緩み'],
+      ['blade_erosion','Blade Erosion','ブレードエロージョン'],
+      ['lightning_damage','Lightning Damage','落雷痕'],
+      ['overheating_burn_mark','Overheating / Burn Mark','過熱・焦げ跡'],
+      ['communication_error','Communication Error','通信異常'],
+      ['water_ingress','Water Ingress','浸水・雨水侵入'],
+      ['other','Other','その他']
+    ];
+    const taxonomyOptions = (items, cur) => '<option value="">— 選択 —</option>' +
+      items.map(([code,en,ja])=>`<option value="${code}" ${cur===code?'selected':''}>${en} / ${ja}</option>`).join('');
+    const taxonomyPick = (items, code) => items.find(x=>x[0]===code) || null;
+    const taxonomyFields = (prefix) => {
+      const comp = taxonomyPick(DEFECT_COMPONENTS, document.getElementById(prefix+'_component_code')?.value);
+      const anom = taxonomyPick(DEFECT_ANOMALIES, document.getElementById(prefix+'_anomaly_code')?.value);
+      return {
+        component_code: comp?.[0] || null,
+        component_name_en: comp?.[1] || null,
+        component_name_ja: comp?.[2] || null,
+        anomaly_code: anom?.[0] || null,
+        anomaly_name_en: anom?.[1] || null,
+        anomaly_name_ja: anom?.[2] || null
+      };
+    };
+    const taxonomySummary = (tx) => [
+      tx.component_code ? `Component: ${tx.component_code} / ${tx.component_name_en} / ${tx.component_name_ja}` : '',
+      tx.anomaly_code ? `Anomaly: ${tx.anomaly_code} / ${tx.anomaly_name_en} / ${tx.anomaly_name_ja}` : ''
+    ].filter(Boolean).join('\n');
+    const withoutTaxonomy = (obj) => {
+      const clean = {...obj};
+      ['component_code','component_name_en','component_name_ja','anomaly_code','anomaly_name_en','anomaly_name_ja'].forEach(k=>delete clean[k]);
+      return clean;
+    };
+    const looksLikeMissingColumn = (err) => /schema cache|column|PGRST204|Could not find/i.test(String(err && (err.message || err)));
+    async function writeDefectFinding(method, filter, payload){
+      try{
+        if(method === 'POST') return await sb.write('POST', 'defect_findings', payload);
+        const res = await fetch(`${sb.URL}/rest/v1/defect_findings${filter}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(payload)});
+        if(!res.ok) throw new Error('HTTP '+res.status+': '+(await res.text()));
+        return null;
+      }catch(e){
+        if(!looksLikeMissingColumn(e)) throw e;
+        const tx = taxonomySummary(payload);
+        const fallback = withoutTaxonomy(payload);
+        fallback.finding_detail = [fallback.finding_detail, tx && `\n[Structured classification / 統一分類]\n${tx}`].filter(Boolean).join('\n');
+        if(method === 'POST') return await sb.write('POST', 'defect_findings', fallback);
+        const res = await fetch(`${sb.URL}/rest/v1/defect_findings${filter}`,
+          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(fallback)});
+        if(!res.ok) throw new Error('HTTP '+res.status+': '+(await res.text()));
+        return null;
+      }
+    }
+    function updateNewRcaTitleFromTaxonomy(){
+      const title = document.getElementById('nr_title');
+      if(!title || title.value.trim()) return;
+      const comp = taxonomyPick(DEFECT_COMPONENTS, document.getElementById('nr_component_code')?.value);
+      const anom = taxonomyPick(DEFECT_ANOMALIES, document.getElementById('nr_anomaly_code')?.value);
+      if(comp && anom) title.value = `${comp[2]} ${anom[2]}`;
+    }
+    function fillTaxonomySelect(id, items, cur=''){
+      const sel = document.getElementById(id);
+      if(sel) sel.innerHTML = taxonomyOptions(items, cur);
+    }
+    fillTaxonomySelect('nr_component_code', DEFECT_COMPONENTS);
+    fillTaxonomySelect('nr_anomaly_code', DEFECT_ANOMALIES);
     function openNewRca() {
+      fillTaxonomySelect('nr_component_code', DEFECT_COMPONENTS);
+      fillTaxonomySelect('nr_anomaly_code', DEFECT_ANOMALIES);
       // 号機リスト読込
       const sel = document.getElementById('nr_turbine');
       if(sel && sel.options.length <= 1) {
@@ -1790,6 +1883,7 @@ const createBtn = !isLocked
           turbine_id:           gv('nr_turbine'),
           finding_title:        title,
           finding_detail:       gv('nr_detail'),
+          ...taxonomyFields('nr'),
           safety_impact:        gv('nr_safety') || 'low',
           initial_judgement:    gv('nr_judge'),           // ← 修正: first_judgment→initial_judgement
           source_type:          gv('nr_source'),
@@ -1805,7 +1899,7 @@ const createBtn = !isLocked
           status:               'open',
           approval_status:      'draft'
         };
-        await sb.write('POST', 'defect_findings', body);
+        await writeDefectFinding('POST', '', body);
         closeNewRca();
         await loadAll();
       } catch(e) {
@@ -2286,6 +2380,18 @@ const createBtn = !isLocked
               <input id="dd_title" class="ddin" value="${sv(df.finding_title)}" ${locked?'disabled':''} placeholder="例: WTG-03 油圧系統圧力低下">
             </div>
           </div>
+          <div style="margin-bottom:10px;padding:10px 12px;background:rgba(88,166,255,.05);border:1px solid rgba(88,166,255,.25);border-radius:8px;">
+            <div style="font-size:11px;color:#9cd2ff;font-weight:800;margin-bottom:8px;border-left:3px solid #58a6ff;padding-left:7px;">統一分類 / Structured classification</div>
+            <div class="ddgrid">
+              <div class="ddfl"><label>部位 / Component</label>
+                <select id="dd_component_code" class="ddin" ${locked?'disabled':''}>${taxonomyOptions(DEFECT_COMPONENTS, df.component_code)}</select>
+              </div>
+              <div class="ddfl"><label>異常内容 / Anomaly type</label>
+                <select id="dd_anomaly_code" class="ddin" ${locked?'disabled':''}>${taxonomyOptions(DEFECT_ANOMALIES, df.anomaly_code)}</select>
+              </div>
+            </div>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:7px;">保存項目: code + English name + 日本語名。未マイグレーション環境では詳細欄へ退避します。</div>
+          </div>
           <div style="margin-bottom:10px">
             <div class="ddfl"><label>異常詳細</label>
               <textarea id="dd_detail" class="ddin" rows="3" ${locked?'disabled':''}>${sv(df.finding_detail)}</textarea>
@@ -2422,6 +2528,7 @@ const createBtn = !isLocked
       const patch = {
         finding_title: title,
         finding_detail: g('dd_detail')?.value?.trim()||null,
+        ...taxonomyFields('dd'),
         safety_impact: g('dd_safety')?.value||null,
         initial_judgement: g('dd_judge')?.value||null,
         cause_clarity: g('dd_clarity')?.value||null,
@@ -2431,9 +2538,7 @@ const createBtn = !isLocked
         updated_at: new Date().toISOString()
       };
       try{
-        const res = await fetch(`${sb.URL}/rest/v1/defect_findings?id=eq.${encodeURIComponent(id)}`,
-          {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(patch)});
-        if(!res.ok) throw new Error('HTTP '+res.status+': '+(await res.text()));
+        await writeDefectFinding('PATCH', `?id=eq.${encodeURIComponent(id)}`, patch);
         if(msg){msg.style.color='#7ee787';msg.textContent='✔ 保存しました';}
         await loadAll(); openDrawer(id);
       }catch(e){ if(msg){msg.style.color='#f85149';msg.textContent='失敗: '+e.message;} }
@@ -2558,6 +2663,52 @@ const createBtn = !isLocked
       </div>
       <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">異常タイトル <span style="color:#f85149">*</span></label>
         <input id="nr_title" type="text" placeholder="例: WT-01 ギア異音" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px;padding:10px 12px;background:rgba(88,166,255,.05);border:1px solid rgba(88,166,255,.25);border-radius:8px;">
+        <div style="font-size:11px;color:#9cd2ff;font-weight:800;margin-bottom:8px;border-left:3px solid #58a6ff;padding-left:7px;">統一分類 / Structured classification</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">部位 / Component</label>
+            <select id="nr_component_code" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:12.5px">
+              <option value="">— 選択 —</option>
+              <option value="rotor_blade">Rotor Blade / ブレード</option>
+              <option value="hub_pitch">Hub / Pitch System / ハブ・ピッチ機構</option>
+              <option value="nacelle_drivetrain">Nacelle / Drivetrain / ナセル・駆動系</option>
+              <option value="gearbox">Gearbox / 増速機</option>
+              <option value="generator">Generator / 発電機</option>
+              <option value="converter_electrical">Converter / Electrical Cabinet / コンバータ・電気盤</option>
+              <option value="yaw_system">Yaw System / ヨー機構</option>
+              <option value="hydraulic_system">Hydraulic System / 油圧系統</option>
+              <option value="cooling_system">Cooling System / 冷却系統</option>
+              <option value="tower">Tower / タワー</option>
+              <option value="foundation">Foundation / 基礎</option>
+              <option value="sensor_scada">Sensor / SCADA / センサー・SCADA</option>
+              <option value="access_road_drainage">Access Road / Drainage / アクセス道路・排水</option>
+              <option value="other">Other / その他</option>
+            </select>
+          </div>
+          <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">異常内容 / Anomaly type</label>
+            <select id="nr_anomaly_code" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:12.5px">
+              <option value="">— 選択 —</option>
+              <option value="abnormal_noise">Abnormal Noise / 異音</option>
+              <option value="abnormal_vibration">Abnormal Vibration / 異常振動</option>
+              <option value="over_temperature">Over Temperature / 温度上昇</option>
+              <option value="oil_leak">Oil Leak / 油漏れ</option>
+              <option value="pressure_drop">Pressure Drop / 圧力低下</option>
+              <option value="alarm_trip">Alarm / Trip / アラーム・トリップ</option>
+              <option value="output_drop">Output Drop / 出力低下</option>
+              <option value="crack_damage">Crack / Damage / 亀裂・損傷</option>
+              <option value="corrosion">Corrosion / 腐食</option>
+              <option value="loose_bolt">Loose Bolt / ボルト緩み</option>
+              <option value="blade_erosion">Blade Erosion / ブレードエロージョン</option>
+              <option value="lightning_damage">Lightning Damage / 落雷痕</option>
+              <option value="overheating_burn_mark">Overheating / Burn Mark / 過熱・焦げ跡</option>
+              <option value="communication_error">Communication Error / 通信異常</option>
+              <option value="water_ingress">Water Ingress / 浸水・雨水侵入</option>
+              <option value="other">Other / その他</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:7px;">例: Gearbox / 増速機 + Abnormal Noise / 異音。後で集計・AI分析しやすくします。</div>
       </div>
       <div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">発見日時</label>
         <input id="nr_found_at" type="datetime-local" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">

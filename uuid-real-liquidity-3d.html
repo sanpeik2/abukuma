@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UUID × REAL × 流動性 — 3D構想マップ</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0d1117;
+  --panel:#121922;
+  --panel2:#17212c;
+  --line:#303d4b;
+  --txt:#edf4fb;
+  --muted:#9aaabc;
+  --blue:#58a6ff;
+  --green:#3fb950;
+  --gold:#d29922;
+  --pink:#db61a2;
+  --red:#f85149;
+  --cyan:#6ee7f9;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 18% 8%,rgba(88,166,255,.16),transparent 26%),
+    radial-gradient(circle at 82% 16%,rgba(63,185,80,.11),transparent 24%),
+    linear-gradient(180deg,#101824 0%,#0d1117 54%,#090d12 100%);
+  color:var(--txt);
+  font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+  letter-spacing:0;
+}
+a,button,input{font:inherit}
+.stage{position:relative;width:100vw;height:100vh;overflow:hidden}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.topbar{
+  position:absolute;top:18px;left:18px;right:18px;z-index:3;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;pointer-events:none;
+}
+.title-block{max-width:760px;pointer-events:auto}
+.crumb{display:inline-flex;align-items:center;gap:8px;color:#9cd2ff;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.28);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;margin-bottom:10px;text-decoration:none}
+h1{margin:0;font-size:clamp(24px,3.1vw,44px);line-height:1.12;color:#fff;font-weight:900}
+.lead{margin:10px 0 0;max-width:700px;color:var(--muted);font-size:13px;line-height:1.7}
+.lead b{color:#fff}
+.toolbar{
+  pointer-events:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;
+  max-width:420px;
+}
+.btn{
+  border:1px solid rgba(139,148,158,.36);
+  background:rgba(13,17,23,.76);
+  color:var(--txt);
+  border-radius:8px;
+  padding:8px 11px;
+  cursor:pointer;
+  min-height:38px;
+}
+.btn:hover,.btn.active{border-color:var(--blue);background:rgba(88,166,255,.14);color:#fff}
+.side{
+  position:absolute;right:18px;top:152px;width:min(360px,calc(100vw - 36px));z-index:3;
+  background:rgba(13,17,23,.78);
+  border:1px solid rgba(88,166,255,.2);
+  backdrop-filter:blur(10px);
+  border-radius:10px;
+  padding:15px;
+  box-shadow:0 18px 60px rgba(0,0,0,.28);
+}
+.side h2{margin:0 0 7px;font-size:16px;color:#fff}
+.side p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.65}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.metric{border:1px solid var(--line);background:rgba(23,33,44,.72);border-radius:8px;padding:8px}
+.metric span{display:block;color:var(--muted);font-size:10.5px;margin-bottom:2px}
+.metric b{display:block;color:#fff;font-size:16px}
+.thesis{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.legend{
+  position:absolute;left:18px;bottom:18px;z-index:3;
+  display:flex;gap:8px;flex-wrap:wrap;max-width:min(760px,calc(100vw - 36px));
+  pointer-events:none;
+}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(13,17,23,.74);
+  border:1px solid rgba(139,148,158,.32);
+  color:var(--muted);
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:11.5px;
+}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.axis-note{
+  position:absolute;left:18px;top:190px;z-index:3;width:min(330px,calc(100vw - 36px));
+  background:rgba(13,17,23,.58);
+  border-left:3px solid var(--blue);
+  padding:12px 14px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.65;
+}
+.axis-note b{color:#fff}
+.hint{
+  position:absolute;right:18px;bottom:18px;z-index:3;color:#9aaabc;font-size:11.5px;
+  background:rgba(13,17,23,.68);border:1px solid rgba(139,148,158,.28);border-radius:999px;padding:7px 11px;
+}
+.fallback{display:none;position:absolute;inset:0;z-index:5;place-items:center;padding:24px;background:#0d1117;color:#fff;text-align:center}
+.fallback div{max-width:620px}
+.fallback p{color:var(--muted);line-height:1.7}
+@media (max-width:900px){
+  body{overflow:auto}
+  .stage{min-height:900px;height:100vh}
+  .topbar{display:block}
+  .toolbar{margin-top:12px;justify-content:flex-start}
+  .side{top:auto;right:12px;left:12px;bottom:72px;width:auto}
+  .axis-note{display:none}
+  .hint{left:12px;right:auto;bottom:18px}
+  .legend{display:none}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="scene"></canvas>
+  <div id="fallback" class="fallback">
+    <div>
+      <h1>3D表示を読み込めませんでした</h1>
+      <p>このページはThree.jsで動く立体グラフを表示します。ネットワーク接続またはブラウザのスクリプト設定を確認して、再読み込みしてください。</p>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="title-block">
+      <a class="crumb" href="./menu.html">← O&M Process Hub</a>
+      <h1>UUID × REAL × 流動性<br>3D構想マップ</h1>
+      <p class="lead"><b>一意に追えるもの</b>を、<b>現実の設備・実績</b>に結び、最後に<b>動かせる資産・判断材料</b>へ変える。いま考えている発想を、3つの軸で立体的に配置しています。</p>
+    </div>
+    <div class="toolbar" aria-label="表示切替">
+      <button class="btn active" data-mode="all">全体</button>
+      <button class="btn" data-mode="ops">O&M</button>
+      <button class="btn" data-mode="finance">金融/投資家</button>
+      <button class="btn" data-mode="market">市場化</button>
+      <button id="spinBtn" class="btn">回転停止</button>
+    </div>
+  </header>
+
+  <aside class="axis-note">
+    <b>X軸 UUID</b>: 記録・設備・事象を一意に追える度合い<br>
+    <b>Y軸 REAL</b>: 現実資産、発電実績、証跡と結びつく度合い<br>
+    <b>Z軸 流動性</b>: 社内外で比較・移転・金融評価に使える度合い
+  </aside>
+
+  <section class="side" aria-live="polite">
+    <h2 id="pointTitle">発想の現在地</h2>
+    <p id="pointBody">点をクリックすると説明が切り替わります。ドラッグで回転、ホイールでズームできます。</p>
+    <div class="metrics">
+      <div class="metric"><span>UUID</span><b id="uuidVal">-</b></div>
+      <div class="metric"><span>REAL</span><b id="realVal">-</b></div>
+      <div class="metric"><span>流動性</span><b id="liqVal">-</b></div>
+    </div>
+    <p class="thesis" id="pointThesis">仮説: UUIDは単なるIDではなく、現場記録、設備実体、財務評価をつなぐ背骨になる。</p>
+  </section>
+
+  <div class="legend">
+    <span class="pill"><span class="dot" style="background:#58a6ff"></span>O&M基盤</span>
+    <span class="pill"><span class="dot" style="background:#3fb950"></span>REAL接続</span>
+    <span class="pill"><span class="dot" style="background:#d29922"></span>投資家/金融</span>
+    <span class="pill"><span class="dot" style="background:#db61a2"></span>市場化</span>
+    <span class="pill"><span class="dot" style="background:#f85149"></span>未整理リスク</span>
+  </div>
+  <div class="hint">ドラッグ: 回転 / ホイール: ズーム / 点をクリック: 詳細</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const points = [
+  { id:"field-uuid", label:"現場記録UUID", group:"ops", x:82, y:46, z:18, color:0x58a6ff, body:"点検、写真、作業票、KY、LOTOを同じ案件IDで追う。まずは現場の記録が散らばらない状態を作る。", thesis:"ここが背骨。UUIDがなければREALにも流動性にも接続できない。" },
+  { id:"asset-real", label:"REAL資産台帳", group:"ops", x:64, y:86, z:24, color:0x3fb950, body:"WTG、部品、点検履歴、故障履歴を現実の設備にひもづける。単なる表ではなく、発電所のデジタル実体にする。", thesis:"REAL軸が上がるほど、記録は『メモ』から『資産状態』になる。" },
+  { id:"evidence", label:"証跡パッケージ", group:"ops", x:78, y:74, z:38, color:0x6ee7f9, body:"作業前後写真、承認、復旧確認、報告判断を束ねる。保安規定・監査・保険説明に耐える証跡単位。", thesis:"O&Mの品質を、あとから説明できる形に固定する。" },
+  { id:"performance", label:"発電実績REAL", group:"finance", x:52, y:90, z:48, color:0x3fb950, body:"SCADA、停止時間、CF率、逸失発電量を資産台帳に重ねる。設備状態と収益影響を同じ空間で見る。", thesis:"現実の発電量と故障原因がつながると、財務説明が強くなる。" },
+  { id:"risk-score", label:"故障/収益リスクスコア", group:"finance", x:66, y:70, z:58, color:0xd29922, body:"部品劣化、停止頻度、復旧時間、季節性からリスクをスコア化する。投資家報告や保険協議の共通言語にする。", thesis:"流動性の前段階は、比較可能性。比べられるものは評価できる。" },
+  { id:"investor-report", label:"投資家報告データ", group:"finance", x:58, y:76, z:72, color:0xd29922, body:"月次報告、DSCR、OPEX、停止損失、重大インシデントを、根拠データ付きで提示する。", thesis:"報告が自動化されるほど、SPC運営の信頼性が上がる。" },
+  { id:"real-token", label:"REAL連動トークン仮説", group:"market", x:80, y:88, z:86, color:0xdb61a2, body:"発電実績、環境価値、設備状態、契約上の権利を、証跡付きの単位として表現できないかという仮説。", thesis:"まだ構想段階。法務・会計・規制を分けて検証する必要がある。" },
+  { id:"liquidity-market", label:"流動性マーケット", group:"market", x:70, y:68, z:94, color:0xdb61a2, body:"外部に売買するという意味だけでなく、社内で比較・優先順位付け・資金配分できる状態を含む。", thesis:"流動性とは『現場判断が資本判断に変換できること』でもある。" },
+  { id:"unverified", label:"未検証の飛躍", group:"risk", x:28, y:42, z:82, color:0xf85149, body:"UUIDやREAL接続が弱いまま市場化だけを先に語ると、説明不能な金融商品っぽくなる。ここは注意ゾーン。", thesis:"流動性を上げる前に、根拠と権利関係を固める。" },
+  { id:"governance", label:"権限/ガバナンス", group:"ops", x:88, y:58, z:54, color:0x58a6ff, body:"誰が記録し、誰が承認し、どの時点で確定するか。UUIDを信頼できるものにする運用ルール。", thesis:"IDは技術だけでは成立しない。承認と変更履歴が信頼を作る。" }
+];
+
+const groupLabels = {
+  all:"全体",
+  ops:"O&M",
+  finance:"金融/投資家",
+  market:"市場化"
+};
+
+const canvas = document.querySelector("#scene");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0d1117, 0.006);
+
+const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(152, 104, 174);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.065;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.7;
+controls.target.set(72, 38, 50);
+controls.minDistance = 70;
+controls.maxDistance = 260;
+
+scene.add(new THREE.AmbientLight(0x96b8d8, 1.2));
+const key = new THREE.DirectionalLight(0xffffff, 1.7);
+key.position.set(70, 120, 80);
+scene.add(key);
+const rim = new THREE.PointLight(0x58a6ff, 2.5, 300);
+rim.position.set(-40, 80, 140);
+scene.add(rim);
+
+const root = new THREE.Group();
+root.position.set(22, -14, 0);
+scene.add(root);
+
+function scale(v){ return v; }
+
+function makeLabel(text, color = "#edf4fb", width = 360, height = 90){
+  const c = document.createElement("canvas");
+  c.width = width;
+  c.height = height;
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0,0,width,height);
+  ctx.font = "700 26px 'Meiryo', 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = "rgba(0,0,0,.75)";
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = color;
+  ctx.fillText(text, width / 2, height / 2);
+  const texture = new THREE.CanvasTexture(c);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.SpriteMaterial({ map:texture, transparent:true, depthWrite:false });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(width / 12, height / 12, 1);
+  return sprite;
+}
+
+function axis(start, end, color, label){
+  const dir = new THREE.Vector3().subVectors(end, start);
+  const len = dir.length();
+  const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(.5);
+  const geom = new THREE.CylinderGeometry(.32, .32, len, 18);
+  const mat = new THREE.MeshStandardMaterial({ color, emissive:color, emissiveIntensity:.18, roughness:.38 });
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.position.copy(mid);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+  root.add(mesh);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(1.8, 5.5, 24), mat);
+  cone.position.copy(end);
+  cone.quaternion.copy(mesh.quaternion);
+  root.add(cone);
+  const sprite = makeLabel(label, "#" + color.toString(16).padStart(6,"0"));
+  sprite.position.copy(end.clone().add(new THREE.Vector3(7,7,7)));
+  root.add(sprite);
+}
+
+axis(new THREE.Vector3(0,0,0), new THREE.Vector3(110,0,0), 0x58a6ff, "UUID");
+axis(new THREE.Vector3(0,0,0), new THREE.Vector3(0,110,0), 0x3fb950, "REAL");
+axis(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,110), 0xdb61a2, "流動性");
+
+const gridMat = new THREE.LineBasicMaterial({ color:0x35506a, transparent:true, opacity:.62 });
+const grid = new THREE.Group();
+for(let i=0;i<=100;i+=20){
+  const lines = [
+    [new THREE.Vector3(i,0,0), new THREE.Vector3(i,100,0)],
+    [new THREE.Vector3(0,i,0), new THREE.Vector3(100,i,0)],
+    [new THREE.Vector3(i,0,0), new THREE.Vector3(i,0,100)],
+    [new THREE.Vector3(0,0,i), new THREE.Vector3(100,0,i)]
+  ];
+  lines.forEach(([a,b])=>{
+    const g = new THREE.BufferGeometry().setFromPoints([a,b]);
+    grid.add(new THREE.Line(g, gridMat));
+  });
+}
+root.add(grid);
+
+const pointMeshes = [];
+const connectionMat = new THREE.LineBasicMaterial({ color:0x5f7d99, transparent:true, opacity:.28 });
+const pathOrder = ["field-uuid","asset-real","evidence","performance","risk-score","investor-report","real-token","liquidity-market"];
+for(let i=0;i<pathOrder.length-1;i++){
+  const a = points.find(p=>p.id===pathOrder[i]);
+  const b = points.find(p=>p.id===pathOrder[i+1]);
+  const geom = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(scale(a.x), scale(a.y), scale(a.z)),
+    new THREE.Vector3(scale(b.x), scale(b.y), scale(b.z))
+  ]);
+  root.add(new THREE.Line(geom, connectionMat));
+}
+
+points.forEach((p)=>{
+  const geom = new THREE.SphereGeometry(p.group === "risk" ? 3.2 : 4.1, 32, 18);
+  const mat = new THREE.MeshStandardMaterial({
+    color:p.color,
+    emissive:p.color,
+    emissiveIntensity:.38,
+    roughness:.28,
+    metalness:.18
+  });
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.position.set(scale(p.x), scale(p.y), scale(p.z));
+  mesh.userData = p;
+  root.add(mesh);
+  pointMeshes.push(mesh);
+
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(p.group === "risk" ? 6.2 : 7.2, 32, 12),
+    new THREE.MeshBasicMaterial({ color:p.color, transparent:true, opacity:.16, depthWrite:false })
+  );
+  halo.position.copy(mesh.position);
+  halo.userData.follow = mesh;
+  root.add(halo);
+
+  const label = makeLabel(p.label, "#ffffff", 420, 84);
+  label.position.set(p.x + 3, p.y + 5.4, p.z + 3);
+  label.userData.follow = mesh;
+  label.userData.group = p.group;
+  root.add(label);
+});
+
+const titleEl = document.querySelector("#pointTitle");
+const bodyEl = document.querySelector("#pointBody");
+const thesisEl = document.querySelector("#pointThesis");
+const uuidEl = document.querySelector("#uuidVal");
+const realEl = document.querySelector("#realVal");
+const liqEl = document.querySelector("#liqVal");
+let selected = null;
+let mode = "all";
+
+function selectPoint(p){
+  selected = p;
+  titleEl.textContent = p.label;
+  bodyEl.textContent = p.body;
+  thesisEl.textContent = p.thesis;
+  uuidEl.textContent = p.x;
+  realEl.textContent = p.y;
+  liqEl.textContent = p.z;
+}
+selectPoint(points[0]);
+
+function applyMode(nextMode){
+  mode = nextMode;
+  document.querySelectorAll("[data-mode]").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+  pointMeshes.forEach(mesh=>{
+    const visible = mode === "all" || mesh.userData.group === mode || (mode === "market" && mesh.userData.group === "risk");
+    mesh.visible = visible;
+    mesh.material.opacity = visible ? 1 : .16;
+    mesh.material.transparent = !visible;
+  });
+  const first = points.find(p=> mode === "all" || p.group === mode || (mode === "market" && p.group === "risk"));
+  if(first){
+    selectPoint(first);
+    titleEl.textContent = groupLabels[mode] ? `${groupLabels[mode]}: ${first.label}` : first.label;
+  }
+}
+
+document.querySelectorAll("[data-mode]").forEach(btn=>{
+  btn.addEventListener("click",()=>applyMode(btn.dataset.mode));
+});
+document.querySelector("#spinBtn").addEventListener("click",(event)=>{
+  controls.autoRotate = !controls.autoRotate;
+  event.currentTarget.textContent = controls.autoRotate ? "回転停止" : "回転再開";
+});
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+renderer.domElement.addEventListener("pointerdown",(event)=>{
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObjects(pointMeshes.filter(m=>m.visible))[0];
+  if(hit){
+    selectPoint(hit.object.userData);
+    return;
+  }
+  let nearest = null;
+  let nearestDistance = Infinity;
+  pointMeshes.filter(m=>m.visible).forEach(mesh=>{
+    const projected = mesh.getWorldPosition(new THREE.Vector3()).project(camera);
+    const sx = (projected.x * .5 + .5) * rect.width + rect.left;
+    const sy = (-projected.y * .5 + .5) * rect.height + rect.top;
+    const distance = Math.hypot(event.clientX - sx, event.clientY - sy);
+    if(distance < nearestDistance){
+      nearestDistance = distance;
+      nearest = mesh;
+    }
+  });
+  if(nearest && nearestDistance < 72){
+    selectPoint(nearest.userData);
+  }
+});
+
+function resize(){
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize);
+resize();
+
+const clock = new THREE.Clock();
+function animate(){
+  const t = clock.getElapsedTime();
+  pointMeshes.forEach((mesh, i)=>{
+    const p = mesh.userData;
+    mesh.scale.setScalar((selected && selected.id === p.id) ? 1.28 + Math.sin(t * 4) * .04 : 1 + Math.sin(t * 2 + i) * .035);
+  });
+  controls.update();
+  renderer.render(scene,camera);
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+<script>
+window.addEventListener("error",()=>{
+  if(!window.__threeFallbackTimer){
+    window.__threeFallbackTimer = setTimeout(()=>{
+      const fallback = document.querySelector("#fallback");
+      if(fallback) fallback.style.display = "grid";
+    }, 800);
+  }
+});
+</script>
+</body>
+</html>
