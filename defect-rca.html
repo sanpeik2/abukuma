@@ -2385,6 +2385,13 @@ const createBtn = !isLocked
         <div class="ddsec" style="border-left-color:#58a6ff;">📋 異常情報（編集可）</div>
         <div style="background:rgba(88,166,255,.04);border:1px solid rgba(88,166,255,.2);border-radius:10px;padding:14px 16px;margin-bottom:4px">
           <div style="margin-bottom:10px">
+            <div class="ddfl"><label>号機</label>
+              <select id="dd_turbine" class="ddin" ${locked?'disabled':''}>
+                <option value="">— 選択 —</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
             <div class="ddfl"><label>異常タイトル *</label>
               <input id="dd_title" class="ddin" value="${sv(df.finding_title)}" ${locked?'disabled':''} placeholder="例: WTG-03 油圧系統圧力低下">
             </div>
@@ -2515,8 +2522,18 @@ const createBtn = !isLocked
           `<span style="font-size:11.5px;color:var(--muted)">🔒 申請中・承認済みは削除できません</span>`}
         </div>
       `;
+      fillDrawerTurbines('dd_turbine', df.turbine_id);
       // 担当者セレクト
       fillDrawerUsers('dd_asg', df.assigned_to);
+    }
+
+    async function fillDrawerTurbines(selId, cur){
+      try{
+        const rows = await sb.get('turbines?select=id,turbine_no&order=turbine_no');
+        const sel = document.getElementById(selId);
+        if(sel) sel.innerHTML = '<option value="">— 選択 —</option>' +
+          (rows||[]).map(t=>`<option value="${esc(t.id)}" ${String(cur||'')===String(t.id)?'selected':''}>${esc(t.turbine_no)}</option>`).join('');
+      }catch(e){}
     }
 
     async function fillDrawerUsers(selId, cur){
@@ -2535,6 +2552,7 @@ const createBtn = !isLocked
       if(!title){ if(msg){msg.style.color='#f85149';msg.textContent='タイトルは必須です';} return; }
       if(msg){msg.style.color='#8b949e';msg.textContent='保存中…';}
       const patch = {
+        turbine_id: g('dd_turbine')?.value||null,
         finding_title: title,
         finding_detail: g('dd_detail')?.value?.trim()||null,
         ...taxonomyFields('dd'),
