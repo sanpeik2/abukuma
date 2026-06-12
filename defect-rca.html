@@ -1808,12 +1808,21 @@ const createBtn = !isLocked
       tx.component_code ? `Component: ${tx.component_code} / ${tx.component_name_en} / ${tx.component_name_ja}` : '',
       tx.anomaly_code ? `Anomaly: ${tx.anomaly_code} / ${tx.anomaly_name_en} / ${tx.anomaly_name_ja}` : ''
     ].filter(Boolean).join('\n');
-    const withoutTaxonomy = (obj) => {
+    const OPTIONAL_DEFECT_COLUMNS = [
+      'component_code','component_name_en','component_name_ja',
+      'anomaly_code','anomaly_name_en','anomaly_name_ja',
+      'assigned_to','due_date'
+    ];
+    const withoutOptionalDefectColumns = (obj, extraColumns=[]) => {
       const clean = {...obj};
-      ['component_code','component_name_en','component_name_ja','anomaly_code','anomaly_name_en','anomaly_name_ja'].forEach(k=>delete clean[k]);
+      [...OPTIONAL_DEFECT_COLUMNS, ...extraColumns].forEach(k=>delete clean[k]);
       return clean;
     };
     const looksLikeMissingColumn = (err) => /schema cache|column|PGRST204|Could not find/i.test(String(err && (err.message || err)));
+    const missingColumnFromError = (err) => {
+      const text = String(err && (err.message || err));
+      return (text.match(/Could not find the '([^']+)' column/) || [])[1] || null;
+    };
     async function writeDefectFinding(method, filter, payload){
       try{
         if(method === 'POST') return await sb.write('POST', 'defect_findings', payload);
@@ -1824,7 +1833,7 @@ const createBtn = !isLocked
       }catch(e){
         if(!looksLikeMissingColumn(e)) throw e;
         const tx = taxonomySummary(payload);
-        const fallback = withoutTaxonomy(payload);
+        const fallback = withoutOptionalDefectColumns(payload, [missingColumnFromError(e)].filter(Boolean));
         fallback.finding_detail = [fallback.finding_detail, tx && `\n[Structured classification / 統一分類]\n${tx}`].filter(Boolean).join('\n');
         if(method === 'POST') return await sb.write('POST', 'defect_findings', fallback);
         const res = await fetch(`${sb.URL}/rest/v1/defect_findings${filter}`,
