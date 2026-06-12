@@ -2765,10 +2765,11 @@ const createBtn = !isLocked
         </div>
         <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600">一次判定（対応方針）</label>
           <select id="nr_judge" style="display:block;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px">
-            <option value="A">A: 即時停止・修理</option>
-            <option value="B">B: 計画修理</option>
-            <option value="C">C: 経過観察</option>
-            <option value="D">D: 記録のみ</option>
+            <option value="tbd">保留</option>
+            <option value="minor_repair">軽微補修</option>
+            <option value="part_replacement">部品交換</option>
+            <option value="rca">RCA</option>
+            <option value="record_only">記録のみ</option>
           </select>
         </div>
       </div>
