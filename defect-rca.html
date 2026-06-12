@@ -1350,15 +1350,14 @@ const createBtn = !isLocked
       };
       try{
         if(rcaId){
-          const res=await fetch(`${sb.URL}/rest/v1/rca_reports?id=eq.${encodeURIComponent(rcaId)}`,{method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(payload)});
-          if(!res.ok) throw new Error((await res.text())||('HTTP '+res.status));
+          await writeRcaReport('PATCH', `?id=eq.${encodeURIComponent(rcaId)}`, payload);
         }else{
           payload.defect_finding_id=defectId;
           payload.turbine_id=(box&&box._dfTurbine)||null;
           payload.rca_no='RCA-'+new Date().toISOString().replace(/[^0-9]/g,'').slice(2,12)+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
           // 関連作業票があれば紐付け
           try{ const wos=await sb.get(`work_orders?defect_finding_id=eq.${encodeURIComponent(defectId)}&select=id&limit=1`); if(wos&&wos[0]) payload.work_order_id=wos[0].id; }catch(e){}
-          const res=await sb.write('POST','rca_reports',payload);
+          await writeRcaReport('POST', '', payload);
         }
         await refreshRcaSection(defectId);
       }catch(e){ if(msg){msg.style.display='block';msg.textContent='保存失敗: '+(e.message||e);} }
@@ -1871,6 +1870,23 @@ const createBtn = !isLocked
       const text = String(err && (err.message || err));
       return (text.match(/Could not find the '([^']+)' column/) || [])[1] || null;
     };
+    async function writeRcaReport(method, filter, payload){
+      let body = {...payload};
+      for(let attempt=0; attempt<8; attempt++){
+        try{
+          if(method === 'POST') return await sb.write('POST', 'rca_reports', body);
+          const res = await fetch(`${sb.URL}/rest/v1/rca_reports${filter}`,
+            {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(body)});
+          if(!res.ok) throw new Error('HTTP '+res.status+': '+(await res.text()));
+          return null;
+        }catch(e){
+          const missing = missingColumnFromError(e);
+          if(!looksLikeMissingColumn(e) || !missing || !(missing in body)) throw e;
+          delete body[missing];
+        }
+      }
+      throw new Error('RCA保存失敗: Supabase側の列定義と画面項目が一致していません');
+    }
     async function writeDefectFinding(method, filter, payload){
       try{
         if(method === 'POST') return await sb.write('POST', 'defect_findings', payload);
@@ -2643,17 +2659,17 @@ const createBtn = !isLocked
         rca_method: g('dd_method')?.value||null,
         root_cause: g('dd_cause')?.value?.trim()||null,
         temporary_fix: g('dd_tmpfix')?.value?.trim()||null,
+        temporary_action: g('dd_tmpfix')?.value?.trim()||null,
         permanent_fix: g('dd_permfix')?.value?.trim()||null,
+        permanent_action: g('dd_permfix')?.value?.trim()||null,
         updated_at: new Date().toISOString()
       };
       try{
         if(rcaId){
-          const res = await fetch(`${sb.URL}/rest/v1/rca_reports?id=eq.${encodeURIComponent(rcaId)}`,
-            {method:'PATCH',headers:sb.headers({'Prefer':'return=minimal','Content-Type':'application/json'}),body:JSON.stringify(payload)});
-          if(!res.ok) throw new Error('HTTP '+res.status+': '+(await res.text()));
+          await writeRcaReport('PATCH', `?id=eq.${encodeURIComponent(rcaId)}`, payload);
         }else{
           payload.created_at = new Date().toISOString();
-          await sb.write('POST','rca_reports',payload);
+          await writeRcaReport('POST', '', payload);
         }
         if(msg){msg.style.color='#7ee787';msg.textContent='✔ 保存しました';}
         await loadAll(); openDrawer(defectId);
