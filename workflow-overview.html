@@ -533,8 +533,10 @@ body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Hiragino Kaku
       <div style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px">
         <div style="font-size:11px;font-weight:700;color:#ff7b72;margin-bottom:8px;">安全設計上の注意点</div>
         <div style="color:var(--muted);line-height:1.7;font-size:11px;">
-          • RLS は現在無効<br>
-          　（フロントは anon キーのみ使用）<br>
+          • RLS は主要 O&amp;M テーブルで有効<br>
+          　（anon は原則ブロック／authenticated は暫定的に広く許可）<br>
+          • 本番運用前にロール別ポリシーへ細分化<br>
+          　（承認・削除・確定操作は主任／管理者に限定）<br>
           • service_role キーはフロントに置かない<br>
           • データ推測 UPDATE 禁止<br>
           　（候補ビュー → 人が確認 → 確定行のみ）<br>
