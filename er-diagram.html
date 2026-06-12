@@ -35,7 +35,7 @@
 </head>
 <body>
   <h1>風力発電 O&M OS — テーブル関係図</h1>
-  <div class="sub">阿武隈風力発電所 / Supabase プロジェクト kwhashtnuzrlzrpikhne / 26テーブル + 33ビュー（Issue #1〜#13 反映）</div>
+  <div class="sub">阿武隈風力発電所 / Supabase プロジェクト kwhashtnuzrlzrpikhne / 26テーブル + 33ビュー（2026-06-12 CA分析軸反映）</div>
 
   <div style="background:#11171f;border:1px solid #30363d;border-left:4px solid #58a6ff;border-radius:10px;padding:14px 18px;margin:16px 0 20px;font-size:12.5px;line-height:1.7">
     <div style="color:#9cd2ff;font-weight:700;font-size:12px;letter-spacing:.04em;margin-bottom:8px">📘 このDocsの使い方</div>
@@ -56,6 +56,8 @@
   <div class="note">
     <b>同居方針:</b> 意思決定OS（朝会コックピット）と業務OS（O&M）はUI/目的を分離するが、Supabaseは同一プロジェクトに同居。
     SCADA（朝会側 <code>alarm_events</code>）→ O&M側 <code>work_orders</code> へ自動起票で連携する。
+    点検結果から是正処置を直接たどれるよう、<code>corrective_actions.inspection_result_id</code> と
+    <code>corrective_actions.fault_code_id</code> をAI再発分析の軸として追加した。
   </div>
 
   <!-- ===== 業務別ビュー（Phase 2 / 現場・管理者向けの入口） ===== -->
@@ -204,6 +206,8 @@
         <div style="display:flex;flex-wrap:wrap;gap:5px">
           <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">rca_investigations</span>
           <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f85149;background:#0d1117;color:#ff9b94">corrective_actions</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #58a6ff;background:#0d1117;color:#9cd2ff">fault_codes</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #58a6ff;background:#0d1117;color:#9cd2ff">status_history(jsonb)</span>
           <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #bc8cff;background:#0d1117;color:#d2b8ff">moc_changes</span>
           <span style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #bc8cff;background:#0d1117;color:#d2b8ff">near_miss_reports</span>
           <a href="./guide-rca.html" style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #30363d;color:#58a6ff;text-decoration:none">⑦ RCAの基本</a>
@@ -238,7 +242,11 @@
     <span class="chip" style="border-color:var(--defect)">rca_investigations</span>
     <span class="arrow">/</span>
     <span class="chip" style="border-color:var(--safety)">moc_changes</span><span class="arrow">→</span>
-    <span class="chip" style="border-color:var(--defect)">corrective_actions</span><span class="arrow">→</span>
+    <span class="chip" style="border-color:var(--defect)">corrective_actions</span>
+    <span class="arrow">↔</span>
+    <span class="chip" style="border-color:var(--insp)">inspection_results</span>
+    <span class="arrow">/</span>
+    <span class="chip" style="border-color:var(--master)">fault_codes</span><span class="arrow">→</span>
     <span class="chip" style="border-color:var(--work)">work_orders</span><span class="arrow">→</span>
     <span class="chip" style="border-color:var(--work)">work_permits</span><span class="arrow">→</span>
     <span class="chip" style="border-color:var(--work)">ky_records</span><span class="arrow">→</span>
@@ -254,14 +262,14 @@
       <div class="tbl"><div class="name">turbines</div><div class="pk">PK id</div><div class="rel">風車台帳（46基）。多くのテーブルが <code>turbine_id</code> で参照</div></div>
       <div class="tbl"><div class="name">om_users</div><div class="pk">PK id = auth.users.id</div><div class="rel">担当者。<code>assigned_to / created_by / owner</code> 等で参照</div></div>
       <div class="tbl"><div class="name">inspection_rules</div><div class="pk">PK id</div><div class="rel">点検ルール。計画・チェック項目が参照</div></div>
-      <div class="tbl"><div class="name">fault_codes</div><div class="pk">PK id</div><div class="rel">故障コード。チェック項目・作業票が参照</div></div>
+      <div class="tbl"><div class="name">fault_codes</div><div class="pk">PK id</div><div class="rel">故障コード。<code>result_checklist.fault_code_id</code> / <code>work_orders.fault_code_id</code> / <code>corrective_actions.fault_code_id</code> が参照</div></div>
       <div class="tbl"><div class="name">parts</div><div class="pk">PK id</div><div class="rel">部品台帳。在庫・使用履歴が参照</div></div>
     </div>
 
     <div class="group">
       <h2 style="background:rgba(63,185,80,.15)"><i class="dot" style="background:var(--insp)"></i>点検</h2>
       <div class="tbl"><div class="name">inspection_plans</div><div class="rel">→ <code>rule_id</code> rules / <code>turbine_id</code> turbines / <code>assigned_to</code> users</div></div>
-      <div class="tbl"><div class="name">inspection_results</div><div class="rel">→ <code>plan_id</code> plans / <code>turbine_id</code> turbines。<b>has_anomaly</b> で異常起票へ分岐</div></div>
+      <div class="tbl"><div class="name">inspection_results</div><div class="rel">→ <code>plan_id</code> plans / <code>turbine_id</code> turbines。<b>has_anomaly</b> で異常起票へ分岐。CAは <code>corrective_actions.inspection_result_id</code> で直接参照</div></div>
       <div class="tbl"><div class="name">result_checklist</div><div class="rel">→ <code>result_id</code> results / <code>rule_id</code> rules / <code>fault_code_id</code> fault_codes</div></div>
     </div>
 
@@ -270,7 +278,7 @@
       <div class="tbl"><div class="name">defect_findings</div><div class="rel">→ <code>turbine_id</code> / <code>source_id</code>（点検/SCADA/巡視/NM）。一次判定 initial_judgement</div></div>
       <div class="tbl"><div class="name">risk_assessments</div><div class="rel">ポリモーフィック → <code>target_type/target_id</code>。recommended_action で A〜F分岐</div></div>
       <div class="tbl"><div class="name">rca_investigations</div><div class="rel">→ <code>work_order_id</code> / <code>defect_finding_id</code>。根本原因調査</div></div>
-      <div class="tbl"><div class="name">corrective_actions</div><div class="rel">→ <code>work_order_id</code> / <code>rca_id</code> / <code>defect_finding_id</code></div></div>
+      <div class="tbl"><div class="name">corrective_actions</div><div class="rel">→ <code>work_order_id</code> / <code>rca_id</code> / <code>defect_finding_id</code> / <code>inspection_result_id</code> / <code>fault_code_id</code>。<code>component_code</code>、<code>wait_reason</code>、<code>status_history</code>で再発・待機要因を分析</div></div>
       <div class="tbl"><div class="name">closeout_reviews</div><div class="rel">→ <code>work_order_id</code>。復旧確認・横展開・クローズ</div></div>
     </div>
 
