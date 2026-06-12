@@ -226,8 +226,8 @@
     <p>46基 / 150MW / GE / 福島 | 全UI要素 × データソース6系統 × AI生成パイプライン 完全設計書</p>
   </div>
   <div class="page-meta">
-    作成: 2026-05-23　最終更新: 2026-06-10（Supabase実スキーマと照合・整合）<br>
-    収録: UI×データソース対応表 / Supabase設計 / アーキテクチャ図 / AI生成パイプライン
+    作成: 2026-05-23　最終更新: 2026-06-12（CA・点検結果・故障コードの分析軸を反映）<br>
+    収録: UI×データソース対応表 / Supabase設計 / アーキテクチャ図 / AI生成パイプライン / CA再発分析軸
   </div>
 </div>
 
@@ -2690,6 +2690,13 @@
             <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">異常発見からクローズまでの現在地を表示する管制塔。復旧確認が必要な案件は「復旧確認待ち」、完了後は「クローズ待ち」に進める。</td>
           </tr>
           <tr style="background:#0e1720">
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#f2d070;font-weight:700">CA・故障分類</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>corrective_actions</code><br><code>future.fault_codes</code><br><code>inspection_results</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">work-orders.html<br>defect-rca.html<br>workflow-status.html</td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#9fb0bd"><code>inspection_result_id</code><br><code>fault_code_id</code><br><code>component_code</code><br><code>status / wait_reason</code><br><code>status_history</code></td>
+            <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">点検結果からCAを直接たどり、故障コード・部位・待機要因を残す再発分析の中核。部品待ち、風待ち、停止調整待ち、外注待ちを分けることで稼働率低下の理由を経営報告・AI学習に使える。</td>
+          </tr>
+          <tr style="background:#0e1720">
             <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:#5adba8;font-weight:700">作業実施</td>
             <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5)"><code>v_work_execution_list</code></td>
             <td style="padding:8px 10px;border-bottom:1px solid rgba(43,59,74,0.5);color:var(--muted)">work-execution.html</td>
@@ -2735,17 +2742,23 @@
       </table>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px">
       <div style="background:#0b1420;border:1px solid rgba(49,196,132,0.25);padding:12px">
         <div style="font-size:11px;font-weight:700;color:#5adba8;margin-bottom:6px">設備起点の流れ</div>
         <div style="font-size:11px;color:var(--muted);line-height:1.9">
-          点検・監視・アラーム → <code>defect_findings</code> → 作業票 → 停止実績 → 復旧確認 → クローズ → 必要に応じて報告候補
+          点検・監視・アラーム → <code>inspection_results</code> / <code>defect_findings</code> → 作業票 → 停止実績 → 復旧確認 → クローズ → 必要に応じて報告候補
         </div>
       </div>
       <div style="background:#0b1420;border:1px solid rgba(232,196,106,0.25);padding:12px">
         <div style="font-size:11px;font-weight:700;color:#f2d070;margin-bottom:6px">事象起点の流れ</div>
         <div style="font-size:11px;color:var(--muted);line-height:1.9">
           ヒヤリハット・事故・手順逸脱 → <code>near_miss_reports</code> → 主任判断 → 必要に応じて報告候補。設備故障と混ぜない。
+        </div>
+      </div>
+      <div style="background:#0b1420;border:1px solid rgba(126,200,240,0.25);padding:12px">
+        <div style="font-size:11px;font-weight:700;color:#7ec8f0;margin-bottom:6px">AI学習・再発分析の流れ</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.9">
+          <code>inspection_results</code> → <code>corrective_actions.inspection_result_id</code> → <code>fault_code_id</code> / <code>component_code</code> → <code>status_history</code>。自由記述の故障名ではなく、同一故障・同一部位・同一待機要因を集計できる形で残す。
         </div>
       </div>
     </div>
@@ -2760,6 +2773,7 @@
         <div style="font-size:11px;color:var(--muted);line-height:2">
           KPIの意味づけと解釈（「稼働率が目標を下回る理由」）<br>
           要対応WTGの優先順位を文章で説明<br>
+          故障コード・部位・待機要因から再発傾向を説明<br>
           次アクションの候補を自然言語で提示<br>
           前日の申し送り事項を引き継いだ文章生成<br>
           議事録9項目の下書き一括生成
@@ -2772,6 +2786,7 @@
           アラーム重要度の最終判定（severity列で判断）<br>
           運転停止の自動決定（推奨表示止まり）<br>
           お天気アラームの閾値判定（JavaScript）<br>
+          故障コード・部位コードの自由生成（必ずマスタ/選択値を使う）<br>
           契約条件・法令の解釈
         </div>
       </div>
